@@ -3987,6 +3987,17 @@ int av_find_stream_info(AVFormatContext *ic)
                 dts_count = 0;
             }
         }
+
+        if ((pkt->dts != AV_NOPTS_VALUE) &&
+           (st->codec_info_nb_frames == 0) &&
+           (ic->pb!=NULL) &&
+           !ic->pb->is_slowmedia)
+        {
+           // avoid always using the 3rd packet's pts for st->start_time in following logic
+           // set the first dts value for discontinue checking
+           st->info->fps_first_dts = pkt->dts;
+        }
+
         if (pkt->dts != AV_NOPTS_VALUE && st->codec_info_nb_frames > 1 && ic->pb != NULL && !ic->pb->is_slowmedia)
         {
             /* check for non-increasing dts */
