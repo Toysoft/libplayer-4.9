@@ -212,7 +212,10 @@ static int64_t curl_ffmpeg_seek(URLContext *h, int64_t off, int whence)
         CLOGE("CURLFFContext invalid CFContext handle\n");
         return ret;
     }
-    if (whence != SEEK_CUR || off != 0) {
+    if ((whence == SEEK_CUR && !off) ||
+        (whence == SEEK_END && off < 0)) {
+        force_interrupt = 0;
+    } else {
         force_interrupt = 1;
     }
     if (whence == AVSEEK_CURL_HTTP_KEEPALIVE) {
