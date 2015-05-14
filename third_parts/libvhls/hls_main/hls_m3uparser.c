@@ -514,7 +514,8 @@ static void makeUrl(char *buf, int size, const char *base, const char *rel)
     }
 
     if (!strncasecmp("http://", rel, 7) || !strncasecmp("https://", rel, 8)) {
-        if ((sep = strstr(rel, "127.0.0.1")) != NULL && strstr(base, "://") != NULL) {
+        if ((sep = strstr(rel, "127.0.0.1")) != NULL && strstr(base, "://") != NULL
+            && !strstr(base, "voole.com")) { // some apk needs 127.0.0.1
             /*rel url is get from http://127.0.0.1
                     we need changed the 127.0.0.1 to real IP address,for server;
                     for http://127.0.0.1:1234 to http://221.1.1.1:1234
