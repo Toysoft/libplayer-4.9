@@ -370,7 +370,7 @@ static int codec_h_ioctl_get(CODEC_HANDLE h, int subcmd, unsigned long paramter)
         return r;
     }
     if (paramter != 0) {
-        *(unsigned long *)paramter = (unsigned long)parm.data_32;
+        *(unsigned int *)paramter = parm.data_32;
     }
     return 0;
 }
@@ -469,7 +469,7 @@ int codec_h_ioctl(CODEC_HANDLE h, int cmd, int subcmd, unsigned long paramter)
     if (h < 0) {
         return -1;
     }
-    //printf("[%s]l: %d --->%x\n", __func__, __LINE__, cmd);
+    //printf("[%s]l: %d --->cmd:%x, subcmd:%x\n", __func__, __LINE__, cmd, subcmd);
     if (!codec_h_is_support_new_cmd()) {
         int old_cmd = get_old_cmd(subcmd);
         if (old_cmd == -1) {

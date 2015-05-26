@@ -121,7 +121,6 @@ static  int set_video_codec_info(codec_para_t *pcodec)
 {
     dec_sysinfo_t am_sysinfo = pcodec->am_sysinfo;
     int r;
-
     r = codec_h_control(pcodec->handle, AMSTREAM_IOC_SYSINFO, (unsigned long)&am_sysinfo);
     if (r < 0) {
         return system_error_to_codec_error(r);
@@ -258,6 +257,28 @@ static int set_ts_skip_byte(codec_para_t *pcodec)
 
     return 0;
 }
+/* --------------------------------------------------------------------------*/
+/**
+* @brief  codec_check_new_cmd  Check new cmd for ioctl
+*
+*/
+/* --------------------------------------------------------------------------*/
+static inline void codec_check_new_cmd(CODEC_HANDLE handle)
+{
+    if (!codec_h_is_support_new_cmd()) {
+        int r;
+        int version = 0;
+        r = codec_h_control(handle, AMSTREAM_IOC_GET_VERSION, &version);
+        if ((r == 0) && (version >= 0x20000)) {
+            CODEC_PRINT("codec_init amstream version : %d.%d\n", (version & 0xffff0000) >> 16, version & 0xffff);
+            codec_h_set_support_new_cmd(1);
+        } else {
+            CODEC_PRINT("codec_init amstream use old cmd\n");
+            codec_h_set_support_new_cmd(0);
+        }
+
+    }
+}
 
 /* --------------------------------------------------------------------------*/
 /**
@@ -291,6 +312,9 @@ static inline int codec_video_es_init(codec_para_t *pcodec)
         return CODEC_OPEN_HANDLE_FAILED;
     }
     pcodec->handle = handle;
+
+    codec_check_new_cmd(handle);
+
     r = set_video_format(pcodec);
     if (r < 0) {
         codec_h_close(handle);
@@ -336,6 +360,9 @@ static inline int codec_audio_es_init(codec_para_t *pcodec)
         return CODEC_OPEN_HANDLE_FAILED;
     }
     pcodec->handle = handle;
+
+    codec_check_new_cmd(handle);
+
     r = set_audio_format(pcodec);
     if (r < 0) {
         codec_h_close(handle);
@@ -425,6 +452,9 @@ static inline int codec_ps_init(codec_para_t *pcodec)
         return CODEC_OPEN_HANDLE_FAILED;
     }
     pcodec->handle = handle;
+
+    codec_check_new_cmd(handle);
+
     if (pcodec->has_video) {
         r = set_video_format(pcodec);
         if (r < 0) {
@@ -510,6 +540,9 @@ static inline int codec_ts_init(codec_para_t *pcodec)
         return CODEC_OPEN_HANDLE_FAILED;
     }
     pcodec->handle = handle;
+
+    codec_check_new_cmd(handle);
+
     codec_set_demux_source(pcodec, DEMUX_PLAYER_SOURCE);
     if (pcodec->has_video) {
         r = set_video_format(pcodec);
@@ -599,6 +632,9 @@ static inline int codec_rm_init(codec_para_t *pcodec)
     }
 
     pcodec->handle = handle;
+
+    codec_check_new_cmd(handle);
+
     if (pcodec->has_video) {
         r = set_video_format(pcodec);
         if (r < 0) {
@@ -676,6 +712,7 @@ int codec_init(codec_para_t *pcodec)
     if (ret != 0) {
         return ret;
     }
+
     ret = codec_init_cntl(pcodec);
     if (ret != CODEC_ERROR_NONE) {
         return ret;
@@ -684,19 +721,7 @@ int codec_init(codec_para_t *pcodec)
     if (ret != 0) {
         return -CODEC_ERROR_SET_BUFSIZE_FAILED;
     }
-    if (!codec_h_is_support_new_cmd()) {
-        int r;
-        int version = 0;
-        r = codec_h_control(pcodec->handle, AMSTREAM_IOC_GET_VERSION, &version);
-        if ((r == 0) && (version >= 0x20000)) {
-            CODEC_PRINT("codec_init amstream version : %d.%d\n", (version & 0xffff0000) >> 16, version & 0xffff);
-            codec_h_set_support_new_cmd(1);
-        } else {
-            CODEC_PRINT("codec_init amstream use old cmd\n");
-            codec_h_set_support_new_cmd(0);
-        }
 
-    }
     ret = codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_SET, AMSTREAM_PORT_INIT, 0);
     if (ret != 0) {
 
@@ -824,8 +849,8 @@ void codec_close_audio(codec_para_t *pcodec)
 {
     if (pcodec) {
         pcodec->has_audio = 0;
+        audio_stop(&pcodec->adec_priv);
     }
-    audio_stop(&pcodec->adec_priv);
     return;
 }
 
