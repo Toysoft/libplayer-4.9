@@ -851,11 +851,19 @@ static void get_stream_info(play_para_t *p_para)
             }
         } else {
             if (p_para->vstream_info.video_format == VFORMAT_HEVC) {
-                unsupported_video = (p_para->pFormatCtx->streams[video_index]->codec->bit_depth == 0 ||
-                                     p_para->pFormatCtx->streams[video_index]->codec->bit_depth == 10 ||
-                                     p_para->pFormatCtx->streams[video_index]->codec->long_term_ref_pic == 1);
-                if (unsupported_video == 1) {
-                    log_print("[%s:%d]hevc 10 bit profile or long term ref pic, not support now!\n", __FUNCTION__, __LINE__);
+                unsupported_video = p_para->pFormatCtx->streams[video_index]->codec->long_term_ref_pic == 1;
+                if (unsupported_video) {
+                    log_print("[%s:%d]hevc long term ref pic, not support now!\n", __FUNCTION__, __LINE__);
+                }
+                if (!unsupported_video) {
+                    unsupported_video= (p_para->pFormatCtx->streams[video_index]->codec->bit_depth == 9 &&
+                               !p_para->vdec_profile.hevc_para.support_9bit) ||
+                               (p_para->pFormatCtx->streams[video_index]->codec->bit_depth == 10 &&
+                               !p_para->vdec_profile.hevc_para.support_10bit);
+                    if (unsupported_video) {
+                        log_print("[%s]hevc 9/10 bit profile, not support for this chip configure!,bit_depth=%d\n", __FUNCTION__,
+                            p_para->pFormatCtx->streams[video_index]->codec->bit_depth);
+                    }
                 }
             }
             if ((p_para->vstream_info.video_width > 1920) ||

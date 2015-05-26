@@ -93,6 +93,18 @@ static int parse_hevc_param(char *str, sys_hevc_profile_t *para, int size)
     if (strstr(str, "4k")) {
         para->support4k = 1;
     }
+    if (strstr(str, "9bit")) {
+        para->support_9bit = 1;
+    }
+    if (strstr(str, "10bit")) {
+        para->support_10bit = 1;
+    }
+    if (strstr(str, "dwrite")) {
+        para->support_dwwrite = 1;
+    }
+    if (strstr(str, "compressed")) {
+        para->support_compressed = 1;
+    }
 
     return 0;
 }

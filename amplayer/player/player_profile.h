@@ -12,6 +12,10 @@ typedef struct {
 typedef struct {
     int exist;
     int support4k;
+    int support_9bit;
+    int support_10bit;
+    int support_dwwrite;
+    int support_compressed;
 } sys_hevc_profile_t;
 
 typedef struct {
