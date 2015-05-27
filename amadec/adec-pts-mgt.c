@@ -172,9 +172,10 @@ int adec_pts_start(aml_audio_dec_t *audec)
     adec_print("[%s:%d] enable_drop_pcm :%d \n", __FUNCTION__, __LINE__, enable_drop_pcm);
     if (enable_drop_pcm) {
         char *path = "/sys/class/tsync/enable";
-        int enable = 0;
-        if (amsysfs_get_sysfs_int(path, &enable) >= 0) {
-            if (enable) {
+        char buf[32] = "";
+
+        if (amsysfs_get_sysfs_str(path, buf,32) >= 0) {
+            if (!strncmp(buf, "1: enabled", 10)) {
                 adec_pts_droppcm(audec);
             }
         }
@@ -919,13 +920,22 @@ int droppcm_get_refpts(aml_audio_dec_t *audec, unsigned long *refpts)
         adec_print("## [%s::%d] unable to get vpts! \n", __FUNCTION__, __LINE__);
         return -1;
     }
-    if (cur_vpts && cur_vpts < firstvpts) {
-        *refpts = cur_vpts;
-        adec_print("## [%s::%d] use cur_vpts, refpts:0x%x, ---\n", __FUNCTION__, __LINE__, *refpts);
-    } else if (firstvpts) {
-        *refpts = firstvpts;
-        adec_print("## [%s::%d] use firstvpts, refpts:0x%x, ---\n", __FUNCTION__, __LINE__, *refpts);
+
+    if (audec->tsync_mode == TSYNC_MODE_PCRMASTER) {
+        if (cur_vpts && cur_vpts < firstvpts) {
+            *refpts = cur_vpts;
+        } else if (firstvpts) {
+            *refpts = firstvpts;
+        }
+    } else {
+        if (firstvpts) {
+            *refpts = firstvpts;
+        } else {
+            *refpts = cur_vpts;
+        }
     }
+    adec_print("## [%s::%d] cur_vpts:0x%x,firstvpts:0x%x refpts:0x%x, ---\n", __FUNCTION__, __LINE__,cur_vpts,firstvpts, *refpts);
+
 
     return 0;
 }
