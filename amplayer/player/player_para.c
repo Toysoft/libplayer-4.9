@@ -73,12 +73,12 @@ static int try_decode_picture(play_para_t *p_para, int video_index)
                     continue;
                 }
             }
-        } while ((avpkt.stream_index != video_index) && (++try_readframe_count <= 100));
+        } while ((avpkt.stream_index != video_index) && (++try_readframe_count <= 200));
 
-        if (try_readframe_count > 100) {
+        if (try_readframe_count > 200) {
             url_fseek(p_para->pFormatCtx->pb, cur_pos, SEEK_SET);
             av_free_packet(&avpkt);
-            log_error("[%s:%d]av_read_frame index %d more than 100 times, return\n", __FUNCTION__, __LINE__, video_index);
+            log_error("[%s:%d]av_read_frame index %d more than 200 times, return\n", __FUNCTION__, __LINE__, video_index);
             return -1;
         }
 
