@@ -696,7 +696,7 @@ int amvideo_utils_set_virtual_position(int32_t x, int32_t y, int32_t w, int32_t 
     if (free_scale_enable == 0 && ppscaler_enable == 0) {
         char val[256];
         char axis_string[100];
-        char num[10]="0123456789";
+        char num[11]="0123456789\0";
         char *first_num, *last_num;
 
         if (freescale_mode_enable == 1) {
@@ -752,7 +752,7 @@ int amvideo_utils_set_virtual_position(int32_t x, int32_t y, int32_t w, int32_t 
     } else if (free_scale_enable == 1 && ppscaler_enable == 0) {
         char val[256];
         char axis_string[100];
-        char num[10]="0123456789";
+        char num[11]="0123456789\0";
         char *first_num, *last_num;
         int left = 0, top = 0, right = 0, bottom = 0;
         int x = 0, y = 0, w = 0, h = 0;
