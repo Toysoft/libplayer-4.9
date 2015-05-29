@@ -380,7 +380,7 @@ void audioCallback(int event, void* user, void *info)
     }
     
     if(wfd_enable){
-        ioctl(audec->adsp_ops.amstream_fd, AMSTREAM_IOC_GET_LAST_CHECKIN_APTS, (int)&last_checkin);
+        ioctl(audec->adsp_ops.amstream_fd, AMSTREAM_IOC_GET_LAST_CHECKIN_APTS, &last_checkin);
         last_checkout = dsp_ops->get_cur_pts(dsp_ops);
         if(last_checkin < last_checkout){
            diff = 0;
@@ -542,11 +542,11 @@ void audioCallback(int event, void* user, void *info)
             channels = buffer->channelCount;
         #endif
         if (wfd_enable) {
-            af_resample_api((char*)(buffer->i16), &buffer->size, channels, audec, resample, resample_step);
+            af_resample_api((char*)(buffer->i16), (unsigned int*)&buffer->size, channels, audec, resample, resample_step);
         } else if (audec->tsync_mode == TSYNC_MODE_PCRMASTER) {
-            af_pcrmaster_resample_api((char*)(buffer->i16), &buffer->size, channels, audec);
+            af_pcrmaster_resample_api((char*)(buffer->i16), (unsigned int*)&buffer->size, channels, audec);
         } else {
-            af_resample_api_normal((char*)(buffer->i16), &buffer->size, channels, audec);
+            af_resample_api_normal((char*)(buffer->i16), (unsigned int*)&buffer->size, channels, audec);
         }
         if(audec->mix_lr_channel_enable>=0)
             mix_lr_channel_enable=audec->mix_lr_channel_enable;

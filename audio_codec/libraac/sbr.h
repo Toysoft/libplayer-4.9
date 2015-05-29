@@ -105,7 +105,7 @@
 #define FFT32C                          STATNAME(FFT32C)
 #define CalcFreqTables                  STATNAME(CalcFreqTables)
 #define AdjustHighFreq                  STATNAME(AdjustHighFreq)
-#define GenerateHighFreq                STATNAME(GenerateHighFreq)
+//#define GenerateHighFreq                STATNAME(GenerateHighFreq)
 #define DecodeSBREnvelope               STATNAME(DecodeSBREnvelope)
 #define DecodeSBRNoise                  STATNAME(DecodeSBRNoise)
 #define UncoupleSBREnvelope             STATNAME(UncoupleSBREnvelope)

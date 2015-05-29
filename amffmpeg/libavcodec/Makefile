@@ -693,7 +693,9 @@ HOSTPROGS = aac_tablegen aacps_tablegen cbrt_tablegen cos_tablegen      \
 
 DIRS = alpha arm bfin mlib ppc ps2 sh4 sparc x86
 
+ifeq ($(TARGET_ARCH),arm)
 include $(LOCAL_PATH)/$(ARCH)/Makefile
+endif
 
 CLEANFILES = *_tables.c *_tables.h *_tablegen$(HOSTEXESUF)
 

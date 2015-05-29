@@ -106,7 +106,7 @@ extern "C" {
         UINT32 index_offset; /* offset to beginning of index data */
         UINT32 data_offset;  /* offset to beginning of packet data */
         UINT16 num_streams;  /* total number of streams in clip */
-        UINT16 flags;        /* various and sundry */
+        UINT32 flags;        /* various and sundry */
     };
 
     /* rm content header -- title, author, copyright */

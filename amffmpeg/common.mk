@@ -13,9 +13,12 @@ FFNAME := lib$(NAME)
 FFLIBS := $(foreach NAME,$(FFLIBS),lib$(NAME))
 FFCFLAGS += $(CFLAGS)
 FFCFLAGS += -DHAVE_AV_CONFIG_H -fPIC 
+
+ifeq ($(TARGET_ARCH),arm)
 LOCAL_LDFLAGS := -Wl,--no-warn-shared-textrel
 ALL_S_FILES := $(wildcard $(LOCAL_PATH)/$(TARGET_ARCH)/*.S)
 ALL_S_FILES := $(addprefix $(TARGET_ARCH)/, $(notdir $(ALL_S_FILES)))
+endif
 
 ifneq ($(ALL_S_FILES),)
 ALL_S_OBJS := $(patsubst %.S,%.o,$(ALL_S_FILES))

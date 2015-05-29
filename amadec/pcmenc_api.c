@@ -31,7 +31,7 @@
 #include "pcmenc_api.h"
 #define AUDIODSP_PCMENC_DEV_NAME  "/dev/audiodsp_pcmenc"
 
-static char *map_buf;
+static char *map_buf = (void *)-1L;
 static unsigned read_offset = 0;
 static unsigned buffer_size = 0;
 static int dev_fd = -1;
@@ -40,7 +40,6 @@ int pcmenc_init()
 {
     buffer_size = 0;
     read_offset = 0;
-    map_buf = 0xffffffff;
     dev_fd = -1;
     dev_fd = open(AUDIODSP_PCMENC_DEV_NAME, O_RDONLY);
     if (dev_fd < 0) {
@@ -51,7 +50,7 @@ int pcmenc_init()
     ioctl(dev_fd, AUDIODSP_PCMENC_GET_RING_BUF_SIZE, &buffer_size);
     /* mapping the kernel buffer to user space to acess */
     map_buf = mmap(0, buffer_size, PROT_READ , MAP_PRIVATE, dev_fd, 0);
-    if ((unsigned)map_buf == -1) {
+    if (map_buf == (void*)-1L) {
         //printf("pcmenc:mmap failed,err id %d \n",errno);
         adec_print("pcmenc:mmap failed,err id %d \n", errno);
         close(dev_fd);
@@ -87,9 +86,9 @@ static int pcmenc_skip_pcm(int size)
     }
 
 }
-int pcmenc_read_pcm(char *inputbuf, int size)
+int pcmenc_read_pcm(char *inputbuf, uint size)
 {
-    int ring_buf_content = 0;
+    unsigned int ring_buf_content = 0;
     int len = 0;
     int tail = 0;
     ioctl(dev_fd, AUDIODSP_PCMENC_GET_RING_BUF_CONTENT, &ring_buf_content);
@@ -138,7 +137,7 @@ int pcmenc_deinit()
 {
     pcm_read_num = 0;
 
-    if ((unsigned)map_buf != 0xffffffff) {
+    if (map_buf != (void *)-1L) {
         munmap(map_buf, buffer_size);
     }
     if (dev_fd >= 0) {

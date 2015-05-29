@@ -15,7 +15,7 @@
 pcm51_encoded_info_t        dts_transenc_info;
 static int                          dts_init_flag = 0;
 char                                        *stream;                        //input raw pcm
-unsigned char                       *output;
+char                       *output;
 static int write_success_flag = 1;
 unsigned int                        input_size;
 unsigned int                        output_size;
@@ -48,7 +48,7 @@ int dts_transenc_init()
     if (dts_transenc_info.LFEFlag > 1) {
         dts_transenc_info.LFEFlag = 1;
     }
-    int fd_dtsenc = dlopen("libdtsenc.so", RTLD_NOW);
+    void *fd_dtsenc = dlopen("libdtsenc.so", RTLD_NOW);
     if (fd_dtsenc != 0) {
         enc_ops.enc_init = dlsym(fd_dtsenc, "init");
         enc_ops.enc_encode = dlsym(fd_dtsenc, "encode_frame");
@@ -64,7 +64,7 @@ int dts_transenc_init()
     }
 
     stream = (char *)malloc(input_size);   //malloc input buf
-    output = (unsigned char *)malloc(output_size); //malloc output buf
+    output = malloc(output_size); //malloc output buf
 
     dts_init_flag = 1;
 
@@ -81,9 +81,8 @@ err3:
 err4:
     pcmenc_deinit();//xujian
     iec958_deinit();//xujian
-    close(fd_dtsenc);
+    dlclose(fd_dtsenc);
     return -1;
-
 }
 
 int dts_transenc_process_frame()

@@ -39,7 +39,7 @@ static int    dev_fd = -1;
 static int use_kernel_wr = 0x1;
 static unsigned stream_type = STREAM_DTS;
 static short iec958_buf[6144 / 2];
-static char *map_buf = 0xffffffff;
+static char *map_buf = (void *)-1L;
 static unsigned first_write = 1;
 #define IEC958_LANTENCY  20
 int iec958_init()
@@ -67,7 +67,7 @@ int iec958_init()
     ioctl(dev_fd, AUDIO_SPDIF_SET_958_WR_OFFSET, &wr_offset);
     /* mapping the kernel 958 dma buffer to user space to acess */
     map_buf = mmap(0, iec958_buffer_size, PROT_READ | PROT_WRITE, MAP_SHARED/*MAP_PRIVATE*/, dev_fd, 0);
-    if ((unsigned)map_buf == 0xffffffff) {
+    if (map_buf == (void *)-1L) {
         printf("mmap failed,error num %d \n", errno);
         ret = -2;
         goto exit1;
@@ -76,7 +76,7 @@ int iec958_init()
     //  ioctl(dev_fd, AUDIO_SPDIF_SET_958_ENABLE,1);
     return 0;
 exit3:
-    if ((unsigned)map_buf != 0xffffffff) {
+    if (map_buf != (void *)-1L) {
         munmap(map_buf, iec958_buffer_size);
     }
 exit1:
@@ -222,7 +222,7 @@ int iec958_packed_frame_write_958buf(char *buf, int frame_size)
             memcpy(map_buf + wr_offset, buf, tail);
             ret = msync(map_buf, iec958_buffer_size, MS_INVALIDATE | MS_SYNC);
             if (ret) {
-                printf("msync0 err %d,error id %d addr %x\n", ret, errno, (unsigned)(map_buf + wr_offset));
+                printf("msync0 err %d,error id %d addr %p\n", ret, errno, map_buf + wr_offset);
             }
         } else {
             write(dev_fd, buf, tail);
@@ -234,7 +234,7 @@ int iec958_packed_frame_write_958buf(char *buf, int frame_size)
             memcpy(map_buf, buf + tail, frame_size - tail);
             ret = msync(map_buf, iec958_buffer_size, MS_INVALIDATE | MS_SYNC);
             if (ret) {
-                printf("msync1 err %d,error id %d addr %x\n", ret, errno, (unsigned)(map_buf));
+                printf("msync1 err %d,error id %d addr %p\n", ret, errno, map_buf);
             }
         } else {
             write(dev_fd, buf + tail, frame_size - tail);
@@ -249,7 +249,7 @@ int iec958_packed_frame_write_958buf(char *buf, int frame_size)
             memcpy(map_buf + wr_offset, buf, frame_size);
             ret = msync(map_buf + wr_offset, frame_size, MS_ASYNC | MS_INVALIDATE);
             if (ret) {
-                printf("msync2 err %d,error id %d addr %x\n", ret, errno, (unsigned)(map_buf + wr_offset));
+                printf("msync2 err %d,error id %d addr %p\n", ret, errno, map_buf + wr_offset);
             }
         } else {
             write(dev_fd, buf, frame_size);
@@ -262,7 +262,7 @@ int iec958_packed_frame_write_958buf(char *buf, int frame_size)
 }
 int iec958buf_fill_zero()
 {
-    int zero_filled_cnt = 0, i2s_status = 0, write_ret = 0;
+    unsigned int zero_filled_cnt = 0, i2s_status = 0, write_ret = 0;
     char zerobuf[2048] = {0};
     ioctl(dev_fd, AUDIO_SPDIF_GET_I2S_ENABLE_STATUS, &i2s_status);
     while ((zero_filled_cnt < iec958_buffer_size) && i2s_status) {
@@ -296,7 +296,7 @@ int iec958_check_958buf_level()
 }
 int iec958_deinit()
 {
-    if ((unsigned)map_buf != 0xffffffff) {
+    if (map_buf != (void *)-1L) {
         munmap(map_buf, iec958_buffer_size);
     }
     if (dev_fd >= 0) {

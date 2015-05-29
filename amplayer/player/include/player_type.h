@@ -80,8 +80,8 @@ typedef struct drm_info {
     int drm_priv;
     unsigned int drm_pktsize;
     unsigned int drm_pktpts;
-    unsigned int drm_phy;
-    unsigned int drm_vir;
+    unsigned long drm_phy;
+    unsigned long drm_vir;
     unsigned int drm_remap;
     int data_offset;
     int extpad[8];
