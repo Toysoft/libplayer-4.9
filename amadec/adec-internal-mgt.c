@@ -600,7 +600,15 @@ static int set_audio_decoder(aml_audio_dec_t *audec)
         if (match_types(t->type, type_value)) {
 #ifdef DOLBY_USE_ARMDEC
             adec_print("DOLBY_USE_ARMDEC=%d", DOLBY_USE_ARMDEC);
-            audio_decoder = AUDIO_ARM_DECODER;
+#ifndef USE_ARM_AUDIO_DEC
+            if (access("/system/etc/firmware/audiodsp_codec_ddp_dcv.bin",F_OK)) {
+#endif
+                audio_decoder = AUDIO_ARM_DECODER;
+#ifndef USE_ARM_AUDIO_DEC
+            }else{
+                audio_decoder = AUDIO_ARC_DECODER;
+            }
+#endif
 #else
             audio_decoder = AUDIO_ARC_DECODER;
             adec_print("<DOLBY_USE_ARMDEC> is not DEFINED,use ARC_Decoder\n!");
