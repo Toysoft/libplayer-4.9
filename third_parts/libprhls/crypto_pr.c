@@ -77,8 +77,8 @@ typedef struct drm_info {
     int drm_priv;
     unsigned int drm_pktsize;
     unsigned int drm_pktpts;
-    unsigned int drm_phy;
-    unsigned int drm_vir;
+    unsigned long drm_phy;
+    unsigned long drm_vir;
     unsigned int drm_remap;
     int data_offset;
     int extpad[8];
@@ -270,7 +270,7 @@ static int drm_stronedrminfo(char *outpktdata, char *addr, int size)
 
     drminfo.drm_level = DRM_LEVEL1;
     drminfo.drm_pktsize = size;
-    drminfo.drm_phy = (unsigned int)addr;
+    drminfo.drm_phy = (unsigned long)addr;
     drminfo.drm_flag = TYPE_DRMINFO;
     memcpy(outpktdata, &drminfo, sizeof(drminfo_t));
     return 0;

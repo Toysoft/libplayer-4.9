@@ -4,11 +4,16 @@ include $(CLEAR_VARS)
 LOCAL_MODULE    := libraac
 
 LOCAL_SRC_FILES := $(notdir $(wildcard $(LOCAL_PATH)/*.c))
-LOCAL_SRC_FILES += sbrcov.s\
-                   sbrqmfak.s\
-                   sbrqmfsk.s
+#ifeq ($(TARGET_ARCH),arm)
+#LOCAL_SRC_FILES += sbrcov.s\
+#                   sbrqmfak.s\
+#                   sbrqmfsk.s
+#endif
+LOCAL_CFLAGS := -DHAVE_NEON=1 -DHAVE_CONFIG -DOPT_NEON -DREAL_IS_FLOAT -DAAC_ENABLE_SBR
 
-LOCAL_CFLAGS := -DHAVE_NEON=1 -DHAVE_CONFIG -DOPT_NEON -DREAL_IS_FLOAT -mfloat-abi=softfp -mfpu=neon   -DAAC_ENABLE_SBR
+ifeq ($(TARGET_ARCH),arm)
+LOCAL_CFLAGS += -mfloat-abi=softfp -mfpu=neon
+endif
 
 LOCAL_ARM_MODE := arm 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)\
@@ -23,11 +28,16 @@ include $(CLEAR_VARS)
 LOCAL_MODULE    := libraac
 
 LOCAL_SRC_FILES := $(notdir $(wildcard $(LOCAL_PATH)/*.c))
-LOCAL_SRC_FILES += sbrcov.s\
-                   sbrqmfak.s\
-                   sbrqmfsk.s
+#ifeq ($(TARGET_ARCH),arm)
+#LOCAL_SRC_FILES += sbrcov.s\
+#                   sbrqmfak.s\
+#                   sbrqmfsk.s
+#endif
+LOCAL_CFLAGS := -DHAVE_NEON=1 -DHAVE_CONFIG -DOPT_NEON -DREAL_IS_FLOAT -DAAC_ENABLE_SBR
 
-LOCAL_CFLAGS := -DHAVE_NEON=1 -DHAVE_CONFIG -DOPT_NEON -DREAL_IS_FLOAT -mfloat-abi=softfp -mfpu=neon  -DAAC_ENABLE_SBR
+ifeq ($(TARGET_ARCH),arm)
+LOCAL_CFLAGS += -mfloat-abi=softfp -mfpu=neon
+endif
 
 LOCAL_ARM_MODE := arm
 LOCAL_MODULE_TAGS := optional

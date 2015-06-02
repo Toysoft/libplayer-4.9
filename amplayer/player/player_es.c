@@ -49,12 +49,12 @@ static void vcodec_info_init(play_para_t *p_para, codec_para_t *v_codec)
         }
         if ((vinfo->video_format == VFORMAT_H264) && (p_para->file_type == MKV_FILE)) {
             if ((vinfo->video_rate == 4004 /*23.97fps*/) || (vinfo->video_rate == 3203 /*29.97fps*/)) {
-                v_codec->am_sysinfo.param = (void *)(UNSTABLE_PTS | (int)v_codec->am_sysinfo.param);
+                v_codec->am_sysinfo.param = (void *)(UNSTABLE_PTS | (unsigned long)v_codec->am_sysinfo.param);
             }
         }
 
         if ((vinfo->video_format == VFORMAT_MPEG4) && (p_para->file_type == MKV_FILE)) {
-            v_codec->am_sysinfo.param = (void *)(UNSTABLE_PTS | (int)v_codec->am_sysinfo.param);
+            v_codec->am_sysinfo.param = (void *)(UNSTABLE_PTS | (unsigned long)v_codec->am_sysinfo.param);
         }
 
         if ((vinfo->video_format == VFORMAT_H264) || (vinfo->video_format == VFORMAT_H264MVC) || (vinfo->video_format == VFORMAT_H264_4K2K)) {
@@ -65,13 +65,13 @@ static void vcodec_info_init(play_para_t *p_para, codec_para_t *v_codec)
             }
         }
         if ((vinfo->video_format == VFORMAT_H264) && p_para->playctrl_info.iponly_flag) {
-            v_codec->am_sysinfo.param = (void *)(IPONLY_MODE | (int)v_codec->am_sysinfo.param);
+            v_codec->am_sysinfo.param = (void *)(IPONLY_MODE | (unsigned long)v_codec->am_sysinfo.param);
         }
         if ((vinfo->video_format == VFORMAT_H264) && p_para->playctrl_info.no_dec_ref_buf) {
-            v_codec->am_sysinfo.param = (void *)(NO_DEC_REF_BUF | (int)v_codec->am_sysinfo.param);
+            v_codec->am_sysinfo.param = (void *)(NO_DEC_REF_BUF | (unsigned long)v_codec->am_sysinfo.param);
         }
         if ((vinfo->video_format == VFORMAT_H264) && p_para->playctrl_info.no_error_recovery) {
-            v_codec->am_sysinfo.param = (void *)(NO_ERROR_RECOVERY | (int)v_codec->am_sysinfo.param);
+            v_codec->am_sysinfo.param = (void *)(NO_ERROR_RECOVERY | (unsigned long)v_codec->am_sysinfo.param);
         }
     } else if ((vinfo->video_format == VFORMAT_VC1) && (p_para->file_type == AVI_FILE)) {
         v_codec->am_sysinfo.param = (void *)EXTERNAL_PTS;
@@ -79,7 +79,7 @@ static void vcodec_info_init(play_para_t *p_para, codec_para_t *v_codec)
         v_codec->am_sysinfo.param     = (void *)0;
     }
 
-    v_codec->am_sysinfo.param = (void *)((unsigned int)v_codec->am_sysinfo.param | (vinfo->video_rotation_degree << 16));
+    v_codec->am_sysinfo.param = (void *)((unsigned long)v_codec->am_sysinfo.param | (vinfo->video_rotation_degree << 16));
     v_codec->stream_type = stream_type_convert(p_para->stream_type, v_codec->has_video, 0);
     log_print("[%s:%d]video stream_type=%d rate=%d\n", __FUNCTION__, __LINE__, v_codec->stream_type, v_codec->am_sysinfo.rate);
 }

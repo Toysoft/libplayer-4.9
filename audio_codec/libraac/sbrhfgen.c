@@ -80,7 +80,70 @@ static const int newBWTab[4][4] = {
 #ifdef __cplusplus
 extern "C"
 #endif
-void CVKernel1(int *XBuf, int *accBuf);
+
+void CVKernel1(int *XBuf, int *accBuf)
+{
+    U64 p01re, p01im, p12re, p12im, p11re, p22re;
+    int n, x0re, x0im, x1re, x1im;
+
+    x0re = XBuf[0];
+    x0im = XBuf[1];
+    XBuf += (2 * 64);
+    x1re = XBuf[0];
+    x1im = XBuf[1];
+    XBuf += (2 * 64);
+
+    p01re.w64 = p01im.w64 = 0;
+    p12re.w64 = p12im.w64 = 0;
+    p11re.w64 = 0;
+    p22re.w64 = 0;
+
+    p12re.w64 = MADD64(p12re.w64,  x1re, x0re);
+    p12re.w64 = MADD64(p12re.w64,  x1im, x0im);
+    p12im.w64 = MADD64(p12im.w64,  x0re, x1im);
+    p12im.w64 = MADD64(p12im.w64, -x0im, x1re);
+    p22re.w64 = MADD64(p22re.w64,  x0re, x0re);
+    p22re.w64 = MADD64(p22re.w64,  x0im, x0im);
+    for (n = (NUM_TIME_SLOTS * SAMPLES_PER_SLOT + 6); n != 0; n--) {
+        /* 4 input, 3*2 acc, 1 ptr, 1 loop counter = 12 registers (use same for x0im, -x0im) */
+        x0re = x1re;
+        x0im = x1im;
+        x1re = XBuf[0];
+        x1im = XBuf[1];
+
+        p01re.w64 = MADD64(p01re.w64,  x1re, x0re);
+        p01re.w64 = MADD64(p01re.w64,  x1im, x0im);
+        p01im.w64 = MADD64(p01im.w64,  x0re, x1im);
+        p01im.w64 = MADD64(p01im.w64, -x0im, x1re);
+        p11re.w64 = MADD64(p11re.w64,  x0re, x0re);
+        p11re.w64 = MADD64(p11re.w64,  x0im, x0im);
+
+        XBuf += (2 * 64);
+    }
+    /* these can be derived by slight changes to account for boundary conditions */
+    p12re.w64 += p01re.w64;
+    p12re.w64 = MADD64(p12re.w64, x1re, -x0re);
+    p12re.w64 = MADD64(p12re.w64, x1im, -x0im);
+    p12im.w64 += p01im.w64;
+    p12im.w64 = MADD64(p12im.w64, x0re, -x1im);
+    p12im.w64 = MADD64(p12im.w64, x0im,  x1re);
+    p22re.w64 += p11re.w64;
+    p22re.w64 = MADD64(p22re.w64, x0re, -x0re);
+    p22re.w64 = MADD64(p22re.w64, x0im, -x0im);
+
+    accBuf[0]  = p01re.r.lo32;
+    accBuf[1]  = p01re.r.hi32;
+    accBuf[2]  = p01im.r.lo32;
+    accBuf[3]  = p01im.r.hi32;
+    accBuf[4]  = p11re.r.lo32;
+    accBuf[5]  = p11re.r.hi32;
+    accBuf[6]  = p12re.r.lo32;
+    accBuf[7]  = p12re.r.hi32;
+    accBuf[8]  = p12im.r.lo32;
+    accBuf[9]  = p12im.r.hi32;
+    accBuf[10] = p22re.r.lo32;
+    accBuf[11] = p22re.r.hi32;
+}
 
 /**************************************************************************************
  * Function:    CalcCovariance1
@@ -200,7 +263,43 @@ static int CalcCovariance1(int *XBuf, int *p01reN, int *p01imN, int *p12reN, int
 #ifdef __cplusplus
 extern "C"
 #endif
-void CVKernel2(int *XBuf, int *accBuf);
+
+void CVKernel2(int *XBuf, int *accBuf)
+{
+    U64 p02re, p02im;
+    int n, x0re, x0im, x1re, x1im, x2re, x2im;
+
+    p02re.w64 = p02im.w64 = 0;
+
+    x0re = XBuf[0];
+    x0im = XBuf[1];
+    XBuf += (2 * 64);
+    x1re = XBuf[0];
+    x1im = XBuf[1];
+    XBuf += (2 * 64);
+
+    for (n = (NUM_TIME_SLOTS * SAMPLES_PER_SLOT + 6); n != 0; n--) {
+        /* 6 input, 2*2 acc, 1 ptr, 1 loop counter = 12 registers (use same for x0im, -x0im) */
+        x2re = XBuf[0];
+        x2im = XBuf[1];
+
+        p02re.w64 = MADD64(p02re.w64,  x2re, x0re);
+        p02re.w64 = MADD64(p02re.w64,  x2im, x0im);
+        p02im.w64 = MADD64(p02im.w64,  x0re, x2im);
+        p02im.w64 = MADD64(p02im.w64, -x0im, x2re);
+
+        x0re = x1re;
+        x0im = x1im;
+        x1re = x2re;
+        x1im = x2im;
+        XBuf += (2 * 64);
+    }
+
+    accBuf[0] = p02re.r.lo32;
+    accBuf[1] = p02re.r.hi32;
+    accBuf[2] = p02im.r.lo32;
+    accBuf[3] = p02im.r.hi32;
+}
 
 /**************************************************************************************
  * Function:    CalcCovariance2

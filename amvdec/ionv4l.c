@@ -152,7 +152,7 @@ ionvideo_dev_t *new_ionv4l(void)
     ionv4l_dev_t *v4l;
     dev = malloc(sizeof(ionvideo_dev_t) + sizeof(ionv4l_dev_t));
     memset(dev, 0, sizeof(ionvideo_dev_t) + sizeof(ionv4l_dev_t));
-    dev->devpriv = (void *)((int)(&dev->devpriv) + 4);
+    dev->devpriv = (void *)((long)(&dev->devpriv) + 4);
     v4l = dev->devpriv;
     v4l->memory_mode = V4L2_MEMORY_DMABUF;
     dev->ops.init = ionv4l_init;

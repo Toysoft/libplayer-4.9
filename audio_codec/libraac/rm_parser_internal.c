@@ -1274,7 +1274,7 @@ HX_RESULT rm_parseri_get_file_properties(rm_parser_internal* pInt,
 
         if (retVal == HXR_OK) {
             retVal = rm_parseri_set_rm_property(pInt, &pProp[ulIndex++], "Flags",
-                                                RM_PROPERTY_TYPE_UINT32,
+                                               RM_PROPERTY_TYPE_UINT32,
                                                 (void*) pInt->propHdr.flags, 0);
         }
         if (retVal == HXR_OK &&

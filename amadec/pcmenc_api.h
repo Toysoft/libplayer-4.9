@@ -19,7 +19,7 @@ typedef struct pcm51_encoded_info_s {
 
 
 extern int  pcmenc_init();
-extern int  pcmenc_read_pcm(char *inputbuf, int size);
+extern int  pcmenc_read_pcm(char *inputbuf, uint size);
 extern int  pcmenc_deinit();
 extern int  pcmenc_get_pcm_info(pcm51_encoded_info_t *info);
 #endif

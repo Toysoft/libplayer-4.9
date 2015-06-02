@@ -111,8 +111,8 @@ typedef struct drm_info {
     int drm_priv;
     unsigned int drm_pktsize;
     unsigned int drm_pktpts;
-    unsigned int drm_phy;
-    unsigned int drm_vir;
+    unsigned long drm_phy;
+    unsigned long drm_vir;
     unsigned int drm_remap;
     int data_offset;
     int extpad[8];
@@ -161,7 +161,7 @@ static int drm_stronedrminfo(char *outpktdata, char *addr,
     drminfo.drm_pktpts = pts;
     if (isdrminfo == 1) { //infoonly
         drminfo.drm_hasesdata = 0;
-        drminfo.drm_phy = (unsigned int)addr;
+        drminfo.drm_phy = (unsigned long)addr;
         drminfo.drm_flag = TYPE_DRMINFO;
         memcpy(outpktdata, &drminfo, sizeof(drminfo_t));
     } else { //info+es; already decrypt in addr buffer+sizeof(drminfo_t)

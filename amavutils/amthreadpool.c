@@ -159,7 +159,8 @@ int amthreadpool_thread_usleep_in_monotonic(int us)
     int64_t us64 = us;
     threadpool_thread_data_t *t = amthreadpool_findthead_thread_data(pid);
     int ret = 0;
-
+/* 64bit compiler do not have pthread_cond_timedwait_monotonic_np */
+#ifndef __aarch64__
     if (!t) {
         ///ALOGE("%lu thread sleep data not found!!!\n", pid);
         usleep(us);//for not deadlock.
@@ -176,8 +177,13 @@ int amthreadpool_thread_usleep_in_monotonic(int us)
     pthread_ts.tv_nsec = (us64 * 1000 + tnow.tv_nsec) % 1000000000;
     pthread_mutex_lock(&t->pthread_mutex);
     ret = pthread_cond_timedwait_monotonic_np(&t->pthread_cond, &t->pthread_mutex, &pthread_ts);
+
     pthread_mutex_unlock(&t->pthread_mutex);
     return ret;
+#else
+    usleep(us);//for not deadlock.
+    return 0;
+#endif
 
 }
 

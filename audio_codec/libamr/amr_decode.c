@@ -3,6 +3,8 @@
 
 #include "../../amadec/adec-armdec-mgt.h"
 #include <android/log.h>
+#include "interf_dec.h"
+#include "dec_if.h"
 
 #define  LOG_TAG    "AmrDecoder"
 #define amr_print(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
@@ -31,7 +33,7 @@ int amr_read(unsigned char *pBuffer, int n)
 void * Decoder_Init()
 {
     if (SampleRateOut == 8000) {
-        return(void *)Decoder_Interface_init();
+        return (void *)Decoder_Interface_init();
     } else {
         return (void *)D_IF_init();
     }

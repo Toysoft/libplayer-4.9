@@ -126,7 +126,7 @@ static unsigned long cache_client_open(const char *url, int64_t filesize)
         if (cache != NULL) {
             cache_file_size_add(cachesize);
         }
-        return (int)cache;/*!=0 is ok no errors*/
+        return (unsigned long)cache;/*!=0 is ok no errors*/
     } else {
         return 0;
     }

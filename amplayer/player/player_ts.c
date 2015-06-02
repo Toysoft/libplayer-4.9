@@ -41,13 +41,13 @@ static int stream_ts_init(play_para_t *p_para)
                 codec->am_sysinfo.param = USE_IDR_FRAMERATE;
             }
             if ((codec->video_type == VFORMAT_H264) && p_para->playctrl_info.iponly_flag) {
-                codec->am_sysinfo.param = (void *)(IPONLY_MODE | (int) codec->am_sysinfo.param);
+                codec->am_sysinfo.param = (void *)(IPONLY_MODE | (unsigned long) codec->am_sysinfo.param);
             }
             if ((codec->video_type == VFORMAT_H264) && p_para->playctrl_info.no_dec_ref_buf) {
-                codec->am_sysinfo.param = (void *)(NO_DEC_REF_BUF | (int) codec->am_sysinfo.param);
+                codec->am_sysinfo.param = (void *)(NO_DEC_REF_BUF | (unsigned long) codec->am_sysinfo.param);
             }
             if ((vinfo->video_format == VFORMAT_H264) && p_para->playctrl_info.no_error_recovery) {
-                codec->am_sysinfo.param = (void *)(NO_ERROR_RECOVERY | (int)codec->am_sysinfo.param);
+                codec->am_sysinfo.param = (void *)(NO_ERROR_RECOVERY | (unsigned long)codec->am_sysinfo.param);
             }
         } else if (codec->video_type == VFORMAT_VC1 || codec->video_type == VFORMAT_MPEG4 || codec->video_type == VFORMAT_AVS || codec->video_type == VFORMAT_MPEG12) {
             codec->am_sysinfo.format = vinfo->video_codec_type;

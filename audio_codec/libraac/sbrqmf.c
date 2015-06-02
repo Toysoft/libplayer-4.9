@@ -227,7 +227,138 @@ static void PostMultiply64(int *fft1, int nSampsOut)
 #ifdef __cplusplus
 extern "C"
 #endif
-void QMFAnalysisConv(int *cTab, int *delay, int dIdx, int *uBuf);
+void QMFAnalysisConv(int *cTab, int *delay, int dIdx, int *uBuf)
+{
+    int k, dOff;
+    int *cPtr0, *cPtr1;
+    U64 u64lo, u64hi;
+
+    dOff = dIdx * 32 + 31;
+    cPtr0 = cTab;
+    cPtr1 = cTab + 33 * 5 - 1;
+
+    /* special first pass since we need to flip sign to create cTab[384], cTab[512] */
+    u64lo.w64 = 0;
+    u64hi.w64 = 0;
+    u64lo.w64 = MADD64(u64lo.w64,  *cPtr0++,   delay[dOff]);
+    dOff -= 32;
+    if (dOff < 0) {
+        dOff += 320;
+    }
+    u64hi.w64 = MADD64(u64hi.w64,  *cPtr0++,   delay[dOff]);
+    dOff -= 32;
+    if (dOff < 0) {
+        dOff += 320;
+    }
+    u64lo.w64 = MADD64(u64lo.w64,  *cPtr0++,   delay[dOff]);
+    dOff -= 32;
+    if (dOff < 0) {
+        dOff += 320;
+    }
+    u64hi.w64 = MADD64(u64hi.w64,  *cPtr0++,   delay[dOff]);
+    dOff -= 32;
+    if (dOff < 0) {
+        dOff += 320;
+    }
+    u64lo.w64 = MADD64(u64lo.w64,  *cPtr0++,   delay[dOff]);
+    dOff -= 32;
+    if (dOff < 0) {
+        dOff += 320;
+    }
+    u64hi.w64 = MADD64(u64hi.w64,  *cPtr1--,   delay[dOff]);
+    dOff -= 32;
+    if (dOff < 0) {
+        dOff += 320;
+    }
+    u64lo.w64 = MADD64(u64lo.w64, -(*cPtr1--), delay[dOff]);
+    dOff -= 32;
+    if (dOff < 0) {
+        dOff += 320;
+    }
+    u64hi.w64 = MADD64(u64hi.w64,  *cPtr1--,   delay[dOff]);
+    dOff -= 32;
+    if (dOff < 0) {
+        dOff += 320;
+    }
+    u64lo.w64 = MADD64(u64lo.w64, -(*cPtr1--), delay[dOff]);
+    dOff -= 32;
+    if (dOff < 0) {
+        dOff += 320;
+    }
+    u64hi.w64 = MADD64(u64hi.w64,  *cPtr1--,   delay[dOff]);
+    dOff -= 32;
+    if (dOff < 0) {
+        dOff += 320;
+    }
+
+    uBuf[0]  = u64lo.r.hi32;
+    uBuf[32] = u64hi.r.hi32;
+    uBuf++;
+    dOff--;
+
+    /* max gain for any sample in uBuf, after scaling by cTab, ~= 0.99
+     * so we can just sum the uBuf values with no overflow problems
+     */
+    for (k = 1; k <= 31; k++) {
+        u64lo.w64 = 0;
+        u64hi.w64 = 0;
+        u64lo.w64 = MADD64(u64lo.w64, *cPtr0++, delay[dOff]);
+        dOff -= 32;
+        if (dOff < 0) {
+            dOff += 320;
+        }
+        u64hi.w64 = MADD64(u64hi.w64, *cPtr0++, delay[dOff]);
+        dOff -= 32;
+        if (dOff < 0) {
+            dOff += 320;
+        }
+        u64lo.w64 = MADD64(u64lo.w64, *cPtr0++, delay[dOff]);
+        dOff -= 32;
+        if (dOff < 0) {
+            dOff += 320;
+        }
+        u64hi.w64 = MADD64(u64hi.w64, *cPtr0++, delay[dOff]);
+        dOff -= 32;
+        if (dOff < 0) {
+            dOff += 320;
+        }
+        u64lo.w64 = MADD64(u64lo.w64, *cPtr0++, delay[dOff]);
+        dOff -= 32;
+        if (dOff < 0) {
+            dOff += 320;
+        }
+        u64hi.w64 = MADD64(u64hi.w64, *cPtr1--, delay[dOff]);
+        dOff -= 32;
+        if (dOff < 0) {
+            dOff += 320;
+        }
+        u64lo.w64 = MADD64(u64lo.w64, *cPtr1--, delay[dOff]);
+        dOff -= 32;
+        if (dOff < 0) {
+            dOff += 320;
+        }
+        u64hi.w64 = MADD64(u64hi.w64, *cPtr1--, delay[dOff]);
+        dOff -= 32;
+        if (dOff < 0) {
+            dOff += 320;
+        }
+        u64lo.w64 = MADD64(u64lo.w64, *cPtr1--, delay[dOff]);
+        dOff -= 32;
+        if (dOff < 0) {
+            dOff += 320;
+        }
+        u64hi.w64 = MADD64(u64hi.w64, *cPtr1--, delay[dOff]);
+        dOff -= 32;
+        if (dOff < 0) {
+            dOff += 320;
+        }
+
+        uBuf[0]  = u64lo.r.hi32;
+        uBuf[32] = u64hi.r.hi32;
+        uBuf++;
+        dOff--;
+    }
+}
 
 /**************************************************************************************
  * Function:    QMFAnalysis
@@ -346,7 +477,77 @@ int QMFAnalysis(int *inbuf, int *delay, int *XBuf, int fBitsIn, int *delayIdx, i
 #ifdef __cplusplus
 extern "C"
 #endif
-void QMFSynthesisConv(int *cPtr, int *delay, int dIdx, short *outbuf, int nChans);
+void QMFSynthesisConv(int *cPtr, int *delay, int dIdx, short *outbuf, int nChans)
+{
+    int k, dOff0, dOff1;
+    U64 sum64;
+
+    dOff0 = (dIdx) * 128;
+    dOff1 = dOff0 - 1;
+    if (dOff1 < 0) {
+        dOff1 += 1280;
+    }
+
+    /* scaling note: total gain of coefs (cPtr[0]-cPtr[9] for any k) is < 2.0, so 1 GB in delay values is adequate */
+    for (k = 0; k <= 63; k++) {
+        sum64.w64 = 0;
+        sum64.w64 = MADD64(sum64.w64, *cPtr++, delay[dOff0]);
+        dOff0 -= 256;
+        if (dOff0 < 0) {
+            dOff0 += 1280;
+        }
+        sum64.w64 = MADD64(sum64.w64, *cPtr++, delay[dOff1]);
+        dOff1 -= 256;
+        if (dOff1 < 0) {
+            dOff1 += 1280;
+        }
+        sum64.w64 = MADD64(sum64.w64, *cPtr++, delay[dOff0]);
+        dOff0 -= 256;
+        if (dOff0 < 0) {
+            dOff0 += 1280;
+        }
+        sum64.w64 = MADD64(sum64.w64, *cPtr++, delay[dOff1]);
+        dOff1 -= 256;
+        if (dOff1 < 0) {
+            dOff1 += 1280;
+        }
+        sum64.w64 = MADD64(sum64.w64, *cPtr++, delay[dOff0]);
+        dOff0 -= 256;
+        if (dOff0 < 0) {
+            dOff0 += 1280;
+        }
+        sum64.w64 = MADD64(sum64.w64, *cPtr++, delay[dOff1]);
+        dOff1 -= 256;
+        if (dOff1 < 0) {
+            dOff1 += 1280;
+        }
+        sum64.w64 = MADD64(sum64.w64, *cPtr++, delay[dOff0]);
+        dOff0 -= 256;
+        if (dOff0 < 0) {
+            dOff0 += 1280;
+        }
+        sum64.w64 = MADD64(sum64.w64, *cPtr++, delay[dOff1]);
+        dOff1 -= 256;
+        if (dOff1 < 0) {
+            dOff1 += 1280;
+        }
+        sum64.w64 = MADD64(sum64.w64, *cPtr++, delay[dOff0]);
+        dOff0 -= 256;
+        if (dOff0 < 0) {
+            dOff0 += 1280;
+        }
+        sum64.w64 = MADD64(sum64.w64, *cPtr++, delay[dOff1]);
+        dOff1 -= 256;
+        if (dOff1 < 0) {
+            dOff1 += 1280;
+        }
+
+        dOff0++;
+        dOff1--;
+        *outbuf = CLIPTOSHORT((sum64.r.hi32 + RND_VAL) >> FBITS_OUT_QMFS);
+        outbuf += nChans;
+    }
+}
 
 /**************************************************************************************
  * Function:    QMFSynthesis

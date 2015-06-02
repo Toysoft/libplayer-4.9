@@ -204,7 +204,7 @@ amvideo_dev_t *new_amlv4l(void)
     amlv4l_dev_t *v4l;
     dev = malloc(sizeof(amvideo_dev_t) + sizeof(amlv4l_dev_t));
     memset(dev, 0, sizeof(amvideo_dev_t) + sizeof(amlv4l_dev_t));
-    dev->devpriv = (void *)((int)(&dev->devpriv) + 4);
+    dev->devpriv = (void *)((unsigned long)(&dev->devpriv) + 4);
     v4l = dev->devpriv;
     v4l->memory_mode = V4L2_MEMORY_MMAP;
     dev->ops.init = amlv4l_init;

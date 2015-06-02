@@ -1,3 +1,5 @@
+#define  LOG_TAG    "AdpcmDecoder"
+
 #include <stdio.h>
 #include <stdint.h>
 #include "adpcm.h"
@@ -7,7 +9,6 @@
 #include <sys/time.h>
 #include <stdint.h>
 #include <string.h>
-#define  LOG_TAG    "AdpcmDecoder"
 #define  PRINTF(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
 
 
@@ -42,7 +43,7 @@ static int pcm_read(pcm_read_ctl_t *pcm_read_ctx, unsigned char* outbuf, int siz
 }
 
 struct t_wave_buf {
-    unsigned addr;
+    void *addr;
     unsigned size;
 };
 static unsigned wave_timestamplen = 0;
@@ -91,13 +92,13 @@ static int adpcm_init(aml_audio_dec_t *audec)
     PRINTF("[%s]audec->format/%d adec_ops->samplerate/%d adec_ops->channels/%d\n",
            __FUNCTION__, audec->format, adec_ops->samplerate, adec_ops->channels);
 
-    wave_decoder_buffer[0].addr = (int)malloc(WAVE_BLOCK_SIZE);
+    wave_decoder_buffer[0].addr = malloc(WAVE_BLOCK_SIZE);
     if (wave_decoder_buffer[0].addr == 0) {
         PRINTF("[%s %d]Error: malloc adpcm buffer failed!\n", __FUNCTION__, __LINE__);
         return -1;
     }
     wave_decoder_buffer[0].size = WAVE_BLOCK_SIZE;
-    wave_decoder_buffer[1].addr = (int)malloc(WAVE_BLOCK_SIZE * 4 * 4);
+    wave_decoder_buffer[1].addr = malloc(WAVE_BLOCK_SIZE * 4 * 4);
     if (wave_decoder_buffer[1].addr == 0) {
         PRINTF("[%s %d]Error: malloc adpcm buffer failed!\n", __FUNCTION__, __LINE__);
         return -1;

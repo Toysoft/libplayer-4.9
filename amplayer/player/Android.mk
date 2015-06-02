@@ -37,9 +37,10 @@ LOCAL_CFLAGS+=-DLIBPLAYER_GIT_UNCOMMIT_FILE_NUM=${LIBPLAYER_GIT_UNCOMMIT_FILE_NU
 
 LOCAL_CFLAGS += -DANDROID_PLATFORM_SDK_VERSION=$(PLATFORM_SDK_VERSION)
 
-FFCFLAGS += -fPIC 
+FFCFLAGS += -fPIC
+ifeq ($(TARGET_ARCH),arm)
 LOCAL_LDFLAGS := -Wl,--no-warn-shared-textrel
-
+endif
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/include \
 	$(LOCAL_PATH)/../../amcodec/include \
 	$(LOCAL_PATH)/../common\
@@ -93,8 +94,9 @@ LOCAL_CFLAGS+=-DLIBPLAYER_GIT_UNCOMMIT_FILE_NUM=${LIBPLAYER_GIT_UNCOMMIT_FILE_NU
 LOCAL_CFLAGS += -DANDROID_PLATFORM_SDK_VERSION=$(PLATFORM_SDK_VERSION)
 
 FFCFLAGS += -fPIC 
+ifeq ($(TARGET_ARCH),arm)
 LOCAL_LDFLAGS := -Wl,--no-warn-shared-textrel
-
+endif
 LOCAL_STATIC_LIBRARIES := libamcodec libavformat librtmp libswscale libavcodec libavutil libamadec
 LOCAL_SHARED_LIBRARIES += libutils libmedia libz libbinder libdl libcutils libc libamavutils libssl libcrypto
 

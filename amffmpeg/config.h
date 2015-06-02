@@ -15,7 +15,7 @@
 
 #define ARCH_ALPHA 0
 #undef  ARCH_ARM
-#define ARCH_ARM 1
+#define ARCH_ARM 0
 #define ARCH_AVR32 0
 #define ARCH_AVR32_AP 0
 #define ARCH_AVR32_UC 0
