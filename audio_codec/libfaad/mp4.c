@@ -141,7 +141,7 @@ int  AudioSpecificConfigFromBitfile(bitfile *ld,
     if (mp4ASC->objectTypeIndex == /*AOT_ESCAPE*/31) {
         mp4ASC->objectTypeIndex = 32 + faad_getbits(ld, 6);
     }
-    audio_codec_print("object type %x \n", mp4ASC->objectTypeIndex);
+    //audio_codec_print("object type %x \n", mp4ASC->objectTypeIndex);
     mp4ASC->samplingFrequencyIndex = (uint8_t)faad_getbits(ld, 4
                                      DEBUGVAR(1, 2, "parse_audio_decoder_specific_info(): SamplingFrequencyIndex"));
     if (mp4ASC->samplingFrequencyIndex == 0x0f) {

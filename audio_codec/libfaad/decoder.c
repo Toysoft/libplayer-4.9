@@ -143,13 +143,13 @@ static int LOASSyncInfo(uint8_t p_header[LOAS_HEADER_SIZE], unsigned int *pi_hea
     return ((p_header[1] & 0x1f) << 8) + p_header[2];
 }
 
-static int Mpeg4GAProgramConfigElement(bitfile *ld)
+static int Mpeg4GAProgramConfigElement(bitfile *ld,mpeg4_cfg_t *p_cfg)
 {
     /* TODO compute channels count ? */
     int i_tag = faad_getbits(ld, 4);
-    if (i_tag != 0x05) {
-        return -1;
-    }
+    //if (i_tag != 0x05) {
+    //    return -1;
+    //}
     faad_getbits(ld, 2 + 4); // object type + sampling index
     int i_num_front = faad_getbits(ld, 4);
     int i_num_side = faad_getbits(ld, 4);
@@ -157,7 +157,7 @@ static int Mpeg4GAProgramConfigElement(bitfile *ld)
     int i_num_lfe = faad_getbits(ld, 2);
     int i_num_assoc_data = faad_getbits(ld, 3);
     int i_num_valid_cc = faad_getbits(ld, 4);
-
+    int i,tmp;
     if (faad_getbits(ld, 1)) {
         faad_getbits(ld, 4);    // mono downmix
     }
@@ -168,12 +168,51 @@ static int Mpeg4GAProgramConfigElement(bitfile *ld)
         faad_getbits(ld, 2 + 1);    // matrix downmix + pseudo_surround
     }
 
-    faad_getbits(ld, i_num_front * (1 + 4));
-    faad_getbits(ld, i_num_side * (1 + 4));
-    faad_getbits(ld, i_num_back * (1 + 4));
-    faad_getbits(ld, i_num_lfe * (4));
-    faad_getbits(ld, i_num_assoc_data * (4));
-    faad_getbits(ld, i_num_valid_cc * (5));
+    for (i = 0; i < i_num_front; i++) {
+        tmp = faad_get1bit(ld DEBUGVAR(1, 26, "program_config_element(): front_element_is_cpe"));
+        faad_getbits(ld, 4 DEBUGVAR(1, 27, "program_config_element(): front_element_tag_select"));
+
+        if (tmp & 1) {
+            p_cfg->i_channel += 2;
+        } else {
+            p_cfg->i_channel++;
+        }
+    }
+
+    for (i = 0; i < i_num_side; i++) {
+        tmp = faad_get1bit(ld DEBUGVAR(1, 28, "program_config_element(): side_element_is_cpe"));
+        faad_getbits(ld, 4 DEBUGVAR(1, 29, "program_config_element(): side_element_tag_select"));
+
+        if (tmp & 1) {
+            p_cfg->i_channel += 2;
+        } else {
+            p_cfg->i_channel++;
+        }
+    }
+
+    for (i = 0; i < i_num_back; i++) {
+        tmp = faad_get1bit(ld DEBUGVAR(1, 30, "program_config_element(): back_element_is_cpe"));
+        faad_getbits(ld, 4 DEBUGVAR(1, 31, "program_config_element(): back_element_tag_select"));
+
+        if (tmp & 1) {
+            p_cfg->i_channel += 2;
+        } else {
+            p_cfg->i_channel++;
+        }
+    }
+
+    for (i = 0; i < i_num_lfe; i++) {
+        tmp = (uint8_t)faad_getbits(ld, 4 DEBUGVAR(1, 32, "program_config_element(): lfe_element_tag_select"));
+        p_cfg->i_channel++;
+    }
+
+    for (i = 0; i < i_num_assoc_data; i++)
+        faad_getbits(ld, 4 DEBUGVAR(1, 33, "program_config_element(): assoc_data_element_tag_select"));
+
+    for (i = 0; i < i_num_valid_cc; i++) {
+        faad_get1bit(ld DEBUGVAR(1, 34, "program_config_element(): cc_element_is_ind_sw"));
+        faad_getbits(ld, 4 DEBUGVAR(1, 35, "program_config_element(): valid_cc_element_tag_select"));
+    }
     faad_byte_align(ld);
     int i_comment = faad_getbits(ld, 8);
     faad_getbits(ld, i_comment * 8);
@@ -190,7 +229,7 @@ static int Mpeg4GASpecificConfig(mpeg4_cfg_t *p_cfg, bitfile *ld)
 
     int i_extension_flag = faad_getbits(ld, 1);
     if (p_cfg->i_channel == 0) {
-        Mpeg4GAProgramConfigElement(ld);
+        Mpeg4GAProgramConfigElement(ld,p_cfg);
     }
     if (p_cfg->i_object_type == 6 || p_cfg->i_object_type == 20) {
         faad_getbits(ld, 3);    // layer
@@ -895,7 +934,8 @@ long NEAACDECAPI NeAACDecInit(NeAACDecHandle hpDecoder,
                               unsigned long buffer_size,
                               unsigned long *samplerate,
                               unsigned char *channels,
-                              int is_latm_external)
+                              int is_latm_external,
+                              int *skipbytes)
 {
     uint32_t bits = 0;
     bitfile ld;
@@ -950,24 +990,25 @@ NEXT_CHECK:
         }
         if (pbuffer_size < LOAS_HEADER_SIZE) {
             LATM_LOG("check the loas frame failed\n");
-            goto   exit_check;
+            *skipbytes = buffer_size-pbuffer_size;
+            goto exit_check;
         }
         /* Check if frame is valid and get frame info */
         i_frame_size = ((pbuffer[1] & 0x1f) << 8) + pbuffer[2];
-        LATM_LOG("i_frame_size  %d \n", i_frame_size);
         if (i_frame_size <= 0 || i_frame_size > 6 * 768) {
-            LATM_LOG("i_frame_size  error\n");
+            LATM_LOG("i_frame_size/%d  error\n",i_frame_size);
             pbuffer++;
             pbuffer_size--;
             goto NEXT_CHECK;
         }
         if (pbuffer_size < (LOAS_HEADER_SIZE + i_frame_size)) {
-            LATM_LOG("buffer size  %d small then frame size %d,\n", pbuffer_size, i_frame_size);
-            goto  exit_check;
+            LATM_LOG("[%s %d]buffer size  %d small then frame size %d,\n", __FUNCTION__,__LINE__,pbuffer_size, i_frame_size+LOAS_HEADER_SIZE);
+            *skipbytes = buffer_size-pbuffer_size;
+            goto exit_check;
         }
 #if 1
         if (pbuffer[LOAS_HEADER_SIZE + i_frame_size] != 0x56 || (pbuffer[LOAS_HEADER_SIZE + i_frame_size + 1] & 0xe0) != 0xe0) { // next frame LOAS sync header detected
-            LATM_LOG("emulated sync word " "(no sync on following frame) \n");
+            LATM_LOG("emulated sync word no (sync on following frame) \n");
             pbuffer++;
             pbuffer_size--;
             goto NEXT_CHECK;
@@ -1716,7 +1757,7 @@ NEXT_CHECK:
 #if 1
         if (buffer[3 + i_frame_size] != 0x56 || (buffer[3 + i_frame_size + 1] & 0xe0) != 0xe0) {
 
-            LATM_LOG("emulated sync word "                  "(no sync on following frame) \n");
+            LATM_LOG("emulated sync word (no sync on following frame) \n");
             buffer++;
             buffer_size--;
             goto NEXT_CHECK;
@@ -1727,7 +1768,6 @@ NEXT_CHECK:
         i_frame_size = LOASParse(buffer, i_frame_size, p_sys);
         if (i_frame_size <= 0) {
             goto NEXT_CHECK;
-            return NULL;
         } else {
             //  LATM_LOG("latm detected\n");
         }
