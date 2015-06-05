@@ -1533,7 +1533,7 @@ int codec_get_cntl_state(codec_para_t *pcodec)
 /* --------------------------------------------------------------------------*/
 int codec_set_cntl_mode(codec_para_t *pcodec, unsigned int mode)
 {
-    return codec_h_ioctl(pcodec->cntl_handle, AMSTREAM_IOC_SET, AMSTREAM_SET_TRICKMODE, (unsigned long)mode);
+    return codec_h_control(pcodec->cntl_handle, AMSTREAM_IOC_TRICKMODE, (unsigned long)mode);
 }
 
 int codec_set_mode(codec_para_t *pcodec, unsigned int mode)
