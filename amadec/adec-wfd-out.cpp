@@ -203,6 +203,7 @@ EXTERN_TAG int  pcm_output_init(int sr,int ch)
     	device = 0;
 	adec_print("get aml card device fail, use default \n");
     }
+    device = 0;
     adec_print("open output device card %d, device %d \n",card,device);	
     if(sr < 32000|| sr > 48000 || ch != 2){
 		adec_print("wfd output: not right parameter sr %d,ch %d \n",sr,ch);
