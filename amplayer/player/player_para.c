@@ -1630,7 +1630,11 @@ int player_dec_init(play_para_t *p_para)
         }
     }
     ret = set_file_type(p_para->pFormatCtx->iformat->name, &file_type, &stream_type);
-    if (memcmp(p_para->pFormatCtx->iformat->name, "mpegts", 6) == 0) {
+    if ((p_para->pFormatCtx && p_para->pFormatCtx->pb && p_para->pFormatCtx->pb->isprtvp)) {
+        p_para->pFormatCtx->flags |= AVFMT_FLAG_PR_TVP;
+        log_print("PlayReady ts  TVP, need use hardware demux\n");
+    }
+    if ((memcmp(p_para->pFormatCtx->iformat->name, "mpegts", 6) == 0) && ((p_para->pFormatCtx->flags & AVFMT_FLAG_PR_TVP) == 0)) {
         if (p_para->start_param->is_ts_soft_demux || is_hevc == 1 || is_truehd == 1) {
             log_print("Player config used soft demux,used soft demux now.\n");
             file_type = STREAM_FILE;
