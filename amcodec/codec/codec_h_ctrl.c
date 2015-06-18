@@ -337,7 +337,7 @@ static int codec_h_ioctl_set_ptr(CODEC_HANDLE h, int subcmd, unsigned long param
     int cmd_new = AMSTREAM_IOC_SET_PTR;
     unsigned long parm_new;
     switch (subcmd) {
-    case AMSTREAM_IOC_AUDIO_INFO: {
+    case AMSTREAM_SET_PTR_AUDIO_INFO: {
         struct am_ioctl_parm_ptr parm;
         memset(&parm, 0, sizeof(parm));
         parm.cmd = subcmd;
@@ -351,7 +351,7 @@ static int codec_h_ioctl_set_ptr(CODEC_HANDLE h, int subcmd, unsigned long param
         break;
     }
     if (r < 0) {
-        CODEC_PRINT("codec_h_ioctl_get failed,handle=%d,subcmd=%x,paramter=%x, t=%x errno=%d\n", h, subcmd, paramter, r, errno);
+        CODEC_PRINT("codec_h_ioctl_set_ptr failed,handle=%d,subcmd=%x,paramter=%x, t=%x errno=%d\n", h, subcmd, paramter, r, errno);
         return r;
     }
     return 0;
@@ -363,6 +363,7 @@ static int codec_h_ioctl_get(CODEC_HANDLE h, int subcmd, unsigned long paramter)
     unsigned long parm_new;
     memset(&parm, 0, sizeof(parm));
     parm.cmd = subcmd;
+    parm.data_32 = *(unsigned int *)paramter;
     parm_new = (unsigned long)&parm;
     r = ioctl(h, AMSTREAM_IOC_GET, parm_new);
     if (r < 0) {
@@ -419,7 +420,7 @@ static int codec_h_ioctl_get_ex(CODEC_HANDLE h, int subcmd, unsigned long paramt
         break;
     }
     if (r < 0) {
-        CODEC_PRINT("codec_h_ioctl_get failed,handle=%d,subcmd=%x,paramter=%x, t=%x errno=%d\n", h, subcmd, paramter, r, errno);
+        CODEC_PRINT("codec_h_ioctl_get_ex failed,handle=%d,subcmd=%x,paramter=%x, t=%x errno=%d\n", h, subcmd, paramter, r, errno);
         return r;
     }
     return 0;
@@ -445,7 +446,7 @@ static int codec_h_ioctl_get_ptr(CODEC_HANDLE h, int subcmd, unsigned long param
         break;
     }
     if (r < 0) {
-        CODEC_PRINT("codec_h_ioctl_get failed,handle=%d,subcmd=%x,paramter=%x, t=%x errno=%d\n", h, subcmd, paramter, r, errno);
+        CODEC_PRINT("codec_h_ioctl_get_ptr failed,handle=%d,subcmd=%x,paramter=%x, t=%x errno=%d\n", h, subcmd, paramter, r, errno);
         return r;
     }
     return 0;

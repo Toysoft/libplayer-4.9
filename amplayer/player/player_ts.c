@@ -110,14 +110,6 @@ static int stream_ts_init(play_para_t *p_para)
         goto error1;
     }
 
-    if (am_getconfig_bool("media.libplayer.wfd")) {
-        ret = codec_init_audio_utils(codec);
-        if (ret != CODEC_ERROR_NONE) {
-            codec_close(codec);
-            goto error1;
-        }
-    }
-
     p_para->codec = codec;
     if (vinfo->has_video) {
         codec_set_freerun_mode(codec, p_para->playctrl_info.freerun_mode);
