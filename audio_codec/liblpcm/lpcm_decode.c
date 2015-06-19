@@ -96,7 +96,8 @@ static int uio_init()
         audio_codec_print("map /dev/uio0 failed\n");
         return -1;
     }
-
+    if (phys_offset == 0)
+        phys_offset = (AIU_AIFIFO_CTRL*4)&(pagesize-1);
     reg_base = memmap + phys_offset;
     return 0;
 }
