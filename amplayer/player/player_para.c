@@ -1659,7 +1659,8 @@ int player_dec_init(play_para_t *p_para)
             }
         }
 
-        if (p_para->playctrl_info.lowbuffermode_flag || am_getconfig_bool("media.libplayer.wfd") || av_strstart(p_para->file_name, "udp://", NULL) || av_strstart(p_para->file_name, "rtsp://", NULL)) {
+        if (p_para->playctrl_info.lowbuffermode_flag || am_getconfig_bool("media.libplayer.wfd") || 
+	        av_strstart(p_para->file_name, "udp://", NULL) || av_strstart(p_para->file_name, "rtsp://", NULL)) {
             if (!p_para->start_param->is_ts_soft_demux && stream_type != STREAM_TS) {
                 log_print("Player reconfig use hwdemux for wfd now\n");
                 file_type = MPEG_FILE;
@@ -1927,6 +1928,10 @@ int player_decoder_init(play_para_t *p_para)
     } else {
         if (p_para->vstream_info.has_video && p_para->astream_info.has_audio && (p_para->astream_num > 1) && (p_para->state.full_time > 0)) {
             p_para->playctrl_info.buf_limited_time_ms = am_getconfig_float_def("media.libplayer.limittime", 2000);
+            if((p_para->vstream_info.video_height * p_para->vstream_info.video_width) > 1920 *1088){
+            /**/
+                p_para->playctrl_info.buf_limited_time_ms = p_para->playctrl_info.buf_limited_time_ms * 2;
+            }
             log_print("[%s:%d]multiple audio switch, set buffer time to %d ms\n", __FUNCTION__, __LINE__, p_para->playctrl_info.buf_limited_time_ms);
         } else {
             p_para->playctrl_info.buf_limited_time_ms = 0; /*0 is not limited.*/

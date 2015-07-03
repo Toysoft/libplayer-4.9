@@ -2762,6 +2762,8 @@ int write_av_packet(play_para_t *para)
                 {
                     player_thread_wait(para, RW_WAIT_TIME);
                 }
+                pkt->data += len;
+                pkt->data_size -= len;
                 return PLAYER_SUCCESS;
             }
             if ((pkt->type == CODEC_SUBTITLE) && (!am_getconfig_bool("media.amplayer.sublowmem")))
@@ -2821,12 +2823,13 @@ int write_av_packet(play_para_t *para)
                 if (para->state.video_bufferlevel >= vbuf_threshold || para->state.audio_bufferlevel >= abuf_threshold)
                 {
                     player_thread_wait(para, 10 * 1000);
+                    pkt->data += len;
+                    pkt->data_size -= len;
                     return PLAYER_SUCCESS;
                 }
             }
 
             write_bytes = codec_write(pkt->codec, (char *)buf, size);
-
             if (write_bytes < 0 || write_bytes > size)
             {
                 if (-errno != AVERROR(EAGAIN))
