@@ -3801,9 +3801,9 @@ int process_es_subtitle(play_para_t *para)
     unsigned char sub_header[20] = {0x41, 0x4d, 0x4c, 0x55, 0xaa, 0};
     unsigned int sub_type;
     int64_t sub_pts = 0;
-    static int last_duration = 0;
+    //static int last_duration = 0;
     float duration = para->sstream_info.sub_pts;
-    long long start_time = para->sstream_info.start_time;
+    int64_t start_time = para->sstream_info.start_time;
     int data_size = pkt->avpkt->size;
     int i;
 
@@ -3825,6 +3825,7 @@ int process_es_subtitle(play_para_t *para)
         //return;
     }
 
+
     /* get pkt pts */
     if ((int64_t)INT64_0 != pkt->avpkt->pts)
     {
@@ -3832,13 +3833,13 @@ int process_es_subtitle(play_para_t *para)
 
         if (sub_pts < start_time)
         {
-            sub_pts = sub_pts * last_duration;
+            sub_pts = sub_pts * para->sstream_info.last_duration;
         }
     }
     else if ((int64_t)INT64_0 != pkt->avpkt->dts)
     {
-        sub_pts = pkt->avpkt->dts * duration * last_duration;
-        last_duration = pkt->avpkt->duration;
+        sub_pts = pkt->avpkt->dts * duration * para->sstream_info.last_duration;
+        para->sstream_info.last_duration = pkt->avpkt->duration;
     }
     else
     {
@@ -3864,7 +3865,7 @@ int process_es_subtitle(play_para_t *para)
 
     if (sub_type == 0x17002)
     {
-        last_duration = (unsigned)pkt->avpkt->convergence_duration * 90;
+        para->sstream_info.last_duration = (unsigned)pkt->avpkt->convergence_duration * 90;
     }
 
     if (sub_type == 0x17003)
@@ -3886,13 +3887,13 @@ int process_es_subtitle(play_para_t *para)
     sub_header[13] = (sub_pts >> 16) & 0xff;
     sub_header[14] = (sub_pts >> 8) & 0xff;
     sub_header[15] = sub_pts & 0xff;
-    sub_header[16] = (last_duration >> 24) & 0xff;
-    sub_header[17] = (last_duration >> 16) & 0xff;
-    sub_header[18] = (last_duration >> 8) & 0xff;
-    sub_header[19] = last_duration & 0xff;
+    sub_header[16] = (para->sstream_info.last_duration >> 24) & 0xff;
+    sub_header[17] = (para->sstream_info.last_duration >> 16) & 0xff;
+    sub_header[18] = (para->sstream_info.last_duration >> 8) & 0xff;
+    sub_header[19] = para->sstream_info.last_duration & 0xff;
 
-    //log_print("## [ sub_type:0x%x,   data_size:%d,  sub_pts:%lld last_duration %d]\n", sub_type , data_size, sub_pts, last_duration);
-    //log_print("## [ sizeof:%d , sub_index=%d, pkt_stream_index=%d,]\n", sizeof(sub_header), para->sstream_info.sub_index, pkt->avpkt->stream_index);
+    log_print("## [ sub_type:0x%x,   data_size:%d,  sub_pts:%lld last_duration %d]\n", sub_type , data_size, sub_pts, para->sstream_info.last_duration);
+    log_print("## [ sizeof:%d , sub_index=%d, pkt_stream_index=%d,]\n", sizeof(sub_header), para->sstream_info.sub_index, pkt->avpkt->stream_index);
 
     if (para->sstream_info.sub_index == pkt->avpkt->stream_index)
     {
@@ -4544,7 +4545,18 @@ void player_switch_sub(play_para_t *para)
     int subnum = para->sstream_num;
     int index;
 
-    /* check if it has audio */
+    int untimed_text = am_getconfig_bool_def("sys.timedtext.disable",1);
+
+    log_print("player_switch_sub,sub_id=%d,index=%d,untimed_text=%d\n",
+        para->playctrl_info.switch_sub_id,sinfo->sub_index,untimed_text);
+
+    if (para->scodec) {
+        pcodec = para->scodec;
+    } else {
+        pcodec = para->codec;
+    }
+
+    /* check if it has sub */
     if (para->sstream_info.has_sub == 0)
     {
         return;
@@ -4591,6 +4603,13 @@ void player_switch_sub(play_para_t *para)
         return;
     }
 
+    //log_print("--%s--pstream->index=%d---\n",__FUNCTION__,pstream->index);
+
+    if (!untimed_text) {
+        /* close subtitle */
+        codec_close_subtitle(pcodec);
+    }
+
     if (pstream->codec->codec_id == CODEC_ID_DVD_SUBTITLE)
     {
         set_subtitle_subtype(0);
@@ -4630,6 +4649,7 @@ void player_switch_sub(play_para_t *para)
             para->sstream_info.sub_duration = UNIT_FREQ * ((float)pstream->time_base.num / pstream->time_base.den);
             para->sstream_info.sub_pts = PTS_FREQ * ((float)pstream->time_base.num / pstream->time_base.den);
             para->sstream_info.start_time = pstream->start_time * pstream->time_base.num * PTS_FREQ / pstream->time_base.den;
+            para->sstream_info.last_duration = 0;
         }
         else
         {
@@ -4698,14 +4718,18 @@ void player_switch_sub(play_para_t *para)
             amthreadpool_thread_usleep(1000);
         }
 
+        if (!untimed_text) {
+            codec_resume_subtitle(pcodec,para->sstream_info.has_sub);
+        }
+
         return;
     }
     else
     {
-        pcodec = para->codec;
+       // pcodec = para->codec;
     }
 
-    codec_reset_subtile(para->codec);
+    codec_reset_subtile(pcodec);
     /* first set an invalid sub id */
     pcodec->sub_pid = 0xffff;
 
@@ -4734,6 +4758,10 @@ void player_switch_sub(play_para_t *para)
     if (IS_SUB_NEED_PREFEED_HEADER(para->sstream_info.sub_type))
     {
         pre_header_feeding(para);
+    }
+
+    if (!untimed_text) {
+        codec_resume_subtitle(pcodec,para->sstream_info.has_sub);
     }
 
     return;

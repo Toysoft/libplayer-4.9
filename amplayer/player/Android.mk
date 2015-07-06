@@ -98,7 +98,7 @@ ifeq ($(TARGET_ARCH),arm)
 LOCAL_LDFLAGS := -Wl,--no-warn-shared-textrel
 endif
 LOCAL_STATIC_LIBRARIES := libamcodec libavformat librtmp libswscale libavcodec libavutil libamadec
-LOCAL_SHARED_LIBRARIES += libutils libmedia libz libbinder libdl libcutils libc libamavutils libssl libcrypto
+LOCAL_SHARED_LIBRARIES += libutils libmedia libz libbinder libdl libcutils libc libamavutils libssl libcrypto libamsubdec
 
 LOCAL_MODULE := libamplayer
 LOCAL_MODULE_TAGS := optional

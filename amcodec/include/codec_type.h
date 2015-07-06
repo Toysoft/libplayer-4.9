@@ -16,6 +16,7 @@
 #include "amports/vformat.h"
 #include "amports/aformat.h"
 #include "ppmgr/ppmgr.h"
+#include <stdlib.h>
 
 typedef int CODEC_HANDLE;
 
@@ -92,10 +93,12 @@ unsigned int noblock:
     int packet_size;            ///< data size per packet
     int avsync_threshold;    ///<for adec in ms>
     void * adec_priv;          ///<for adec>
+    void * amsub_priv;          // <for amsub>
     int SessionID;
     int dspdec_not_supported;//check some profile that audiodsp decoder can not support,we switch to arm decoder
     int switch_audio_flag;      //<switch audio flag switching(1) else(0)
     int automute_flag;
+    char *sub_filename;
 } codec_para_t;
 
 typedef struct {
@@ -127,6 +130,25 @@ typedef struct {
     int droppcm_flag;               // drop pcm flag, if switch audio (1)
     int automute;
 } arm_audio_info;
+
+
+typedef struct {
+    int sub_type;
+    int sub_pid;
+    int stream_type;  // to judge sub how to get data
+    char *sub_filename;
+    unsigned int curr_timeMs; //for idx+sub
+    unsigned int next_pts; //for idx+sub
+
+    unsigned int pts;
+    unsigned int m_delay;
+    unsigned short sub_start_x;
+    unsigned short sub_start_y;
+    unsigned short sub_width;
+    unsigned short sub_height;
+    char * odata;    // point to decoder data
+    unsigned buffer_size;
+} amsub_info_t;
 
 //audio decoder type, default arc
 #define AUDIO_ARC_DECODER 0

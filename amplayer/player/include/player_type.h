@@ -135,7 +135,7 @@ typedef struct {
 
 typedef struct {
     int index;
-    char id;
+    int id;
     char internal_external; //0:internal_sub 1:external_sub
     unsigned short width;
     unsigned short height;

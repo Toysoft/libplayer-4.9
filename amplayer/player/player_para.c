@@ -461,6 +461,7 @@ static void get_av_codec_type(play_para_t *p_para)
             p_para->sstream_info.sub_duration = UNIT_FREQ * ((float)pStream->time_base.num / pStream->time_base.den);
             p_para->sstream_info.sub_pts = PTS_FREQ * ((float)pStream->time_base.num / pStream->time_base.den);
             p_para->sstream_info.start_time = pStream->start_time * pStream->time_base.num * PTS_FREQ / pStream->time_base.den;
+            p_para->sstream_info.last_duration = 0;
         } else {
             p_para->sstream_info.start_time = pStream->start_time * PTS_FREQ;
         }

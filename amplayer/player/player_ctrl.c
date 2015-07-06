@@ -1823,3 +1823,210 @@ int resume_auto_refresh_rate()
 {
     return set_auto_refresh_rate(auto_refresh_rate_enable);
 }
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @function    player_get_sub_odata
+ *
+ * @brief       get subtitle data from subtitle decode
+ *
+ * @param[in]   pid; player tag which get from player_start return value
+ *
+ * @param[in]   amsub_info; the paraments of subtitle, such as sub_type ,sub_data,etc
+ *
+ * @return      r = 0 for success
+ *
+ */
+/* --------------------------------------------------------------------------*/
+
+
+int player_get_sub_odata(int pid, amsub_info_t *amsub_info)
+{
+    int ret = 0;
+    play_para_t *player_para;
+    codec_para_t *p;
+
+    player_para = player_open_pid_data(pid);
+    if (player_para == NULL) {
+        return -1;    /*this data is 0 for default!*/
+    }
+
+    p = get_subtitle_codec(player_para);
+
+    if (p) {
+        ret = codec_amsub_read_outdata(p,amsub_info);
+        if (ret != 0) {
+            log_print("player_get_sub_odata,get amsub data failed!\n");
+            player_close_pid_data(pid);
+            return -1;
+        }
+        //return 2;
+    } else {
+        log_print("player_get_sub_odata,can not get amsub_handle!\n");
+        player_close_pid_data(pid);
+        return -1;
+    }
+    player_close_pid_data(pid);
+
+    return 0;
+
+}
+
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @function    player_get_sub_start_pts
+ *
+ * @brief       get player start time from video or audio stream
+ *
+ * @param[in]   pid; player tag which get from player_start return value
+ *
+ * @param[in]   start_pts; the value of video or audio stream start time
+ *
+ * @return      r = 0 for success
+ *
+ */
+/* --------------------------------------------------------------------------*/
+
+
+int player_get_sub_start_pts(int pid, unsigned int *start_pts)
+{
+    int ret = 0;
+    play_para_t *player_para;
+    codec_para_t *p;
+
+    player_para = player_open_pid_data(pid);
+    if (player_para == NULL) {
+        return -1;    /*this data is 0 for default!*/
+    }
+
+    if (player_para->astream_info.start_time > 0) {
+        *start_pts = (unsigned int)player_para->astream_info.start_time;
+    } else if (player_para->vstream_info.start_time > 0) {
+        *start_pts = (unsigned int)player_para->vstream_info.start_time;
+    } else {
+        *start_pts = 0;
+        player_close_pid_data(pid);
+        return -1;
+    }
+    log_print("%s: start_pts=%d!\n",__FUNCTION__,*start_pts);
+    player_close_pid_data(pid);
+
+    return 0;
+
+}
+
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @function    player_set_sub_filename
+ *
+ * @brief       set filename for subtitle of idx+sub;
+ *
+ * @param[in]   pid; player tag which get from player_start return value
+ *
+ * @param[in]   filename; the name of idx + sub
+ *
+ * @return      r = 0 for success
+ *
+ */
+/* --------------------------------------------------------------------------*/
+
+
+int player_set_sub_filename(int pid, const char* filename)
+{
+    int ret = 0;
+    play_para_t *player_para;
+    codec_para_t *p;
+    log_print("player_set_sub_filename,pid=%d,filename=%s !\n",pid,filename);
+
+    player_para = player_open_pid_data(pid);
+    if (player_para == NULL) {
+        return -1;    /*this data is 0 for default!*/
+    }
+    if (filename) {
+        player_para->sub_filename = filename;
+    }
+
+    player_close_pid_data(pid);
+
+    return 0;
+
+}
+
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @function    player_get_current_time
+ *
+ * @brief      get player current time
+ *
+ * @param[in]   pid; player tag which get from player_start return value
+ *
+ * @param[in]   curr_timeMs; get the current time
+ *
+ * @return      r = 0 for success
+ *
+ */
+/* --------------------------------------------------------------------------*/
+
+
+int player_get_current_time(int pid, unsigned int* curr_timeMs)
+{
+    int ret = 0;
+    play_para_t *player_para;
+    log_print("[%s]: pid=%d.\n",__FUNCTION__,pid);
+
+    player_para = player_open_pid_data(pid);
+    if (player_para == NULL) {
+        return -1;    /*this data is 0 for default!*/
+    }
+    if (player_para->state.current_ms > 0) {
+        *curr_timeMs = player_para->state.current_ms;
+    } else {
+        *curr_timeMs = 0;
+    }
+
+    player_close_pid_data(pid);
+
+    return 0;
+
+}
+
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @function    player_get_curr_sub_index
+ *
+ * @brief       get  current subtitle index
+ *
+ * @param[in]   pid; player tag which get from player_start return value
+ *
+ * @param[in]   curr_sub_index; the index of current subtitle
+ *
+ * @return      r = 0 for success
+ *
+ */
+/* --------------------------------------------------------------------------*/
+
+
+int player_get_curr_sub_id(int pid, int *curr_sub_id)
+{
+    int ret = 0;
+    play_para_t *player_para;
+    codec_para_t *p;
+
+    player_para = player_open_pid_data(pid);
+    if (player_para == NULL) {
+        return -1;    /*this data is 0 for default!*/
+    }
+
+    *curr_sub_id = player_para->sstream_info.sub_pid;
+
+    log_print("sstream_info.sub_pid=%d !\n",player_para->sstream_info.sub_pid);
+
+    player_close_pid_data(pid);
+
+    return 0;
+
+}

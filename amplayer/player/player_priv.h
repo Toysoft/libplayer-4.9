@@ -137,6 +137,7 @@ typedef struct play_para {
     play_control_t  *start_param;
     int player_id;
     char            *file_name;
+    char            *sub_filename; //for idx+sub
     pfile_type      file_type;
     int64_t         file_size;
     int64_t         data_offset;
