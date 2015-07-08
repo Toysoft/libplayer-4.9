@@ -344,6 +344,7 @@ vdec_type_t video_codec_type_convert(unsigned int id)
             break;
 
             // divx5
+        case CODEC_ID_MSMPEG4V2:
         case CODEC_TAG_DIV5:
         case CODEC_TAG_DX50:
         case CODEC_TAG_M4S2:
