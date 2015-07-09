@@ -4420,7 +4420,7 @@ audio_init:
 
         log_print("[%s:%d]finish bakup packet,do seek\n", __FUNCTION__, __LINE__);
         /* time search based on audio */
-        para->playctrl_info.time_point = (float)((float)para->state.current_ms / 1000);
+        para->playctrl_info.time_point = (float)((float)(para->state.current_ms + 500) / 1000);
         ret = time_search(para, -1);
 
         if (ret != PLAYER_SUCCESS)
