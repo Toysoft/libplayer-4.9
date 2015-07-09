@@ -446,6 +446,11 @@ int audio_dec_decode(
     }
     sample_buffer = NeAACDecDecode(gFaadCxt->hDecoder, &frameInfo, dec_buf, dec_bufsize);
     dec_bufsize -= frameInfo.bytesconsumed;
+    if (frameInfo.channels < 0 || frameInfo.channels > 8) {
+        audio_codec_print("[%s %d]ERR__Unvalid Nch/%d bytesconsumed/%d error/%d\n",
+                           __FUNCTION__,__LINE__,frameInfo.channels,frameInfo.bytesconsumed,frameInfo.error);
+        sample_buffer=NULL;
+    }
     if (frameInfo.error == 0 && sample_buffer == NULL && hDecoder->latm_header_present) {
         dec_bufsize -= 3;
         goto exit;
