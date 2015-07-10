@@ -222,6 +222,7 @@ typedef struct play_para {
     int force_enter_buffering;
 
     int pre_seek_flag; // seekto comming prior to start
+    int audio_digital_raw;
 } play_para_t;
 
 typedef struct media_type_t {

@@ -1168,6 +1168,17 @@ static int64_t get_playing_bandwidth(play_para_t *p_para)
     //log_print("Get measured bandwidth: %lld\n",value);
     return value;
 }
+int  audio_digital_mode_change(play_para_t *p_para)
+{
+	 if(p_para->astream_info.audio_format == AFORMAT_AC3 || p_para->astream_info.audio_format == AFORMAT_EAC3 || \
+            p_para->astream_info.audio_format == AFORMAT_DTS || p_para->astream_info.audio_format == AFORMAT_TRUEHD) {
+             if (get_audio_digital_output_mode() != p_para->audio_digital_raw) {
+                 p_para->audio_digital_raw = get_audio_digital_output_mode();
+                 return 1;
+             }
+         }
+         return  0;
+}
 static int  update_buffering_states(play_para_t *p_para,
                                     struct buf_status *vbuf,
                                     struct buf_status *abuf)
