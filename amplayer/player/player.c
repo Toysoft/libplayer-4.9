@@ -341,6 +341,11 @@ void check_msg(play_para_t *para, player_cmd_t *msg)
             para->playctrl_info.end_flag = 1;
             para->playctrl_info.search_flag = 0;
             para->playctrl_info.reset_drop_buffered_data = 0;
+            para->state.current_time = msg->f_param;
+            para->state.current_ms = para->state.current_time * 1000;
+            para->state.seek_point = msg->f_param;
+            log_print("seek the end,update current_time:%d (ms:%d)\n",
+                                   para->state.current_time,para->state.current_ms);
             set_player_state(para, PLAYER_SEARCHOK);
             update_player_states(para, 1);
             set_player_state(para, PLAYER_PLAYEND);
