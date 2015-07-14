@@ -321,13 +321,13 @@ retry:
         islatm = 1;
         int nSeekNum = AACFindLATMSyncWord(in_buf, inbuf_size);
         if (nSeekNum == (inbuf_size - 2)) {
-            audio_codec_print("[%s]%d bytes data not found latm sync header \n", __FUNCTION__, nSeekNum);
+            audio_codec_print("[%s %d]%d bytes data not found latm sync header \n", __FUNCTION__,__LINE__, nSeekNum);
         } else {
-            audio_codec_print("[%s]latm seek sync header cost %d,total %d,left %d \n", __FUNCTION__, nSeekNum, inbuf_size, inbuf_size - nSeekNum);
+            audio_codec_print("[%s %d]latm seek sync header cost %d,total %d,left %d \n", __FUNCTION__,__LINE__, nSeekNum, inbuf_size, inbuf_size - nSeekNum);
         }
         inbuf_size = inbuf_size - nSeekNum;
         if (inbuf_size < (get_frame_size(gFaadCxt) + FRAME_SIZE_MARGIN)/*AAC_INPUTBUF_SIZE/2*/) {
-            audio_codec_print("[%s]input size %d at least %d ,need more data \n", __FUNCTION__, inbuf_size, (get_frame_size(gFaadCxt) + FRAME_SIZE_MARGIN));
+            audio_codec_print("[%s %d]input size %d at least %d ,need more data \n", __FUNCTION__,__LINE__, inbuf_size, (get_frame_size(gFaadCxt) + FRAME_SIZE_MARGIN));
             *inbuf_consumed = inlen - inbuf_size;
             return AAC_ERROR_NO_ENOUGH_DATA;
         }
@@ -341,17 +341,19 @@ retry:
     config->useOldADTSFormat = 0;
     //config->dontUpSampleImplicitSBR = 1;
     NeAACDecSetConfiguration(gFaadCxt->hDecoder, config);
-    if ((ret = NeAACDecInit(gFaadCxt->hDecoder, in_buf, inbuf_size, &samplerate, &channels, islatm)) < 0) {
-        in_buf += RSYNC_SKIP_BYTES;
-        inbuf_size -= RSYNC_SKIP_BYTES;
+    int skipbytes=RSYNC_SKIP_BYTES;
+    if ((ret = NeAACDecInit(gFaadCxt->hDecoder, in_buf, inbuf_size, &samplerate, &channels, islatm,&skipbytes)) < 0) {
+        in_buf += skipbytes;
+        inbuf_size -= skipbytes;
         NeAACDecClose(gFaadCxt->hDecoder);
         gFaadCxt->hDecoder = NULL;
         if (inbuf_size < 0) {
             inbuf_size = 0;
         }
         audio_codec_print("init fail,inbuf_size %d \n", inbuf_size);
-        if (inbuf_size < (get_frame_size(gFaadCxt) + FRAME_SIZE_MARGIN)/*AAC_INPUTBUF_SIZE/2*/) {
-            audio_codec_print("input size %d at least %d ,need more data \n", inbuf_size, (get_frame_size(gFaadCxt) + FRAME_SIZE_MARGIN));
+
+        if (inbuf_size < (get_frame_size(gFaadCxt) + FRAME_SIZE_MARGIN) || skipbytes == 0) {
+            audio_codec_print("skipbytes/%d inbuf_size/%d get_frame_size()/%d ,need more data \n",skipbytes, inbuf_size, (get_frame_size(gFaadCxt) + FRAME_SIZE_MARGIN));
             *inbuf_consumed = inlen - inbuf_size;
             return AAC_ERROR_NO_ENOUGH_DATA;
         }
