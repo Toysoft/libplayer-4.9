@@ -130,6 +130,10 @@ int check_audiodsp_fatal_err()
     return fatal_err;
 }
 
+int get_audio_digital_output_mode()
+{
+    return !!amsysfs_get_sysfs_int("/sys/class/audiodsp/digital_raw");
+}
 int check_audio_output()
 {
     return get_sysfs_int("/sys/class/amaudio/output_enable") & 3;

@@ -192,7 +192,7 @@ static int check_decoder_worksta(play_para_t *para)
         }
     }
     if (para->astream_info.has_audio) {
-        if (check_audiodsp_fatal_err() == AUDIO_DSP_FATAL_ERROR) {
+        if (check_audiodsp_fatal_err() == AUDIO_DSP_FATAL_ERROR || audio_digital_mode_change(para)) {
             para->playctrl_info.seek_base_audio = 1;
             para->playctrl_info.time_point = para->state.current_time + 1;
             para->playctrl_info.reset_flag = 1;
@@ -772,6 +772,7 @@ void update_player_start_paras(play_para_t *p_para, play_control_t *c_para)
     p_para->buffering_enable            = c_para->auto_buffing_enable;
     p_para->byteiobufsize = c_para->byteiobufsize;
     p_para->loopbufsize = c_para->loopbufsize;
+    p_para->audio_digital_raw = get_audio_digital_output_mode();
     p_para->enable_rw_on_pause = c_para->enable_rw_on_pause;
     p_para->playctrl_info.lowbuffermode_flag = c_para->lowbuffermode_flag;
     p_para->playctrl_info.buf_limited_time_ms = c_para->lowbuffermode_limited_ms;
