@@ -430,7 +430,7 @@ static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st, AVProbeDa
     };
     int score;
     AVInputFormat *fmt = av_probe_input_format3(pd, 1, &score);
-    if (fmt)
+    if (fmt && score > 1)//the condition : score > 1 ,rererence from ffmpeg 2.6,to aviod wrong probe;
     {
         int i;
         av_log(s, AV_LOG_DEBUG, "Probe with size=%d, packets=%d detected %s with score=%d\n",
