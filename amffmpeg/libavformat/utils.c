@@ -3891,9 +3891,15 @@ int av_find_stream_info(AVFormatContext *ic)
             /* NOTE: if the format has no header, then we need to read
                some packets to get most of the streams, so we cannot
                stop here */
-            if ((!(ic->ctx_flags & AVFMTCTX_NOHEADER) || (fast_switch && ic->nb_streams >= 2) || (2 == fast_switch && 1 == ic->nb_streams))
-                    && (need_continue_parse >= 2 || continue_parse_count > 10))
+            if (!(ic->ctx_flags & AVFMTCTX_NOHEADER) ||
+                (((fast_switch && ic->nb_streams >= 2) || (2 == fast_switch && 1 == ic->nb_streams))
+                  && (need_continue_parse >= 2 || continue_parse_count > 10)))
             {
+               /*
+               for fast_mode
+               if not found a video & audio ,need_continue_parse
+               try more continue_parse_count,
+               */
                 /* if we found the info for all the codecs, we can stop */
                 ret = count;
                 av_log(ic, AV_LOG_INFO, "All info found at pos=%lld\n", avio_tell(ic->pb));
