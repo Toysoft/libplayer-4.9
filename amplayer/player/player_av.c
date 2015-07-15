@@ -2017,7 +2017,15 @@ int time_search(play_para_t *am_p, int flags)
                     {
                         ret = (int64_t)av_seek_frame(s, stream_index, timestamp, seek_flags | AVSEEK_FLAG_BACKWARD);
                     }
-
+                    if (ret < 0) {
+                        if (time_point < 0.1 ) {
+                            //time_point is less than 0.1s,
+                            //just seek to 0.
+                            url_fseek(s->pb, 0, SEEK_SET);
+                            ff_read_frame_flush(s);
+                            ret = 0;
+                        }
+                    }
                     if (ret < 0)
                     {
                         log_info("[%s] could not seek to position %0.3f s ret=%lld\n", __FUNCTION__, (double)timestamp / AV_TIME_BASE, ret);
