@@ -149,6 +149,13 @@ PASS:
             ff_hevc_decode_nal_vps(h);
             break;
         case NAL_SPS:
+            /*
+            if we have width & height.
+            ignore the later sps,we don't need it for hardware decoder;
+            if we continue parser it, the big bitrate file may not smooth.
+            */
+            if (avctx->width >0 && avctx->height > 0)
+                break;
             ff_hevc_decode_nal_sps(h);
             HEVCSPS *sps = (HEVCSPS*)h->sps_list[0]->data;
             avctx->width = sps->width;
