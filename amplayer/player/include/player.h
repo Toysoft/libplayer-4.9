@@ -84,6 +84,11 @@ extern "C" {
     int64_t player_get_streambufbuffedsize(int pid);
     int audio_get_decoder_enable(int pid);
     int player_closeCodec(int pid);
+    int player_get_sub_odata(int pid, amsub_info_t *amsub_info);
+    int player_get_sub_start_pts(int pid, unsigned int *start_pts);
+    int player_set_sub_filename(int pid, const char* filename);
+    int player_get_current_time(int pid, unsigned int* curr_timeMs);
+    int player_get_curr_sub_id(int pid, int *curr_sub_id);
 
 #ifdef  __cplusplus
 }

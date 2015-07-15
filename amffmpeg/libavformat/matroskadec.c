@@ -2441,7 +2441,7 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
     else
         pkt->pts = timecode;
     pkt->pos = pos;
-    if (st->codec->codec_id == CODEC_ID_SUBRIP) {
+    if (st->codec->codec_id == CODEC_ID_SUBRIP || st->codec->codec_id == CODEC_ID_TEXT) {
         /*
          * For backward compatibility.
          * Historically, we have put subtitle duration

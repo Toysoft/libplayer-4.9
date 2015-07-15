@@ -22,9 +22,11 @@
 #include <codec_type.h>
 #include <codec.h>
 #include <audio_priv.h>
+#include <amsub_ctr.h>    // amsub
 #include "codec_h_ctrl.h"
 #include <adec-external-ctrl.h>
 #include <Amvideoutils.h>
+
 
 #define SUBTITLE_EVENT
 #define TS_PACKET_SIZE 188
@@ -770,6 +772,27 @@ int codec_init(codec_para_t *pcodec)
             audio_set_avsync_threshold(pcodec->adec_priv, pcodec->avsync_threshold);
         }
     }
+
+    int untimed_text = am_getconfig_bool_def("sys.timedtext.disable", 1);
+    CODEC_PRINT("%s,untimed_text=%d\n", __FUNCTION__, untimed_text);
+
+    if (pcodec->has_sub && !untimed_text)
+    {
+        CODEC_PRINT("codec_init: has_sub\n");
+        amsub_info_t amsub_info;
+        memset(&amsub_info, 0, sizeof(amsub_info));
+        amsub_info.sub_pid = pcodec->sub_pid;
+        amsub_info.sub_type = pcodec->sub_type;
+        amsub_info.stream_type = pcodec->stream_type;
+        if (pcodec->sub_filename)
+        {
+            amsub_info.sub_filename = pcodec->sub_filename;
+            CODEC_PRINT("sub_filename=%s\n", amsub_info.sub_filename);
+        }
+        amsub_start(&pcodec->amsub_priv, &amsub_info);
+        CODEC_PRINT("[%s] amsub start ok-\n", __FUNCTION__);
+        //CODEC_PRINT("--pcodec=%p-pcodec->amsub_priv=%p---\n", pcodec, pcodec->amsub_priv);
+    }
     return ret;
 }
 
@@ -822,17 +845,34 @@ int codec_read(codec_para_t *pcodec, void *buffer, int len)
 int codec_close(codec_para_t *pcodec)
 {
     int res = 0;
-
-    if (pcodec->has_audio) {
+    if (pcodec->has_audio)
+    {
         audio_stop(&pcodec->adec_priv);
         CODEC_PRINT("[%s]audio stop OK!\n", __FUNCTION__);
     }
 #ifdef SUBTITLE_EVENT
-    if (pcodec->has_sub && pcodec->sub_handle >= 0) {
+    if (pcodec->has_sub && pcodec->sub_handle >= 0)
+    {
         res |= codec_close_sub_fd(pcodec->sub_handle);
     }
 #endif
 
+    int untimed_text = am_getconfig_bool_def("sys.timedtext.disable", 1);
+    CODEC_PRINT("%s,untimed_text=%d\n", __FUNCTION__, untimed_text);
+
+    //CODEC_PRINT("[%s]pcodec->has_sub=%d,pcodec->amsub_priv=%p\n", __FUNCTION__,pcodec->has_sub,pcodec->amsub_priv);
+    if (pcodec->has_sub && !untimed_text)
+    {
+        if (pcodec->amsub_priv)
+        {
+            amsub_stop(&pcodec->amsub_priv);
+            CODEC_PRINT("[%s],amsub stop ok\n", __FUNCTION__);
+        }
+        else
+        {
+            CODEC_PRINT("codec_close,subtitle not crate ok,no need close-\n");
+        }
+    }
     res |= codec_close_cntl(pcodec);
     res |= codec_h_close(pcodec->handle);
     return res;
@@ -2451,4 +2491,87 @@ int codec_utils_set_video_position(int x, int y, int w, int h, int rotation)
 }
 
 
+/* --------------------------------------------------------------------------*/
+/**
+* @brief  codec_amsub_read_outdata  get subtitle data from aml subtitle decode
+*
+* @param[in]  pcodec  Pointer of codec parameter structure
+* @param[in]  amsub_info   the paraments and data of subtitle  (such as sub_type, start_times)
+*/
+/* --------------------------------------------------------------------------*/
+
+
+int codec_amsub_read_outdata(codec_para_t *pcodec, amsub_info_t *amsub_info)
+{
+    //CODEC_PRINT("---pcodec->amsub_priv=%p---\n",pcodec->amsub_priv);
+    if (pcodec->amsub_priv)
+    {
+        return amsub_outdata_read(&pcodec->amsub_priv, amsub_info);
+    }
+    else
+    {
+        CODEC_PRINT("codec_amsub_read_outdata,can not get amsub_handle\n");
+        return -1;
+    }
+    return 0;
+}
+
+/* --------------------------------------------------------------------------*/
+/**
+* @brief  codec_close_subtitle  Close subtitle decoder
+*
+* @param[in]  pcodec  Pointer of codec parameter structure
+*/
+/* --------------------------------------------------------------------------*/
+
+
+void codec_close_subtitle(codec_para_t *pcodec)
+{
+    if (pcodec)
+    {
+        pcodec->has_sub = 0;
+    }
+    CODEC_PRINT("enter [%s]\n", __FUNCTION__);
+    if (pcodec->amsub_priv)
+    {
+        amsub_stop(&pcodec->amsub_priv);
+        CODEC_PRINT("[%s]amsub stop ok !\n", __FUNCTION__);
+    }
+    else
+    {
+        CODEC_PRINT("codec_close,subtitle not crate ok,no need close !\n");
+    }
+    return;
+}
+
+/* --------------------------------------------------------------------------*/
+/**
+* @brief  codec_resume_subtitle  Resume subtitle decoder to work (etc, after pause)
+*
+* @param[in]  pcodec  Pointer of codec parameter structure
+* @param[in]  has_sub   subtitle status (has subtitle or not)
+*/
+/* --------------------------------------------------------------------------*/
+
+void codec_resume_subtitle(codec_para_t *pcodec, unsigned int has_sub)
+{
+    pcodec->has_sub = has_sub;
+    CODEC_PRINT("codec_resume_subtitle, has_sub=%d !\n", has_sub);
+    if (pcodec->has_sub)
+    {
+        amsub_info_t amsub_info;
+        memset(&amsub_info, 0, sizeof(amsub_info));
+        amsub_info.sub_pid = pcodec->sub_pid;
+        amsub_info.sub_type = pcodec->sub_type;
+        amsub_info.stream_type = pcodec->stream_type;
+        if (pcodec->sub_filename)
+        {
+            amsub_info.sub_filename = pcodec->sub_filename;
+            CODEC_PRINT("codec_resume_subtitle,sub_filename=%s\n", amsub_info.sub_filename);
+        }
+        amsub_start(&pcodec->amsub_priv, &amsub_info);
+        CODEC_PRINT("[%s]: amsub start ok !\n", __FUNCTION__);
+    }
+    return;
+}
 

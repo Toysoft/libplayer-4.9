@@ -289,6 +289,19 @@ codec_para_t *get_video_codec(play_para_t *player)
     }
 }
 
+/******************************
+ * get subtitle codec pointer
+ ******************************/
+codec_para_t *get_subtitle_codec(play_para_t *player)
+{
+    log_print("player->stream_type=%d.\n",player->stream_type);
+    if (player->stream_type == STREAM_ES) {
+        return player->scodec;
+    } else {
+        return player->codec;
+    }
+}
+
 void check_msg(play_para_t *para, player_cmd_t *msg)
 {
 #ifdef DEBUG_VARIABLE_DUR

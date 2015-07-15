@@ -68,6 +68,7 @@ typedef struct {
     int64_t         start_time;
     float           sub_duration;
     float           sub_pts;
+    int             last_duration;
     int             check_first_pts;
     int             cur_subindex; //for change subtitle
     int             sub_has_found;

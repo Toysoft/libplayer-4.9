@@ -124,4 +124,7 @@ int codec_get_last_checkout_apts(codec_para_t* pcodec, unsigned long *apts);
 int codec_get_last_checkin_apts(codec_para_t* pcodec, unsigned long *apts);
 int codec_disalbe_slowsync(codec_para_t *pcodec, int disable_slowsync);
 int codec_utils_set_video_position(int x, int y, int w, int h, int rotation);
+int codec_amsub_read_outdata(codec_para_t *pcodec,amsub_info_t *amsub_info);
+void codec_close_subtitle(codec_para_t *pcodec);
+void codec_resume_subtitle(codec_para_t *pcodec, unsigned int has_sub);
 #endif

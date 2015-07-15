@@ -204,7 +204,7 @@ static int stream_es_init(play_para_t *p_para)
         log_print("[stream_es_init] no audio and no video codec init!\n");
         return DECODER_INIT_FAILED;
     }
-    if (sinfo->has_sub) {
+    if (sinfo->has_sub || p_para->sub_filename) {
         s_codec = codec_alloc();
         if (!s_codec) {
             if (vinfo->has_video && v_codec) {
@@ -217,6 +217,7 @@ static int stream_es_init(play_para_t *p_para)
         }
 
         MEMSET(s_codec, 0, sizeof(codec_para_t));
+        s_codec->sub_filename = p_para->sub_filename;
         scodec_info_init(p_para, s_codec);
         if (codec_init(s_codec) != 0) {
             goto error3;
