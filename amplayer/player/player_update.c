@@ -1123,7 +1123,19 @@ static void check_force_end(play_para_t *p_para, struct buf_status *vbuf, struct
             }
             p_para->check_end.end_count -= dec_unit;
             if (!p_para->playctrl_info.reset_flag) {
-                player_thread_wait(p_para, 100 * 1000); //40ms
+                player_thread_wait(p_para, 100 * 1000); //100ms
+            }
+            if (has_video && p_para->check_end.end_count <= 0) {
+                int vpts = codec_get_vpts(get_video_codec(p_para));
+                /*if video pts is changed,
+                we think not finished playing video.
+                just wait vpts notchanged.
+                */
+                if (vpts != p_para->vbuffer.latest_pts) {
+                    p_para->check_end.end_count += CHECK_END_COUNT;
+                    p_para->vbuffer.latest_pts = vpts;
+                    return ;
+                }
             }
             if (p_para->check_end.end_count <= 0) {
                 if (!p_para->playctrl_info.video_end_flag) {

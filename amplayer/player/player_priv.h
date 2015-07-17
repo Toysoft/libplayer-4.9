@@ -125,6 +125,7 @@ typedef struct {
     unsigned int    buffer_rp;
     unsigned int    rp_is_changed;
     unsigned int    buf_empty;
+    unsigned int    latest_pts;
 } decbuf_status_t;
 
 typedef struct {
