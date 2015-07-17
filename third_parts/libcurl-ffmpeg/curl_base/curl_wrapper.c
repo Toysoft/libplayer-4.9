@@ -30,7 +30,11 @@ static void response_process(char * line, Curl_Data * buf)
             buf->ctx->connected = 1;
         }
         if (!strncasecmp(line, "Content-Length", 14)) {
-            while (!isspace(*ptr) && *ptr != '\0') {
+            while (*ptr != '\0' && *ptr != ':') {
+                ptr++;
+            }
+            ptr++;
+            while (isspace(*ptr)) {
                 ptr++;
             }
             buf->handle->chunk_size = atoll(ptr);
@@ -67,10 +71,13 @@ static void response_process(char * line, Curl_Data * buf)
         || 303 == buf->handle->http_code
         || 307 == buf->handle->http_code) {
         if (!strncasecmp(line, "Location", 8)) {
-            while (!isspace(*ptr) && *ptr != '\0') {
+            while (*ptr != '\0' && *ptr != ':') {
                 ptr++;
             }
             ptr++;
+            while (isspace(*ptr)) {
+                ptr++;
+            }
             buf->handle->relocation = (char *)c_mallocz(strlen(ptr) + 1);
             if (!buf->handle->relocation) {
                 return;
