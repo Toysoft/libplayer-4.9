@@ -272,7 +272,12 @@ static void get_av_codec_type(play_para_t *p_para)
                 p_para->vstream_info.video_rate = (int64_t)UNIT_FREQ * pStream->r_frame_rate.den / pStream->r_frame_rate.num;
             }
             log_print("[%s:%d]video_codec_rate=%d,video_rate=%d\n", __FUNCTION__, __LINE__, p_para->vstream_info.video_codec_rate, p_para->vstream_info.video_rate);
-
+            if (( p_para->pFormatCtx->pb != NULL && p_para->pFormatCtx->pb->is_slowmedia) && (p_para->vstream_info.video_format == VFORMAT_MPEG4) && ( p_para->vstream_info.video_rate < 10))
+            {
+               // in network playback. fast switch might causes stream video_rate info  not correct . then set it to 0.
+               p_para->vstream_info.video_rate = 0;
+               log_print(" video_rate might not be correct. set it to 0  video_rate =%d\n", p_para->vstream_info.video_rate);
+            }
             if (p_para->vstream_info.video_format != VFORMAT_MPEG12) {
                 p_para->vstream_info.extradata_size = pCodecCtx->extradata_size;
                 p_para->vstream_info.extradata      = pCodecCtx->extradata;
