@@ -1280,7 +1280,7 @@ static void show_vob_subtitle(subtitlevobsub_t *subtitlevobsub)
     subtitlevobsub->vob_subtitle_config.width = (((subtitlevobsub->VobSPU.spu_width + 7) >> 3) << 3);
     subtitlevobsub->vob_subtitle_config.height = subtitlevobsub->VobSPU.spu_height;
     subtitlevobsub->vob_subtitle_config.contrast = subtitlevobsub->VobSPU.spu_alpha;
-    subtitlevobsub->vob_subtitle_config.prtData = (unsigned)subtitlevobsub->vob_pixData;
+    subtitlevobsub->vob_subtitle_config.prtData = (unsigned long)subtitlevobsub->vob_pixData;
     if (subtitlevobsub->VobSPU.display_pending == 0 || subtitlevobsub->VobSPU.displaying)
     {
         subtitlevobsub->vob_subtitle_config.cls = 1;
@@ -1923,9 +1923,9 @@ static int SubtitleVOBSub_ShowSubtitle(subtitlevobsub_t *subtitlevobsub, int pts
                                             subtitlevobsub->vob_pixData = malloc(OSD_HALF_SIZE * 2);
                                         if (subtitlevobsub->vob_pixData)
                                         {
-                                            subtitlevobsub->vob_ptrPXDRead = (unsigned short *)((unsigned)(rawsubdata) + subtitlevobsub->VobSPU.top_pxd_addr);
+                                            subtitlevobsub->vob_ptrPXDRead = (unsigned short *)((unsigned long)(rawsubdata) + subtitlevobsub->VobSPU.top_pxd_addr);
                                             vob_fill_pixel(subtitlevobsub, 1);       // 1 for odd, 2 for even
-                                            subtitlevobsub->vob_ptrPXDRead = (unsigned short *)((unsigned)(rawsubdata) + subtitlevobsub->VobSPU.bottom_pxd_addr);
+                                            subtitlevobsub->vob_ptrPXDRead = (unsigned short *)((unsigned long)(rawsubdata) + subtitlevobsub->VobSPU.bottom_pxd_addr);
                                             vob_fill_pixel(subtitlevobsub, 2);       // 1 for odd, 2 for even
                                             show_vob_subtitle(subtitlevobsub);
                                             LOGI("get subtitle ----------------yes\n");

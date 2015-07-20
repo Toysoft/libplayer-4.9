@@ -34,12 +34,20 @@
 #endif
 
 #if !defined(A32_BITSTREAM_READER) && !defined(ALT_BITSTREAM_READER)
-#   if defined(ARCH_ARM) && !defined(HAVE_FAST_UNALIGNED)
-#       define A32_BITSTREAM_READER
-#   else
-#       define ALT_BITSTREAM_READER
+#if defined(ARCH_ARM) && !defined(HAVE_FAST_UNALIGNED)
+#define A32_BITSTREAM_READER
+#else
+#define ALT_BITSTREAM_READER
 //#define A32_BITSTREAM_READER
-#   endif
+#endif
+#endif
+
+#ifndef av_unused
+#if defined(__GNUC__)
+#define av_unused __attribute__((unused))
+#else
+#define av_unused
+#endif
 #endif
 
 #ifndef AV_RB16
