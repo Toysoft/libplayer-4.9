@@ -694,6 +694,10 @@ int audio_decoder_get_enable_status(void* handle)
 int audio_get_decoded_pcm_delay(void *handle)
 {
     aml_audio_dec_t *audec = (aml_audio_dec_t *)handle;
+    if (!audec) {
+       adec_print("audec null\n");
+       return -1;
+    }
     buffer_stream_t  *g_bst = audec->g_bst;
     if (!handle) {
         adec_print("audio handle is NULL !\n");
