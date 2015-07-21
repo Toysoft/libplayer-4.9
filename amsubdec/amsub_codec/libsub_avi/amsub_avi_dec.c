@@ -770,7 +770,7 @@ int xsub_subtitle_decode(amsub_dec_t *amsub_dec, int read_handle)
                 }
                 ptrPXDRead = (unsigned short *) & (avihandle->rleData);
                 FillPixel(ptrPXDRead, amsub_ps->amsub_data, 1, amsub_ps, avihandle->field_offset);
-                ptrPXDRead = (unsigned short *)((int)(&avihandle->rleData) + (int)(avihandle->field_offset));
+                ptrPXDRead = (unsigned short *)((unsigned long)(&avihandle->rleData) + (unsigned long)(avihandle->field_offset));
                 FillPixel(ptrPXDRead, amsub_ps->amsub_data + VOB_SUB_SIZE / 2, 2, amsub_ps, avihandle->field_offset);
                 ret = 0;
                 break;
@@ -824,7 +824,7 @@ int xsub_subtitle_decode(amsub_dec_t *amsub_dec, int read_handle)
                 LOGI(" spu->rgba_pattern2 == 0x%x,  spu->rgba_pattern3 == 0x%x\n", amsub_ps->rgba_pattern2, amsub_ps->rgba_pattern3);
                 ptrPXDRead = (unsigned short *) & (avihandle_hd->rleData);
                 FillPixel(ptrPXDRead, amsub_ps->amsub_data, 1, amsub_ps, avihandle_hd->field_offset);
-                ptrPXDRead = (unsigned short *)((int)(&avihandle_hd->rleData) + (int)(avihandle_hd->field_offset));
+                ptrPXDRead = (unsigned short *)((unsigned long)(&avihandle_hd->rleData) + (unsigned long)(avihandle_hd->field_offset));
                 FillPixel(ptrPXDRead, amsub_ps->amsub_data + VOB_SUB_SIZE / 2, 2, amsub_ps, avihandle_hd->field_offset);
                 ret = 0;
                 break;
