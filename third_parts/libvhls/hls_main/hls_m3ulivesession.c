@@ -11,6 +11,7 @@
 #include "hls_download.h"
 #include "hls_bandwidth_measure.h"
 #include "libavformat/avio.h"
+#include "libavformat/avformat.h"
 #include <amthreadpool.h>
 
 #ifdef HAVE_ANDROID_OS
