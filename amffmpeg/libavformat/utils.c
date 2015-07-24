@@ -3453,8 +3453,10 @@ static int has_codec_parameters_ex(AVCodecContext *enc, int fastmode)
 
 static int has_decode_delay_been_guessed(AVStream *st)
 {
+    /* trying decode 8k would cost huge memory, invoke oom-killer */
     return (st->codec->codec_id != CODEC_ID_H264 && st->codec->codec_id != CODEC_ID_HEVC) ||
-           st->codec_info_nb_frames >= 6 + st->codec->has_b_frames;
+        (st->codec_info_nb_frames >= 6 + st->codec->has_b_frames) ||
+        (st->codec->width > 4096 || st->codec->height > 2304);
 }
 
 static int try_decode_frame(AVStream *st, AVPacket *avpkt)
