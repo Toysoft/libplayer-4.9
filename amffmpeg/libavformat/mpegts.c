@@ -2081,6 +2081,9 @@ RETRY:
             || (retry_count >= RETRY_MAX))) {
             av_log(s, AV_LOG_ERROR, "avio read error, retry_cout = %d!, len = %x\n", retry_count, len);
             return len < 0 ? len : AVERROR_EOF;
+        } else if (len == AVERROR(ENOSR)) {
+            av_log(s, AV_LOG_ERROR, "avio read %d, return ENOSR\n", len);
+            return AVERROR(ENOSR);
         }
         else if (len < 0){
             av_log(s, AV_LOG_ERROR, "avio read error, len = %x, retry_cout = %d \n", len, retry_count);

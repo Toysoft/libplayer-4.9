@@ -3180,7 +3180,11 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset
                 ret = av_read_packet(ic, pkt);
             }
             while (ret == AVERROR(EAGAIN));
-            if (ret != 0)
+            if (ret == AVERROR(ENOSR)) {
+                retry = DURATION_MAX_RETRY;
+                av_log(NULL, AV_LOG_ERROR, "may be live stream, seek return range error\n");
+                break;
+            } else if (ret != 0)
                 break;
             //av_log(NULL, AV_LOG_INFO, "[%s:%d] read a [%d]packet, pkt->pts=0x%llx\n",__FUNCTION__, __LINE__,pkt->stream_index,pkt->pts);
             read_size += pkt->size;
