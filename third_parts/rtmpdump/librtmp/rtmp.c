@@ -71,6 +71,9 @@ TLS_CTX RTMP_TLS_ctx;
 
 static const int packetSize[] = { 12, 8, 4, 1 };
 
+int RTMP_interrupt_cb();
+static int (*rtmp_interrupt_cb_ext)() = NULL;
+
 int RTMP_ctrlC;
 
 const char RTMPProtocolStrings[][7] = {
@@ -386,6 +389,16 @@ void
 RTMP_UpdateBufferMS(RTMP *r)
 {
     RTMP_SendCtrl(r, 3, r->m_stream_id, r->m_nBufferMS);
+}
+
+int RTMP_interrupt_cb() {
+    return rtmp_interrupt_cb_ext();
+}
+
+void RTMP_register_interrupt(int(* interrupt_func_cb)()) {
+    if (interrupt_func_cb) {
+        rtmp_interrupt_cb_ext = interrupt_func_cb;
+    }
 }
 
 #undef OSS
@@ -988,6 +1001,7 @@ RTMP_Connect0(RTMP *r, struct sockaddr * service)
         return FALSE;
     }
 
+#if 0
     /* set timeout */
     {
         SET_RCVTIMEO(tv, r->Link.timeout);
@@ -997,8 +1011,11 @@ RTMP_Connect0(RTMP *r, struct sockaddr * service)
                      __FUNCTION__, r->Link.timeout);
         }
     }
-
+#endif
     setsockopt(r->m_sb.sb_socket, IPPROTO_TCP, TCP_NODELAY, (char *) &on, sizeof(on));
+
+    // noblock
+    fcntl(r->m_sb.sb_socket, F_SETFL, fcntl(r->m_sb.sb_socket, F_GETFL) | O_NONBLOCK);
 
     return TRUE;
 }
@@ -4187,7 +4204,7 @@ RTMP_Close(RTMP *r)
 }
 
 int
-RTMPSockBuf_Fill(RTMPSockBuf *sb)
+ RTMPSockBuf_Fill(RTMPSockBuf *sb)
 {
     int nBytes;
 
@@ -4211,11 +4228,18 @@ RTMPSockBuf_Fill(RTMPSockBuf *sb)
             int sockerr = GetSockError();
             RTMP_Log(RTMP_LOGDEBUG, "%s, recv returned %d. GetSockError(): %d (%s)",
                      __FUNCTION__, nBytes, sockerr, strerror(sockerr));
-            if (sockerr == EINTR && !RTMP_ctrlC) {
+            if (RTMP_interrupt_cb()) {
+                RTMP_Log(RTMP_LOGERROR, "%s, recv interrupted!", __FUNCTION__);
+                nBytes = 0;
+                break;
+            }
+
+            if (sockerr == EINTR || sockerr == EAGAIN) {
+                msleep(100);
                 continue;
             }
 
-            if (sockerr == EWOULDBLOCK || sockerr == EAGAIN) {
+            if (sockerr == EWOULDBLOCK) {
                 sb->sb_timedout = TRUE;
                 nBytes = 0;
             }

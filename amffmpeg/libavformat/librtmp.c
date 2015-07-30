@@ -36,6 +36,15 @@
 #define DEF_SKIPFRM	0
 #define DEF_TIMEOUT	30	/* seconds */
 
+static int interrupt_call_cb(void)
+{
+    if (url_interrupt_cb()) {
+        return 1;
+    }
+    return 0;
+}
+
+
 static void rtmp_log(int level, const char *fmt, va_list args)
 {
     switch (level) {
@@ -279,6 +288,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     RTMP_LogSetCallback(rtmp_log);
 
     RTMP_Init(r);
+    RTMP_register_interrupt(interrupt_call_cb);
     
     /*
     if (!RTMP_SetupURL(r, s->filename)) {
