@@ -120,7 +120,10 @@ struct MpegTSContext {
     int raw_packet_size;
 
     int first_packet;
+
+    int hevc_first_packet;
     int is_hevc;
+    int hevc_stream_index;
 
     int pos47;
 
@@ -1792,72 +1795,66 @@ static int   Get_H264_Header_Packet(AVFormatContext *s, const uint8_t *packet)
 }	
 
 
-static int get_hevc_csd_packet(AVFormatContext *s, AVStream * st, const uint8_t *packet)
+static int get_hevc_csd_packet(AVFormatContext *s, AVStream * st, AVPacket *packet)
 {
-    uint8_t * p = packet;
+    uint8_t * p = packet->data;
     uint8_t * b;
     uint8_t * e;
-    int i, ps_count = 0, len = 0, ps_start = 0;
-    for(i = 0;i < TS_PACKET_SIZE;i++){
-        if(p[0] == 0 && p[1] == 0 && p[2] == 0 && p[3] == 1) {
+    int i, ps_count = 0, len = 0, ps_start = 0, end = 0;
+    for (i = 0; i < packet->size - 4; i++) {
+        if (p[0] == 0 && p[1] == 0 && p[2] == 0 && p[3] == 1) {
             p += 4;
             i += 4;
             break;
         }
-        if(p[0] == 0 && p[1] == 0 && p[2] == 1) {
+        if (p[0] == 0 && p[1] == 0 && p[2] == 1) {
             p += 3;
             i += 3;
             break;
         }
         p++;
     }
-    for(;i < TS_PACKET_SIZE;i++){
-        if(p[0] == 0 && p[1] == 0 && p[2] == 0 && p[3] == 1) {
-           // if(!ps_start) {
-            //    b = p;
-           ///     ps_start = 1;
-            //}
-            if(ps_count == 3) { // got vps/sps/pps
+    for (; i < packet->size - 4; i++) {
+        if (p[0] == 0 && p[1] == 0 && p[2] == 0 && p[3] == 1) {
+            if (ps_count == 3) { // got vps/sps/pps
                 e = p - 1;
+                end = 1;
                 break;
             }
-            if(((p[4]>>1) & 0x3f) == 32) { // vps
-            if(!ps_start) {
-                b = p;
-                ps_start = 1;
-            }
+            if (((p[4]>>1) & 0x3f) == 32) { // vps
+                if (!ps_start) {
+                    b = p;
+                    ps_start = 1;
+                }
                 ps_count++;
             }
-            if(((p[4]>>1) & 0x3f) == 33) { // sps
+            if (((p[4]>>1) & 0x3f) == 33) { // sps
                 ps_count++;
             }
-            if(((p[4]>>1) & 0x3f) == 34) { // pps
+            if (((p[4]>>1) & 0x3f) == 34) { // pps
                 ps_count++;
             }
             p += 4;
             i += 4;
             continue;
         }
-        if(p[0] == 0 && p[1] == 0 && p[2] == 1) {
-           // if(!ps_start) {
-           //     b = p;
-           //     ps_start = 1;
-           // }
-            if(ps_count == 3) { // got vps/sps/pps
+        if (p[0] == 0 && p[1] == 0 && p[2] == 1) {
+            if (ps_count == 3) { // got vps/sps/pps
                 e = p - 1;
+                end = 1;
                 break;
             }
-            if(((p[3]>>1) & 0x3f) == 32) { // vps
-            if(!ps_start) {
-                b = p;
-                ps_start = 1;
-            }
+            if (((p[3]>>1) & 0x3f) == 32) { // vps
+                if (!ps_start) {
+                    b = p;
+                    ps_start = 1;
+                }
                 ps_count++;
             }
-            if(((p[3]>>1) & 0x3f) == 33) { // sps
+            if (((p[3]>>1) & 0x3f) == 33) { // sps
                 ps_count++;
             }
-            if(((p[3]>>1) & 0x3f) == 34) { // pps
+            if (((p[3]>>1) & 0x3f) == 34) { // pps
                 ps_count++;
             }
             p += 3;
@@ -1867,7 +1864,7 @@ static int get_hevc_csd_packet(AVFormatContext *s, AVStream * st, const uint8_t 
         p++;
     }
 
-    if(ps_count != 3) {
+    if (!end) {
         av_log(NULL,AV_LOG_ERROR,"Could not get hevc csd data from ts packet!\n");
         return -1;
     }
@@ -1993,35 +1990,27 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
             return ret;
     }
 
-    if(tss->type == MPEGTS_PES) {
+    if (tss->type == MPEGTS_PES) {
         PESContext *pc = tss->u.pes_filter.opaque;
-        if(pc) {
+        if (pc) {
             AVStream * st = pc->st;
-            if(st) {
-                if(ts->first_packet == 1 && (st->codec->codec_id == CODEC_ID_MPEG2VIDEO || st->codec->codec_id == CODEC_ID_H264 || st->codec->codec_id == CODEC_ID_HEVC )) {
-					
-                  
-                 if(st->codec->codec_id == CODEC_ID_MPEG2VIDEO)
-                 	{
-                      if(get_mpeg_seq_packet(s, packet) < 0)
- 		               { 
-                           //av_log(s, AV_LOG_INFO, "get  mpeg seq packet fail ! \n");
-                           return 0;
+            if (st) {
+                if (ts->first_packet == 1 && (st->codec->codec_id == CODEC_ID_MPEG2VIDEO || st->codec->codec_id == CODEC_ID_H264 || st->codec->codec_id == CODEC_ID_HEVC )) {
+                    if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO) {
+                        if (get_mpeg_seq_packet(s, packet) < 0) {
+                            //av_log(s, AV_LOG_INFO, "get  mpeg seq packet fail ! \n");
+                            return 0;
                       	}	  
-                 	} else if(st->codec->codec_id == CODEC_ID_H264)
-                 	{
-                      if(Get_H264_Header_Packet(s, packet) < 0)
- 		                {
- 		                    ///av_log(s, AV_LOG_INFO, "get  h264 header packet fail ! \n");	
-			                return 0;
-                      	} 
-		 			  
-                 	} else         	 {
-                 	   get_hevc_csd_packet(s, st, packet);
-		              ts->is_hevc = 1;
+                    } else if (st->codec->codec_id == CODEC_ID_H264) {
+                        if (Get_H264_Header_Packet(s, packet) < 0) {
+                            ///av_log(s, AV_LOG_INFO, "get  h264 header packet fail ! \n");
+                            return 0;
+                        }
+                    } else {
+                        ts->is_hevc = 1;
+                        ts->hevc_stream_index = st->index;
                  	}			  
-	       	 ts->first_packet = 0;		   
-                
+                    ts->first_packet = 0;
                 }
             }
         }
@@ -2391,6 +2380,8 @@ reget_packet_size:
     }
 
     ts->first_packet = 1;
+    ts->hevc_first_packet = 1;
+    ts->hevc_stream_index = -1;
     check_ac3_dts(s);
     avio_seek(pb, pos, SEEK_SET);
     return 0;
@@ -2494,14 +2485,23 @@ static int mpegts_read_packet(AVFormatContext *s,
                               AVPacket *pkt)
 {
 
-	int ret;
-	ret = mpegts_read_packet_inside(s,pkt);
-	if (ret == 0){
-		recalcpts_startwhetherornot(s,pkt);
-		recalcpts_pts(s,pkt);
-	}			
+    int ret;
+    ret = mpegts_read_packet_inside(s, pkt);
+    if (ret == 0) {
+        recalcpts_startwhetherornot(s, pkt);
+        recalcpts_pts(s,pkt);
+    }
 
-	return ret;
+    // parse hevc csd from first frame.
+    // maybe a lot data among a few ts packets.
+    MpegTSContext *ts = s->priv_data;
+    if (ts->is_hevc == 1 && ts->hevc_first_packet == 1 && pkt->stream_index == ts->hevc_stream_index) {
+        AVStream * st = s->streams[ts->hevc_stream_index];
+        get_hevc_csd_packet(s, st, pkt);
+        ts->hevc_first_packet = 0;
+    }
+
+    return ret;
 }
 static int mpegts_read_close(AVFormatContext *s)
 {
