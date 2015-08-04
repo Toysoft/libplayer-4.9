@@ -2575,6 +2575,7 @@ static int read_seek2sync(AVFormatContext *s,
     int stream_index_gen_search;
     AVStream *st;
     AVParserState *backup;
+    int64_t starttime = av_gettime();
 
     backup = ff_store_parser_state(s);
 
@@ -2613,7 +2614,7 @@ static int read_seek2sync(AVFormatContext *s,
             return -1;
         }
     }
-
+    av_log(NULL,AV_LOG_INFO,"%s:%d cost time:%d ms\n", __FUNCTION__, __LINE__, ((int)(av_gettime() - starttime))/1000 );
     // search for actual matching keyframe/starting position for all streams
     if (ff_gen_syncpoint_search(s, stream_index, pos,
                                 min_ts, target_ts, max_ts,
@@ -2623,24 +2624,30 @@ static int read_seek2sync(AVFormatContext *s,
     }
 
     ff_free_parser_state(s, backup);
+    av_log(NULL,AV_LOG_INFO,"%s:%d cost time:%d ms\n", __FUNCTION__, __LINE__, ((int)(av_gettime() - starttime))/1000 );
     return 0;
 }
 
 static int read_seek2(AVFormatContext *s, int stream_index, int64_t target_ts, int flags)
 {
     int ret;
+    int64_t starttime = av_gettime();
+
     if (flags & AVSEEK_FLAG_BACKWARD) {
         flags &= ~AVSEEK_FLAG_BACKWARD;
         ret = read_seek2sync(s, stream_index, INT64_MIN, target_ts, target_ts, flags);
+        av_log(NULL,AV_LOG_INFO,"%s:%d cost time:%d ms\n", __FUNCTION__, __LINE__, ((int)(av_gettime() - starttime))/1000 );
         if (ret < 0)
             // for compatibility reasons, seek to the best-fitting timestamp
-            ret = read_seek2sync(s, stream_index, INT64_MIN, target_ts, INT64_MAX, flags);
+             ret = read_seek2sync(s, stream_index, INT64_MIN, target_ts, INT64_MAX, flags);
     } else {
         ret = read_seek2sync(s, stream_index, target_ts, target_ts, INT64_MAX, flags);
+        av_log(NULL,AV_LOG_INFO,"%s:%d cost time:%d ms\n", __FUNCTION__, __LINE__, ((int)(av_gettime() - starttime))/1000 );
         if (ret < 0)
             // for compatibility reasons, seek to the best-fitting timestamp
             ret = read_seek2sync(s, stream_index, INT64_MIN, target_ts, INT64_MAX, flags);
     }
+    av_log(NULL,AV_LOG_INFO,"%s:%d cost time:%d ms\n", __FUNCTION__, __LINE__, ((int)(av_gettime() - starttime))/1000 );
     return ret;
 }
 

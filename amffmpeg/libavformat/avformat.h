@@ -940,11 +940,12 @@ typedef struct AVFormatContext {
 	int skip_extradata;
 	
     // ts header packet for mpeg seq, 264/hevc sps/pps/vps 
-       int ts_video_header_valid; 
-       uint8_t ts_video_header_packet[188];
-
-	int64_t seek_pos_max;
-	int64_t seek_timestamp_max;
+    int ts_video_header_valid;
+    uint8_t ts_video_header_packet[188];
+    int64_t seek_pos_min;
+    int64_t seek_timestamp_min;
+    int64_t seek_pos_max;
+    int64_t seek_timestamp_max;
 } AVFormatContext;
 
 typedef struct AVPacketList {

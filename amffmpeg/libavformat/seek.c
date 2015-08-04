@@ -113,6 +113,7 @@ static void search_hi_lo_keyframes(AVFormatContext *s,
     int64_t pts, dts;   // PTS/DTS from stream
     int64_t ts;         // PTS in stream-local time base or position for byte seeking
     AVRational ts_tb;   // Time base of the stream or 1:1 for byte seeking
+    int64_t starttime = av_gettime();
 
     for (;;) {
         if (av_read_frame(s, &pkt) < 0) {
@@ -221,6 +222,12 @@ static void search_hi_lo_keyframes(AVFormatContext *s,
                     (*found_hi)++;
                     sp->ts_hi  = ts;
                     sp->pos_hi = pos;
+                    if (sp->pos_lo == INT64_MAX) {
+                        /*if the first pts is bigger than target ts,
+                          we need restart the search.
+                        */
+                        break;
+                    }
                     if (*found_hi >= keyframes_to_find && first_iter) {
                         // We found high frame for all. They may get updated
                         // to TS closer to target TS in later iterations (which
@@ -238,6 +245,7 @@ static void search_hi_lo_keyframes(AVFormatContext *s,
 
     // Clean up the parser.
     ff_read_frame_flush(s);
+    av_log(NULL,AV_LOG_INFO,"%s:%d cost time:%d ms\n", __FUNCTION__, __LINE__, ((int)(av_gettime() - starttime))/1000 );
 }
 
 int64_t ff_gen_syncpoint_search(AVFormatContext *s,
@@ -259,7 +267,7 @@ int64_t ff_gen_syncpoint_search(AVFormatContext *s,
     int64_t min_pos = 0;
     int first_iter = 1;
     AVRational time_base;
-
+    int64_t starttime = av_gettime();
     if (flags & AVSEEK_FLAG_BYTE) {
         // for byte seeking, we have exact 1:1 "timestamps" - positions
         time_base.num = 1;
@@ -307,11 +315,14 @@ int64_t ff_gen_syncpoint_search(AVFormatContext *s,
         av_free(sync);
         return -1;
     }
-
     // Find keyframes in all active streams with timestamp/position just before
     // and just after requested timestamp/position.
     if(s->bit_rate > 0) { // use bitrate as step size, prevent more search loop.
-        step = s->bit_rate * 10 / 8;
+        step = s->bit_rate * 2 / 8;
+        if (step < 32 * 1024)
+            step = 32 *1024;
+        if (step > 32 * 1024 * 1024)
+            step = 32 * 1024 *1024;
     } else {
         step = s->pb->buffer_size;
     }
@@ -350,8 +361,10 @@ int64_t ff_gen_syncpoint_search(AVFormatContext *s,
             sp->last_pos = curpos;
         }
         first_iter = 0;
+        av_log(NULL,AV_LOG_INFO,"search_hi_lo_keyframes :lo:%d hi:%d ,step %lld\n",
+            __FUNCTION__, __LINE__, found_lo, found_hi,
+            step);
     }
-
     // Find actual position to start decoding so that decoder synchronizes
     // closest to ts and between ts_min and ts_max.
     pos = INT64_MAX;
@@ -388,7 +401,7 @@ int64_t ff_gen_syncpoint_search(AVFormatContext *s,
                 pos = min_pos;
         }
     }
-
+    av_log(NULL,AV_LOG_INFO,"%s:%d cost time:%d ms\n", __FUNCTION__, __LINE__, ((int)(av_gettime() - starttime))/1000 );
     avio_seek(s->pb, pos, SEEK_SET);
     av_free(sync);
     return pos;

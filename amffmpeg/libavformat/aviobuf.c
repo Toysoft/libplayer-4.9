@@ -301,11 +301,11 @@ int url_clear_seek_flags(AVIOContext *s,unsigned int flags)
 
 int url_start_user_seek(AVIOContext *s)
 {	
-	return url_set_seek_flags(s,LESS_READ_SEEK);
+	return url_set_seek_flags(s,LESS_READ_SEEK | PLAYER_ON_SEEKING);
 }
 int url_finished_user_seek(AVIOContext *s)
 {
-	return url_clear_seek_flags(s,LESS_READ_SEEK);
+	return url_clear_seek_flags(s,LESS_READ_SEEK | PLAYER_ON_SEEKING);
 }
 int url_set_more_data_seek(AVIOContext *s)
 {	

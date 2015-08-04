@@ -1653,7 +1653,11 @@ got_packet:
                     int64_t old_pts = pkt->pts;
                     int64_t old_dts = pkt->dts;
                     compute_pkt_fields(s, st, st->parser, pkt);
-                    if (!strcmp(s->iformat->name, "mpegts"))
+                    if (!strcmp(s->iformat->name, "mpegts") &&
+                        !(s->pb && (s->pb->seekflags & PLAYER_ON_SEEKING)))
+                        /*for mpegts compute pts error,
+                          but if on seek,compute all pts,ignore the errors.
+                        */
                     {
                         pkt->pts = old_pts;
                         pkt->dts = old_dts;
@@ -2124,18 +2128,26 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts, i
     int max_retry_search = 20;
     int no_exact_seek = 0;
     int64_t seek_finish_range = -1;
+    int64_t starttime = av_gettime();
+
     if (s->pb && s->pb->is_slowmedia)
     {
         max_retry_search = am_getconfig_float_def("media.libplayer.maxseekretry", 10);
         seek_finish_range = (int64_t)am_getconfig_int_def("libplayer.seek.finish_range", 10 * 90000); // default 10s
         no_exact_seek = 1;
     }
-    av_dlog(s, "gen_seek: %d %"PRId64"\n", stream_index, target_ts);
-    av_log(NULL, NULL, "gen_seek: %d %"PRId64"\n", stream_index, target_ts);
-    if (ts_min == AV_NOPTS_VALUE)
+    av_log(NULL, AV_LOG_INFO, "gen_seek: %d %"PRId64"\n", stream_index, target_ts);
+
+    if (s->seek_timestamp_max != 0)
+    {
+        pos_min = s->seek_pos_min;
+        ts_min = s->seek_timestamp_min;
+    }
+    if (ts_min == AV_NOPTS_VALUE )
     {
         pos_min = s->data_offset;
         ts_min = read_timestamp(s, stream_index, &pos_min, INT64_MAX);
+        av_log(NULL, AV_LOG_ERROR, "%s:%d ts_min =%lld\n",__FUNCTION__,__LINE__,ts_min);
         if (ts_min == AV_NOPTS_VALUE)
         {
             av_log(NULL, AV_LOG_ERROR, "av_gen_search failed, first pts not found\n");
@@ -2147,6 +2159,7 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts, i
         ts_max  = s->seek_timestamp_max;
         pos_max = s->seek_pos_max;
         pos_limit = pos_max;
+        av_log(NULL, AV_LOG_ERROR, "%s:%d ts_max =%lld\n",__FUNCTION__,__LINE__,ts_max);
     }
     if (ts_max == AV_NOPTS_VALUE || ts_max < target_ts)
     {
@@ -2199,6 +2212,9 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts, i
     {
         pos_limit = pos_min;
     }
+    av_log(NULL,AV_LOG_INFO,"%s:%d cost time:%d ms\n", __FUNCTION__, __LINE__, ((int)(av_gettime() - starttime))/1000 );
+    s->seek_timestamp_min= ts_min;
+    s->seek_pos_min = pos_min;
     s->seek_timestamp_max = ts_max;
     s->seek_pos_max = pos_max;
     no_change = 0;
@@ -2285,9 +2301,10 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts, i
     ts_min = read_timestamp(s, stream_index, &pos_min, INT64_MAX);
     pos_min++;
     ts_max = read_timestamp(s, stream_index, &pos_min, INT64_MAX);
-    av_dlog(s, "pos=0x%"PRIx64" %"PRId64"<=%"PRId64"<=%"PRId64"\n",
+    av_log(s, AV_LOG_INFO,"av_gen_search pos=0x%"PRIx64" %"PRId64"<=%"PRId64"<=%"PRId64"\n",
             pos, ts_min, target_ts, ts_max);
     *ts_ret = ts;
+    av_log(NULL,AV_LOG_INFO,"%s:%d cost time:%d ms\n", __FUNCTION__, __LINE__, ((int)(av_gettime() - starttime))/1000 );
     return pos;
 }
 
