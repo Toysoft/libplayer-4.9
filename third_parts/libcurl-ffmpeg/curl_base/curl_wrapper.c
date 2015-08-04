@@ -154,7 +154,13 @@ static size_t curl_dl_chunkdata_callback(void *ptr, size_t size, size_t nmemb, v
                 return -1;
             }
         }
-        pthread_cond_wait(&mem->handle->pthread_cond, &mem->handle->fifo_mutex);
+
+        struct timeval now;
+        struct timespec timeout;
+        gettimeofday(&now, NULL);
+        timeout.tv_sec = now.tv_sec + (200 * 1000 + now.tv_usec) / 1000000;
+        timeout.tv_nsec = now.tv_usec * 1000;
+        pthread_cond_timedwait(&mem->handle->pthread_cond, &mem->handle->fifo_mutex, &timeout); // 200ms
         left = curl_fifo_space(mem->handle->cfifo);
     }
     curl_fifo_generic_write(mem->handle->cfifo, ptr, realsize, NULL);

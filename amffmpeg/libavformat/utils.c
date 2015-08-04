@@ -3722,7 +3722,7 @@ int av_find_stream_info(AVFormatContext *ic)
         {
             fast_switch = FLV_PARSE_MODE;
         }
-        else if (strcmp(ic->iformat->name, "mpegts") && strcmp(ic->iformat->name, "rtsp"))
+        else if (strcmp(ic->iformat->name, "mpegts") && strcmp(ic->iformat->name, "rtsp") && !ic->is_dash_demuxer && strcmp(ic->iformat->name, "dash"))
         {
             /*not ts. always do full parser.*/
             fast_switch = 0;

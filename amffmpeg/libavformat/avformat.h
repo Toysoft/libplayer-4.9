@@ -946,6 +946,9 @@ typedef struct AVFormatContext {
     int64_t seek_timestamp_min;
     int64_t seek_pos_max;
     int64_t seek_timestamp_max;
+
+    // dash parse.
+    int is_dash_demuxer;
 } AVFormatContext;
 
 typedef struct AVPacketList {

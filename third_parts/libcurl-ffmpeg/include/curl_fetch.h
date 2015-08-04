@@ -25,6 +25,10 @@ typedef struct _CFContext {
     struct curl_slist * chunk;
 } CFContext;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 CFContext * curl_fetch_init(const char * uri, const char * headers, int flags);
 int curl_fetch_open(CFContext * handle);
 int curl_fetch_http_keepalive_open(CFContext * handle, const char * uri);
@@ -36,5 +40,9 @@ int curl_fetch_http_set_cookie(CFContext * handle, const char * cookie);
 int curl_fetch_get_info(CFContext * handle, curl_info cmd, uint32_t flag, void * info);
 void curl_fetch_register_interrupt(CFContext * handle, interruptcallback pfunc);
 //int curl_fetch_interrupt(CFContext * handle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
