@@ -763,7 +763,7 @@ static unsigned int get_current_time(play_para_t *p_para)
             if (!set_discontinue && is_chapter_discontinue(p_para)) {
                 p_para->discontinue_point = p_para->state.current_time;
                 set_discontinue = 1;
-                p_para->discontinue_flag = 1;
+                p_para->discontinue_flag = 0;
                 log_info("vpts discontinue, point=%d\n", p_para->discontinue_point);
                 //discontinue handled, remove audio discontinue flag
                 if (p_para->astream_info.has_audio && codec) {
@@ -796,7 +796,7 @@ static unsigned int get_current_time(play_para_t *p_para)
             (p_para->state.current_time < p_para->state.last_time)*/) {
                 p_para->discontinue_point = p_para->state.current_time;
                 set_discontinue = 1;
-                p_para->discontinue_flag = 1;
+                p_para->discontinue_flag = 0;
                 log_info("apts discontinue, point=%d\n", p_para->discontinue_point);
                 if (p_para->vstream_info.has_video && codec) {
                     codec_set_sync_video_discont(codec, 0);
