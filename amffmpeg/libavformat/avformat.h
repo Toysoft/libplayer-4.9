@@ -660,6 +660,8 @@ typedef struct AVStream {
     int encrypt;
      int no_program;
     int stream_valid;
+
+    int need_check_avs_version; //check avs version
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1

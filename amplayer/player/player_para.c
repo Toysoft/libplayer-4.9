@@ -855,6 +855,12 @@ static void get_stream_info(play_para_t *p_para)
             if ((p_para->vstream_info.video_width * p_para->vstream_info.video_height) > (1920 * 1088)) {
                 unsupported_video = 1;
             }
+        } else if (p_para->vstream_info.video_format == VFORMAT_AVS) {
+            if (p_para->pFormatCtx->streams[video_index]->codec->profile == 1) {
+                unsupported_video = 1;
+                log_print("[%s:%d]avs+, not support now!\n", __FUNCTION__, __LINE__);
+
+            }
         } else {
             if (p_para->vstream_info.video_format == VFORMAT_HEVC) {
                 unsupported_video = p_para->pFormatCtx->streams[video_index]->codec->long_term_ref_pic == 1;

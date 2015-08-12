@@ -678,6 +678,9 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
     st->codec->codec_tag = pes->stream_type;
 
     mpegts_find_stream_type(st, pes->stream_type, ISO_types);
+    if (st->codec->codec_id == CODEC_ID_CAVS)
+        st->need_check_avs_version = 1;
+
     if (st->codec->codec_id == CODEC_ID_NONE) {
         mpegts_find_stream_type(st, pes->stream_type, HDMV_types);
         if ((prog_reg_desc == AV_RL32("HDMV")) || (prog_reg_desc == AV_RL32("HDPR"))) {
@@ -1248,6 +1251,12 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
     case 0x52: /* stream identifier descriptor */
         st->stream_identifier = 1 + get8(pp, desc_end);
         break;
+    case 0x3f: /* avs descriptor */
+        {
+            int profile_id = get8(pp, desc_end);
+            //av_log(NULL,AV_LOG_ERROR,"avs profile_id:%x\n", profile_id);
+        }
+        break;
     default:
         break;
     }
@@ -1743,6 +1752,26 @@ static int get_hevc_csd_packet(AVFormatContext *s, AVStream * st, const uint8_t 
 }
 #endif
 
+static int  check_avs_version(AVFormatContext *s, const uint8_t *packet)
+{
+    //avs version : avs: 0; avs+: 1
+    uint8_t * p = packet;
+    int avs_version = -1;
+    int i;
+    for (i = 0;i < TS_PACKET_SIZE -5; i++) {
+        if (p[i] == 0 && p[i+1] == 0 && p[i+2] == 1 && p[i+3] == 0xb0) {
+            if (p[i+4] == 0x48) {
+                avs_version = 1;
+            } else {
+                avs_version = 0;
+            }
+            break;
+        }
+    }
+
+    return avs_version;
+}
+
 static int   get_mpeg_seq_packet(AVFormatContext *s, const uint8_t *packet)
 {
     uint32_t  i,j;
@@ -1984,6 +2013,26 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
         }
     } else {
         int ret;
+
+        PESContext *pc = tss->u.pes_filter.opaque;
+        if (pc) {
+            AVStream * st = pc->st;
+            if (st && st->codec->codec_id == CODEC_ID_CAVS && st->need_check_avs_version == 1) {
+                int avs_version = check_avs_version(s, packet);
+                //av_log(ts->stream, AV_LOG_ERROR, "check_avs_version: %d\n", avs_version);
+                if (avs_version == 1) {
+                    //Note: Now no support avs+
+                    st->codec->profile = 1;
+                    st->need_check_avs_version = 0;
+                    return 0;
+                } else if(avs_version == 0) {
+                    st->codec->profile = 0;
+                    st->need_check_avs_version = 0;
+                }
+            }
+
+        }
+
         // Note: The position here points actually behind the current packet.
         if ((ret = tss->u.pes_filter.pes_cb(tss, p, p_end - p, is_start,
                                             pos - ts->raw_packet_size)) < 0)
