@@ -406,78 +406,93 @@ static AVStream *create_stream(AVFormatContext *s, int is_audio){
 
 static int flv_read_avcodec_info(AVFormatContext *s)
 {
-	AVStream *ast = NULL, *vst = NULL, *st;
-	int64_t old_offset, next;
-	int type, size, info;	
-	int i = 0;
+    AVStream *ast = NULL, *vst = NULL, *st;
+    int64_t old_offset, next;
+    int type, size, info;
+    int i = 0;
 
-	if((!s->seekable) || (!s->support_seek))
-		return ;
-	
-	/* find av stream */		
-    do{
-        st = s->streams[i];		         
-		if(st->id == 0 && vst == NULL){	
-			vst = st;	
-    	}
-		if(st->id == 1 && ast == NULL){	
-			ast = st;	 
-    	}
+    if ((!s->seekable) || (!s->support_seek)) {
+        return 0;
+    }
+
+    /* find av stream */
+    do {
+        st = s->streams[i];
+        if (st->id == 0 && vst == NULL) {
+            vst = st;
+        }
+        if (st->id == 1 && ast == NULL) {
+            ast = st;
+        }
         i ++;
-    }while(i<s->nb_streams && (ast == NULL || vst == NULL));	
-	
-	old_offset = avio_tell(s->pb);
-	
-	do{	
-	    type = avio_r8(s->pb);
-		size = avio_rb24(s->pb);		
-		avio_skip(s->pb, 7); /* dts:4bytes streamid:3bytes */
-		
-		if (url_feof(s->pb))
-        	return AVERROR_EOF;
-		
-		if(size == 0)
-        	continue;
-		
-		next= size + avio_tell(s->pb);
-		if (type == FLV_TAG_TYPE_VIDEO) {
-            if(!vst)
-            {
-                if(!create_stream(s, 0))
+    } while (i < s->nb_streams && (ast == NULL || vst == NULL));
+
+    old_offset = avio_tell(s->pb);
+
+    int find_stream_nb = 0, audio_flag = 0, video_flag = 0;
+    do {
+        type = avio_r8(s->pb);
+        size = avio_rb24(s->pb);
+        avio_skip(s->pb, 7); /* dts:4bytes streamid:3bytes */
+
+        if (url_feof(s->pb)) {
+            return AVERROR_EOF;
+        }
+
+        if (size == 0) {
+            continue;
+        }
+
+        next= size + avio_tell(s->pb);
+        if (type == FLV_TAG_TYPE_VIDEO) {
+            if (!vst) {
+                if (!create_stream(s, 0)) {
                     return AVERROR(ENOMEM);
+                }
                 vst = s->streams[0];
             }
-		  	if(vst && vst->codec->codec_id == 0) {			
-				info = avio_r8(s->pb);	//get video info
-				if ((info & 0xf0) == 0x50){ /* video info / command frame */
-					goto skip;
-				}	 
-				flv_set_video_codec(s, vst, info & FLV_VIDEO_CODECID_MASK);	
-				av_log(s, AV_LOG_INFO, "[%s]vst->codec->codec_id =%x\n", __FUNCTION__, vst->codec->codec_id);
-		  	}
-		}
-		else if(type == FLV_TAG_TYPE_AUDIO) {
-            if(!ast)
+            if (vst && vst->codec->codec_id == 0) {
+                info = avio_r8(s->pb);	//get video info
+                if ((info & 0xf0) == 0x50) { /* video info / command frame */
+                    goto skip;
+                }
+                flv_set_video_codec(s, vst, info & FLV_VIDEO_CODECID_MASK);
+                av_log(s, AV_LOG_INFO, "[%s]vst->codec->codec_id =%x\n", __FUNCTION__, vst->codec->codec_id);
+            }
+        } else if (type == FLV_TAG_TYPE_AUDIO) {
+            if (!ast)
             {
-                if(!create_stream(s, 1))
+                if (!create_stream(s, 1)) {
                     return AVERROR(ENOMEM);
+                }
                 ast = s->streams[1];
             }
-			if(ast && ast->codec->codec_id == 0){
-				 info = avio_r8(s->pb);	//get audio info		
-				 flv_set_audio_codec(s, ast, info & FLV_AUDIO_CODECID_MASK);	
-				 av_log(s, AV_LOG_INFO, "[%s]ast->codec->codec_id =%x\n", __FUNCTION__, ast->codec->codec_id);
-	  		}
-		}
-		if((vst && vst->codec->codec_id != 0) && (ast && ast->codec->codec_id != 0))
-			break;
-		skip:
-			avio_seek(s->pb, next, SEEK_SET);
-			avio_skip(s->pb, 4);    
-       		continue;		
-	}while(1);
-	avio_seek(s->pb, old_offset, SEEK_SET);
-	return 0;
+            if (ast && ast->codec->codec_id == 0) {
+                info = avio_r8(s->pb);	//get audio info
+                flv_set_audio_codec(s, ast, info & FLV_AUDIO_CODECID_MASK);
+                av_log(s, AV_LOG_INFO, "[%s]ast->codec->codec_id =%x\n", __FUNCTION__, ast->codec->codec_id);
+            }
+        }
+
+        if (!video_flag && vst && vst->codec->codec_id != 0) {
+            find_stream_nb++;
+            video_flag = 1;
+        }
+        if (!audio_flag && ast && ast->codec->codec_id != 0) {
+            find_stream_nb++;
+            audio_flag = 1;
+        }
+        if (find_stream_nb == s->nb_streams) {
+            break;
+        }
+
+skip:
+        avio_seek(s->pb, next, SEEK_SET);
+        avio_skip(s->pb, 4);
+        continue;
+    } while (1);
+    avio_seek(s->pb, old_offset, SEEK_SET);
+    return 0;
 }
 
 static int flv_read_header(AVFormatContext *s,
@@ -495,7 +510,7 @@ static int flv_read_header(AVFormatContext *s,
     }
 
     if((flags & (FLV_HEADER_FLAG_HASVIDEO|FLV_HEADER_FLAG_HASAUDIO))
-             != (FLV_HEADER_FLAG_HASVIDEO|FLV_HEADER_FLAG_HASAUDIO))
+             == 0)
         s->ctx_flags |= AVFMTCTX_NOHEADER;
 
     if(flags & FLV_HEADER_FLAG_HASVIDEO){
