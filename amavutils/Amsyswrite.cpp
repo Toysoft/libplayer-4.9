@@ -96,7 +96,7 @@ int amSystemWriteGetPropertyStr(const char* key, char* def, char* value)
     if(sws != 0){
         String16 v;
         String16 d(def);
-        sws->getPropertyString(String16(key), d, v);
+        sws->getPropertyString(String16(key), v, d);
         strcpy(value, String8(v).string());
     }
     strcpy(value, def);
