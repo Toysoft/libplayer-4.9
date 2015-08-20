@@ -324,8 +324,8 @@ int av_filename_number_test(const char *filename)
 AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened, int *score_ret)
 {
     AVProbeData lpd = *pd;
-    AVInputFormat *fmt1 = NULL, *fmt;
-    int score, score_max = 0;
+    AVInputFormat *fmt1 = NULL, *fmt = NULL, *cmf_fmt = NULL;
+    int score, score_max = 0, cmf_flag = 0;
     if (lpd.buf_size > 10 && ff_id3v2_match(lpd.buf, ID3v2_DEFAULT_MAGIC))
     {
         int id3len = ff_id3v2_tag_len(lpd.buf);
@@ -335,7 +335,7 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened, int *score
             lpd.buf_size -= id3len;
         }
     }
-    fmt = NULL;
+
     while ((fmt1 = av_iformat_next(fmt1)))
     {
         if (!is_opened == !(fmt1->flags & AVFMT_NOFILE))
@@ -354,39 +354,34 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened, int *score
                 score = 50;
             }
         }
+        if (!strncmp(fmt1->name, "cmf", 3) && score == AVPROBE_SCORE_MAX) {
+            cmf_fmt = fmt1;
+        }
+        if (cmf_fmt && score == AVPROBE_SCORE_MAX) {
+            if (am_getconfig_bool("media.libplayer.tsincmf") && !strncmp(fmt1->name, "mpegts", 6)) {
+                cmf_flag = 1;
+            } else if (!strncmp(fmt1->name, "flv", 3) || !strncmp(fmt1->name, "mov", 3)) {
+                cmf_flag = 1;
+            }
+        }
         if (score > score_max)
         {
-            score_max = score;
-            fmt = fmt1;
+            if (strncmp(fmt1->name, "cmf", 3)) { // skip cmf
+                score_max = score;
+                fmt = fmt1;
+            }
         }
         else if (score == score_max)
         {
-            int cmf_config = am_getconfig_bool("media.libplayer.tsincmf");
-            if (score == AVPROBE_SCORE_MAX)
-            {
-                if (!strncmp(fmt->name, "cmf", 3))
-                {
-                    if (cmf_config && !strncmp(fmt1->name, "mpegts", 6))
-                    {
-                        continue;
-                    }
-                    else if (!strncmp(fmt1->name, "flv", 3) || !strncmp(fmt1->name, "mov", 3))
-                    {
-                        continue;
-                    }
-                    else
-                    {
-                        fmt = fmt1;
-                        continue;
-                    }
-                }
-            }
             fmt = NULL;
         }
     }
     *score_ret = score_max;
     if (lpd.pads[0] != 0)
         memcpy(pd->pads, lpd.pads, sizeof(lpd.pads));
+    if (cmf_flag) {
+        fmt = cmf_fmt;
+    }
     return fmt;
 }
 
