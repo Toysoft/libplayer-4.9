@@ -537,6 +537,12 @@ static unsigned int handle_current_time(play_para_t *para, unsigned int scr, uns
             // no audio, pcr will wait video for 3s, so compare
             return 0;
         }
+        /* tsync.c timestamp_pcrscr_set(param -VIDEO_HOLD_THRESHOLD)
+                    PCR may be set to a negative number */
+        if ( scr > ~(PTS_FREQ *3) && pts < PTS_FREQ *3) {
+            log_print("[%s] scr %x, give pts %x\n", __FUNCTION__,  scr, pts);
+            return pts;
+        }
         return scr;
     } else {
         return 0;
