@@ -2264,7 +2264,6 @@ int m3u_session_open(const char* baseUrl, const char* headers, void** hSession, 
         }
         session->is_except = strcmp(EXCEPSOURCE, session->baseUrl);
         for (i = 0; i < node_num; i++) {
-
             M3uBaseNode* node = m3u_get_node_by_index(base_list, i);
             if (node == NULL) {
                 LOGE("Failed to get node\n");
@@ -2275,6 +2274,16 @@ int m3u_session_open(const char* baseUrl, const char* headers, void** hSession, 
                 ret = -1;
                 goto fail_open;
             }
+            if (node->bandwidth > filter_threshold) {
+                break;
+            }
+        }
+        if (i == node_num) { // all audio streams.
+            filter_threshold = 0;
+        }
+        for (i = 0; i < node_num; i++) {
+
+            M3uBaseNode* node = m3u_get_node_by_index(base_list, i);
 
 #if 1
             if (node->bandwidth > 0 && ((node->bandwidth < filter_threshold && node->bandwidth > BANDWIDTH_THRESHOLD)
