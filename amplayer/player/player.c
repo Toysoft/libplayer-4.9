@@ -365,7 +365,7 @@ void check_msg(play_para_t *para, player_cmd_t *msg)
             update_playing_info(para);
             update_player_states(para, 1);
         } else {
-            if (para->state.full_time == -1 && msg->f_param == 0) {
+            if (para->state.full_time == -1/* && msg->f_param == 0*/) {
                 log_print("not support seek when fulltime is -1\n", para->player_id);
                 return;
             }
