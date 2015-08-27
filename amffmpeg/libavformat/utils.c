@@ -2099,6 +2099,10 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
     {
         /*when network, ignore big difference*/
     }
+    else if (!memcmp(s->iformat->name, "mpegts", 6))
+    {
+        /*when mpegts, ignore big difference*/
+    }
     else
     {
         if (ts > target_ts && (ts - target_ts) > ts_limit)
@@ -2124,6 +2128,7 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts, i
     int no_exact_seek = 0;
     int64_t seek_finish_range = -1;
     int64_t starttime = av_gettime();
+    int need_reset_tsmin = 1;
 
     if (s->pb && s->pb->is_slowmedia)
     {
@@ -2133,7 +2138,14 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts, i
     }
     av_log(NULL, AV_LOG_INFO, "gen_seek: %d %"PRId64"\n", stream_index, target_ts);
 
-    if (s->seek_timestamp_max != 0)
+    //Add for MPEGTS can't seek backward at a large distance
+    if ((flags & AVSEEK_FLAG_BACKWARD)
+        && !memcmp(s->iformat->name, "mpegts", 6)
+        && ts_min != AV_NOPTS_VALUE ){
+        need_reset_tsmin = 0;
+    }
+
+    if ((s->seek_timestamp_max != 0) && (need_reset_tsmin == 1))
     {
         pos_min = s->seek_pos_min;
         ts_min = s->seek_timestamp_min;
