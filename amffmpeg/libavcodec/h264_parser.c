@@ -151,6 +151,9 @@ static inline int parse_nal_units(AVCodecParserContext *s,
         init_get_bits(&h->s.gb, ptr, 8*dst_length);
         switch(h->nal_unit_type) {
         case NAL_SPS:
+            if (avctx->width > 0 && avctx->height > 0) {
+                break;
+            }
             ff_h264_decode_seq_parameter_set(h);
             avctx->width = h->width;
             avctx->height = h->height;
@@ -253,7 +256,11 @@ static int h264_parse(AVCodecParserContext *s,
         h->got_first = 1;
         if (avctx->extradata_size) {
             h->s.avctx = avctx;
-            ff_h264_decode_extradata(h);
+            int ret = ff_h264_decode_extradata(h);
+            if (!ret) {
+                avctx->width = h->width;
+                avctx->height = h->height;
+            }
         }
     }
 
