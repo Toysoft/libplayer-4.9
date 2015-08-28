@@ -254,6 +254,20 @@ static int set_astream_info(play_para_t *p_para)
                     ainfo->audio_tag = MALLOC(sizeof(audio_tag_info));
                     get_tag_from_metadata(pCtx, ainfo->audio_tag);
                 }
+
+                AVDictionaryEntry *lang = av_dict_get(pStream->metadata, "language", NULL, 0);
+                if (lang) {
+                    log_print("[%s %d]Stream %d Audio_Lang_INFO: %s",__FUNCTION__,__LINE__,i,lang->value);
+                    int langlen=strlen(lang->value);
+                    if (langlen > 128) {
+                        log_print("Audio_Lang_INFO too long: cut it to 128 bytes");
+                        langlen = 128;
+                    }
+                    memcpy(ainfo->language,lang->value,langlen);
+                }else{
+                    log_print("[%s %d]Stream %d Audio_Language_INFO:unkbown\n",__FUNCTION__,__LINE__,i);
+                }
+
                 p_para->media_info.audio_info[anum] = ainfo;
                 anum ++;
                 if (anum > p_para->media_info.stream_info.total_audio_num) {
@@ -299,7 +313,12 @@ static int set_sstream_info(play_para_t *p_para)
                 sinfo->sub_type = pStream->codec->codec_id;
                 //sinfo->subtitle_size;
                 if (lang) {
-                    sinfo->sub_language = lang->value;
+                    int langlen = strlen(lang->value);
+                    if (langlen > 128) {
+                        log_print("Subtitle_Lang_INFO/%s too long: cut it to 128 bytes",lang->value);
+                        langlen = 128;
+                    }
+                    memcpy(sinfo->sub_language,lang->value,langlen);
                 }
                 p_para->media_info.sub_info[snum] = sinfo;
                 snum ++;

@@ -131,6 +131,7 @@ typedef struct {
     aformat_t aformat;
     int duration;
     audio_tag_info *audio_tag;
+    char language[128];
 } maudio_info_t;
 
 typedef struct {
@@ -142,7 +143,7 @@ typedef struct {
     unsigned int sub_type;
     char resolution;
     long long subtitle_size;
-    char *sub_language;
+    char sub_language[128];
 } msub_info_t;
 
 typedef struct {
