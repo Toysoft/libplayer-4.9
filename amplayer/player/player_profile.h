@@ -51,6 +51,11 @@ typedef struct {
     int exist;
 } sys_hmvc_profile_t;
 
+typedef struct {
+    int exist;
+    int support_avsplus;
+} sys_avs_profile_t;
+
 typedef struct _system_para_ {
     sys_h264_profile_t      h264_para;
     sys_hevc_profile_t      hevc_para;
@@ -61,6 +66,7 @@ typedef struct _system_para_ {
     sys_mjpeg_profile_t     mjpeg_para;
     sys_h264_4k2k_profile_t h264_4k2k_para;
     sys_hmvc_profile_t      hmvc_para;
+    sys_avs_profile_t       avs_para;
 } vdec_profile_t;
 
 /*for update player's profile */

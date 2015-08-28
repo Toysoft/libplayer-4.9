@@ -856,10 +856,10 @@ static void get_stream_info(play_para_t *p_para)
                 unsupported_video = 1;
             }
         } else if (p_para->vstream_info.video_format == VFORMAT_AVS) {
-            if (p_para->pFormatCtx->streams[video_index]->codec->profile == 1) {
+            if (p_para->pFormatCtx->streams[video_index]->codec->profile == 1
+                && !p_para->vdec_profile.avs_para.support_avsplus) {
                 unsupported_video = 1;
                 log_print("[%s:%d]avs+, not support now!\n", __FUNCTION__, __LINE__);
-
             }
         } else {
             if (p_para->vstream_info.video_format == VFORMAT_HEVC) {

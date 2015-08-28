@@ -147,6 +147,18 @@ static int parse_hmvc_param(char *str, sys_hmvc_profile_t *para, int size)
     return 0;
 }
 
+static int parse_avs_param(char *str, sys_avs_profile_t *para, int size)
+{
+    para->exist = 1;
+
+    log_info("hevc decoder exist.");
+
+    if (strstr(str, "avs+")) {
+        para->support_avsplus = 1;
+    }
+
+    return 0;
+}
 static int parse_param(char *str, char **substr, int size, vdec_profile_t *para)
 {
     if (!strcmp(*substr, "vc1:")) {
@@ -167,6 +179,8 @@ static int parse_param(char *str, char **substr, int size, vdec_profile_t *para)
         parse_h264_4k2k_param(str, &para->h264_4k2k_para, size);
     } else if (!strcmp(*substr, "hmvc:")) {
         parse_hmvc_param(str, &para->hmvc_para, size);
+    }else if (!strcmp(*substr, "avs:")) {
+        parse_avs_param(str, &para->avs_para, size);
     }
     return 0;
 }
@@ -176,8 +190,7 @@ static int parse_sysparam_str(vdec_profile_t *m_vdec_profiles, char *str)
     int i, j;
     int pos_start, pos_end;
     char *p;
-    char *substr[] = {"vc1:", "h264:", "real:", "mpeg12:", "mpeg4:", "mjpeg:", "h264_4k2k:", "hmvc:", "hevc:"};
-
+    char *substr[] = {"vc1:", "h264:", "real:", "mpeg12:", "mpeg4:", "mjpeg:", "h264_4k2k:", "hmvc:", "hevc:", "avs:"};
     for (j = 0; j < sizeof(substr) / sizeof(char *); j ++) {
         p = strstr(str, substr[j]);
         if (p != NULL) {
