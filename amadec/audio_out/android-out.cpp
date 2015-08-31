@@ -56,6 +56,12 @@ static int get_digitalraw_mode(void)
 #define DTSHD_IEC958_PKTTYPE_CORE      0 //common feature for DTSETC_DECODE_VERSION 350/380,so set it to 0 by default 
 #define DTSHD_IEC958_PKTTYPE_SINGLEI2S 1
 #define DTSHD_IEC958_PKTTYPE_FOURI2S   2
+//TODO:the following to copy defined according to
+//         </system/core/include/system/audio.h>
+//should add to  </system/core/include/system/audio.h> some day
+#define AUDIO_FORMAT_DTS_HD      0x0D000000
+#define AUDIO_FORMAT_DTS_MASTER  0x0E000000
+
 void restore_system_samplerate(struct aml_audio_dec* audec)
 {
 #if defined(ANDROID_VERSION_JBMR2_UP)
@@ -696,6 +702,7 @@ extern "C" int android_init_raw(struct aml_audio_dec* audec)
     audio_out_operations_t *out_ops = &audec->aout_ops;
     int SampleRate=audec->samplerate;
     out_ops->private_data_raw=NULL;
+    audio_format_t aformat = AUDIO_FORMAT_INVALID;
     if((audec->format!=ACODEC_FMT_DTS) &&
        (audec->format != ACODEC_FMT_AC3) &&
        (audec->format != ACODEC_FMT_EAC3) &&
@@ -707,13 +714,21 @@ extern "C" int android_init_raw(struct aml_audio_dec* audec)
           adec_print("[%s %d]DIGITAL_RAW WAS DISABLE !",__FUNCTION__,__LINE__);
           return 0;
     }
-    
-    
+
+    if (audec->format == ACODEC_FMT_DTS)
+        aformat = AUDIO_FORMAT_DTS;
+    else if(audec->format == ACODEC_FMT_AC3)
+        aformat = AUDIO_FORMAT_AC3;
+    else if(audec->format == ACODEC_FMT_EAC3)
+        aformat = AUDIO_FORMAT_EAC3;
+    else if(audec->format == ACODEC_FMT_TRUEHD)
+        aformat = AUDIO_FORMAT_TRUEHD;
+
     if(audec->format == ACODEC_FMT_TRUEHD){
         amsysfs_set_sysfs_int("/sys/class/audiodsp/digital_codec",7);
         audec->codec_type=16;
     }
-	
+
     int dgraw = amsysfs_get_sysfs_int("/sys/class/audiodsp/digital_raw");
     if(dgraw == 1){
         if((audec->format == ACODEC_FMT_AC3) ||
@@ -768,6 +783,10 @@ extern "C" int android_init_raw(struct aml_audio_dec* audec)
                 }else if(audec->DTSHDIEC958_FS==192000||audec->DTSHDIEC958_FS==176400){// clock need Mutiple 4
                     amsysfs_set_sysfs_int("/sys/class/audiodsp/digital_codec",5);
                     SampleRate=audec->DTSHDIEC958_FS/4;
+                    #if ANDROID_PLATFORM_SDK_VERSION >= 21//android 5.0
+                    aformat = (audio_format_t)AUDIO_FORMAT_DTS_HD;
+                    SampleRate=audec->DTSHDIEC958_FS;
+                    #endif
                 }else{
                     unvalidpara=1;
                 }
@@ -777,6 +796,10 @@ extern "C" int android_init_raw(struct aml_audio_dec* audec)
                 {
                     amsysfs_set_sysfs_int("/sys/class/audiodsp/digital_codec",8);
                     SampleRate=audec->DTSHDIEC958_FS/4;
+                    #if ANDROID_PLATFORM_SDK_VERSION >= 21//android 5.0
+                    aformat = (audio_format_t)AUDIO_FORMAT_DTS_MASTER;
+                    SampleRate=audec->DTSHDIEC958_FS;
+                    #endif
                 }else{
                     unvalidpara=2;
                 }
@@ -810,15 +833,6 @@ extern "C" int android_init_raw(struct aml_audio_dec* audec)
 
     int SessionID = 0;//audec->SessionID;
     adec_print("[%s %d]SessionID = %d audec->codec_type/%f audec->samplerate/%d",__FUNCTION__,__LINE__,SessionID,audec->codec_type,audec->samplerate);
-    audio_format_t aformat = AUDIO_FORMAT_INVALID;
-    if(audec->format == ACODEC_FMT_DTS)
-		aformat = AUDIO_FORMAT_DTS;
-    else if(audec->format == ACODEC_FMT_AC3)
-		aformat = AUDIO_FORMAT_AC3;
-    else if(audec->format == ACODEC_FMT_EAC3)
-		aformat = AUDIO_FORMAT_EAC3;
-    else if(audec->format == ACODEC_FMT_TRUEHD)
-        aformat = AUDIO_FORMAT_TRUEHD;
         
    status = track->set(AUDIO_STREAM_MUSIC,
         SampleRate,
