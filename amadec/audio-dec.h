@@ -195,6 +195,7 @@ struct aml_audio_dec {
     int DTSHDIEC958_PktFrmSize;
     int DTSHDIEC958_PktType;
     int DTSHDPCM_SamsInFrmAtMaxSR;
+    unsigned int has_video;
 };
 
 //from amcodec
@@ -212,6 +213,7 @@ typedef struct {
     int dspdec_not_supported;//check some profile that audiodsp decoder can not support,we switch to arm decoder
     int droppcm_flag;               // drop pcm flag, if switch audio (1)
     int automute;
+    unsigned int has_video;
 } arm_audio_info;
 
 typedef struct {

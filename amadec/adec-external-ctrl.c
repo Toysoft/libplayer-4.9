@@ -61,6 +61,7 @@ int audio_decode_init(void **handle, arm_audio_info *a_ainfo)
     audec->block_align = a_ainfo->block_align;
     audec->codec_id = a_ainfo->codec_id;
     audec->auto_mute = a_ainfo->automute;
+    audec->has_video=a_ainfo->has_video;
     if (a_ainfo->droppcm_flag) {
         audec->droppcm_flag = a_ainfo->droppcm_flag;
         a_ainfo->droppcm_flag = 0;
