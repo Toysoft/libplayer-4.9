@@ -899,7 +899,7 @@ int droppcm_get_refpts(aml_audio_dec_t *audec, unsigned long *refpts)
 #endif
 
 
-    while (!firstvpts) {
+    while (!firstvpts && audec->has_video) {
         if (audec->need_stop) {
             return 0;
         }
