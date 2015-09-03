@@ -211,6 +211,8 @@ int ffmpeg_open_file(play_para_t *am_p)
     if (am_p->byteiobufsize > 0) {
         byteiosize = am_p->byteiobufsize;
     }
+
+    int retry_count = 3;
     if (am_p->file_name != NULL) {
 Retry_open:
         //ret = av_open_input_file(&pFCtx, am_p->file_name, NULL, byteiosize, NULL, am_p->start_param ? am_p->start_param->headers : NULL);
@@ -225,9 +227,15 @@ Retry_open:
         if (am_getconfig_bool_def("media.amplayer.disp_url", 1) > 0) {
             log_print("[ffmpeg_open_file] file=%s,header=%s\n", am_p->file_name, header);
         }
+        if (url_interrupt_cb()) {
+            return FFMPEG_OPEN_FAILED;
+        }
         if (ret != 0) {
             if (ret == AVERROR(EAGAIN)) {
                 goto  Retry_open;
+            }
+            if (retry_count-- > 0) {
+                goto Retry_open;
             }
             log_print("ffmpeg error: Couldn't open input file! ret==%x\n", ret);
             return FFMPEG_OPEN_FAILED; // Couldn't open file
@@ -458,6 +466,12 @@ int ffmpeg_geturl_netstream_info(play_para_t* para, int type, void* value)
             ret = avio_getinfo(para->pFormatCtx->pb, AVCMD_GET_NETSTREAMINFO, 2, value);
         } else if (type == 3) { //download error code
             ret = avio_getinfo(para->pFormatCtx->pb, AVCMD_GET_NETSTREAMINFO, 3, value);
+        } else if (type == 4) { //estimate from ts segment
+            ret = avio_getinfo(para->pFormatCtx->pb, AVCMD_GET_NETSTREAMINFO, 4, value);
+        } else if (type == 5) { //hls livemode
+            ret = avio_getinfo(para->pFormatCtx->pb, AVCMD_GET_NETSTREAMINFO, 5, value);
+        } else if (type == 6) { //estimate bps
+            ret = avio_getinfo(para->pFormatCtx->pb, AVCMD_GET_NETSTREAMINFO, 6, value);
         }
     }
 

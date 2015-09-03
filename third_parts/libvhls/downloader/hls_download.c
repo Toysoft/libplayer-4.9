@@ -89,7 +89,7 @@ int hls_http_open(const char* url, const char* _headers, void* key, void** handl
     }
     int ret = -1;
     int reason_code = 0;
-    char fileUrl[MAX_URL_SIZE] ={0};
+    char fileUrl[MAX_URL_SIZE] = {0};
     int is_ignore_range_req = 1;
 
 #if 0 //remove Range in http request
@@ -136,15 +136,18 @@ int hls_http_open(const char* url, const char* _headers, void* key, void** handl
         }
     } else {
         AESKeyInfo_t* aeskey = (AESKeyInfo_t*)key;
-        if (aeskey->type != AES128_CBC || aeskey->key_info == NULL) {
-            LOGE("Only support AES128-cbc\n");
+        if ((aeskey->type != AES128_CBC && aeskey->type != AES128_CTR) || aeskey->key_info == NULL) {
+            LOGE("Only support AES128-cbc and AES128_CTR\n");
             ctx->h = NULL;
             *handle = ctx;
             return -1;
         }
         if (strstr(url, "://")) {
-            snprintf(fileUrl, MAX_URL_SIZE, "crypto+%s", url);
-
+            if (aeskey->type != AES128_CTR) {
+                snprintf(fileUrl, MAX_URL_SIZE, "crypto+%s", url);
+            } else {
+                snprintf(fileUrl, MAX_URL_SIZE, "cryptopr+%s", url);
+            }
         } else {
             snprintf(fileUrl, MAX_URL_SIZE, "crypto:%s", url);
         }

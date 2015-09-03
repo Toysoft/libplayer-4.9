@@ -222,6 +222,8 @@ typedef struct play_para {
 
     int retry_cnt;  // -1: means retry forever; >0 mean the retry cnt
     int force_enter_buffering;
+    int64_t buffering_enter_time; // system time when entering buffering - ms
+    int resume_play_flag;
 
     int pre_seek_flag; // seekto comming prior to start
     int audio_digital_raw;
@@ -264,6 +266,7 @@ int player_mate_release(play_para_t *player);
 void check_msg(play_para_t *para, player_cmd_t *msg);
 int nextcmd_is_cmd(play_para_t *player, ctrl_cmd_t c_cmd);
 int update_dump_dir_path(void);
+int player_force_enter_buffering(play_para_t *player, int nForce);
 int player_pre_switch_audio(play_para_t *para, int aid);
 
 #endif

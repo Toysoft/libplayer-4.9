@@ -294,7 +294,7 @@ codec_para_t *get_video_codec(play_para_t *player)
  ******************************/
 codec_para_t *get_subtitle_codec(play_para_t *player)
 {
-    log_print("player->stream_type=%d.\n",player->stream_type);
+    log_print("player->stream_type=%d.\n", player->stream_type);
     if (player->stream_type == STREAM_ES) {
         return player->scodec;
     } else {
@@ -308,6 +308,15 @@ void check_msg(play_para_t *para, player_cmd_t *msg)
     int64_t t_fsize = 0;
     int t_fulltime = 0;
 #endif
+    if (((msg->ctrl_cmd & CMD_PAUSE) || (msg->ctrl_cmd & CMD_RESUME)) &&
+        (get_player_state(para) == PLAYER_SEARCHING)) {
+        if (para->vstream_info.has_video) {
+            para->playctrl_info.init_ff_fr = 0;
+            para->playctrl_info.last_f_step = para->playctrl_info.f_step;
+            para->playctrl_info.f_step = 0;
+        }
+        return;
+    }
     if ((msg->ctrl_cmd & CMD_EXIT) || (msg->ctrl_cmd & CMD_STOP)) {
         para->playctrl_info.end_flag = 1;
         para->playctrl_info.loop_flag = 0;
@@ -333,14 +342,14 @@ void check_msg(play_para_t *para, player_cmd_t *msg)
             log_print("seek durint searching, clear ff/fb first\n");
         }
 
-        if ((para->start_param->is_livemode == 1) || (msg->f_param < para->state.full_time && msg->f_param >= 0)) {
+        if ((para->start_param->is_livemode == 1 || para->start_param->is_livemode == 2) || (msg->f_param < para->state.full_time && msg->f_param >= 0)) {
             para->playctrl_info.search_flag = 1;
             para->playctrl_info.time_point = msg->f_param;
             para->playctrl_info.end_flag = 1;
             para->playctrl_info.reset_drop_buffered_data = 0;
             para->playctrl_info.seek_keyframe = 1;
             para->state.seek_point = msg->f_param;
-            para->state.seek_delay = 1000;
+            para->state.seek_delay = am_getconfig_int_def("libplayer.seek.delay_count", 1000);
         } else if (msg->f_param < 0) {
             log_print("pid[%d]::seek reset\n", para->player_id);
             para->playctrl_info.reset_flag = 1;
@@ -358,7 +367,7 @@ void check_msg(play_para_t *para, player_cmd_t *msg)
             para->state.current_ms = para->state.current_time * 1000;
             para->state.seek_point = msg->f_param;
             log_print("seek the end,update current_time:%d (ms:%d)\n",
-                                   para->state.current_time,para->state.current_ms);
+                      para->state.current_time, para->state.current_ms);
             set_player_state(para, PLAYER_SEARCHOK);
             update_player_states(para, 1);
             set_player_state(para, PLAYER_PLAYEND);
@@ -599,6 +608,13 @@ int check_flag(play_para_t *p_para)
             /*not search now,resore the sync states...*/
             set_tsync_enable(p_para->oldavsyncstate);
             p_para->avsynctmpchanged = 0;
+        }
+        // check resume play
+        if (msg->ctrl_cmd == CMD_SEARCH) {
+            int64_t time_diff = (p_para->oldcmdtime - p_para->play_start_systemtime_us);
+            if (time_diff < 1 * 1000) { // 1s
+                p_para->resume_play_flag = 1;
+            }
         }
         check_msg(p_para, msg);
         message_free(msg);
@@ -922,6 +938,49 @@ static void player_para_init(play_para_t *para)
     para->state.seek_delay = 0;
 }
 
+int player_force_enter_buffering(play_para_t *player, int nForce)
+{
+    int force_buf_enable =  am_getconfig_bool_def("media.amplayer.force_buf_enable", 1);
+    if (player->pFormatCtx->pb == NULL || player->pFormatCtx->pb->local_playback == 0) {
+        player->force_enter_buffering = force_buf_enable;
+        // enter buffering here, for quick pause
+        if (force_buf_enable) {
+            codec_pause(player->codec);
+            set_player_state(player, PLAYER_BUFFERING);
+            update_player_states(player, 1);
+            if (nForce == 0) {
+                player->force_enter_buffering = 0;
+                log_print("Force enter buffering!!!, but set player->force_enter_buffering=0\n");
+            } else {
+                if (player->codec->has_audio == 1) {
+                    log_print("[%s:%d]mute audio before forcing codec_pause", __FUNCTION__, __LINE__);
+                    codec_set_mute(player->codec, 1);
+                }
+                log_print("Force enter buffering!!!\n");
+            }
+        }
+    }
+
+    return 0;
+
+}
+static int check_and_modify_livemode(play_para_t *player);
+static int check_and_modify_livemode(play_para_t *player)
+{
+    if (NULL == player) {
+        log_print("Invalid input param\n");
+        return -1;
+    }
+
+    int nLivemode = -1;
+    int ret = ffmpeg_geturl_netstream_info(player, 5, &nLivemode);
+    if (ret == 0 && nLivemode != player->start_param->is_livemode) {
+        log_print("[%s:%d]livemode %d --> %d\n", __FUNCTION__, __LINE__, player->start_param->is_livemode, nLivemode);
+        player->start_param->is_livemode = nLivemode;
+    }
+
+    return 0;
+}
 ///////////////////*main function *//////////////////////////////////////
 void *player_thread(play_para_t *player)
 {
@@ -993,6 +1052,22 @@ void *player_thread(play_para_t *player)
             set_player_state(player, PLAYER_ERROR);
         }
         goto release0;
+    }
+    if (player->pFormatCtx != NULL && player->pFormatCtx->duration > 0 && player->pFormatCtx->pb != NULL && player->pFormatCtx->pb->opaque != NULL) {
+        URLContext *h = (URLContext *)player->pFormatCtx->pb->opaque;
+        if (h != NULL && h->prot != NULL && (strcmp(h->prot->name, "shttp") == 0 || strcmp(h->prot->name, "http") == 0)) {
+            log_info("[player_thread]set to the network vod\n");
+            //player->pFormatCtx->flags|=AVFMT_FLAG_NETWORK_VOD;
+        }
+    }
+    const char * startsync_mode = "/sys/class/tsync/startsync_mode";
+    const char * droppcm_prop = "sys.amplayer.drop_pcm";
+    if (!strncmp(player->file_name, "rtp:", strlen("rtp:")) || player->pFormatCtx->flags & AVFMT_FLAG_NETWORK_VOD) {
+        set_sysfs_int(startsync_mode, 1);
+        am_setconfig_float(droppcm_prop, 0);
+    } else {
+        set_sysfs_int(startsync_mode, 2);
+        am_setconfig_float(droppcm_prop, 1);
     }
 
     ret = set_media_info(player);
@@ -1196,6 +1271,7 @@ void *player_thread(play_para_t *player)
             }
         }
         do {
+            check_and_modify_livemode(player);
             ret = check_flag(player);
             if (ret == BREAK_FLAG) {
                 //log_print("pid[%d]::[player_thread:%d]end=%d valid=%d new=%d pktsize=%d ff %d gettime %lld\n", player->player_id,
@@ -1240,13 +1316,11 @@ void *player_thread(play_para_t *player)
                     player->retry_cnt = 0;
                 }
 
-                if (pkt->avpkt->size > 0) {
-                    ret = set_header_info(player);
-                    if (ret != PLAYER_SUCCESS) {
-                        log_error("pid[%d]::set_header_info failed! ret=%x\n", player->player_id, -ret);
-                        set_player_state(player, PLAYER_ERROR);
-                        goto release;
-                    }
+                ret = set_header_info(player);
+                if (ret != PLAYER_SUCCESS) {
+                    log_error("pid[%d]::set_header_info failed! ret=%x\n", player->player_id, -ret);
+                    set_player_state(player, PLAYER_ERROR);
+                    goto release;
                 }
             } else {
                 /*low level buf is full ,do buffering or just do wait.*/
@@ -1400,6 +1474,14 @@ write_packet:
                             }
                             player->playctrl_info.trick_start_sysus = gettime();
                         }
+                        int64_t discontinue_threshold = player->playctrl_info.f_step * 20000000;
+                        if ((player->playctrl_info.fast_forward
+                             && (((cur_us - player->playctrl_info.trick_start_us) > discontinue_threshold) || ((cur_us - player->playctrl_info.trick_start_us) < 0)))
+                            || (player->playctrl_info.fast_backward
+                                && (((player->playctrl_info.trick_start_us - cur_us) > discontinue_threshold) || ((player->playctrl_info.trick_start_us - cur_us) < 0)))) {
+                            log_print("[%s:%d]reset player->playctrl_info.trick_start_us from %lld to %lld\n", __FUNCTION__, __LINE__, player->playctrl_info.trick_start_us, cur_us);
+                            player->playctrl_info.trick_start_us = cur_us;
+                        }
                         if (0 == player->playctrl_info.f_step) {
                             wait_time = 0;
                         } else {
@@ -1496,16 +1578,11 @@ write_packet:
                 update_player_states(player, 1);
                 //reset thes contrl var
                 player->div_buf_time = (int)am_getconfig_float_def("media.amplayer.divtime", 1);
-                int force_buf_enable =  am_getconfig_bool_def("media.amplayer.force_buf_enable", 1);
-                if (player->pFormatCtx->pb == NULL || player->pFormatCtx->pb->local_playback == 0) {
-                    player->force_enter_buffering = force_buf_enable;
-                    // enter buffering here, for quick pause
-                    if (force_buf_enable) {
-                        codec_pause(player->codec);
-                        set_player_state(player, PLAYER_BUFFERING);
-                        update_player_states(player, 1);
-                        log_print("Force enter buffering!!!\n");
-                    }
+                if (player->pFormatCtx->flags & AVFMT_FLAG_NETWORK_VOD) {
+                    player->buffering_force_delay_s  = am_getconfig_float_def("media.amplayer.delaybuffering", 2);
+                    log_print("set force delay buffering %f\n", player->buffering_force_delay_s);
+                } else {
+                    force_buffering_enter(player);
                 }
                 player->play_last_reset_systemtime_us = player_get_systemtime_ms();
                 if (player->playctrl_info.f_step == 0) {
@@ -1543,7 +1620,7 @@ release:
         }
     }
     set_cntl_mode(player, TRICKMODE_NONE);
-    set_sysfs_int("/sys/class/tsync/vpause_flag",0);
+    set_sysfs_int("/sys/class/tsync/vpause_flag", 0);
 
 release0:
     resume_auto_refresh_rate();

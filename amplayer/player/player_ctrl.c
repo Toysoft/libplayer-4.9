@@ -1094,6 +1094,45 @@ int player_set_disp_lastframe(int pid, int disp)
 
 /* --------------------------------------------------------------------------*/
 /**
+ * @function    player_get_bitrate
+ *
+ * @brief       get video+audio bitrate
+ *
+ * @param[in]   pid     player tag which get from player_start return value
+ *
+ * @return      bitrate video bitrate + audio bitrate
+ *              PLAYER_NOT_VALID_PID    error,invalid pid
+ *
+ * @details
+ */
+/* --------------------------------------------------------------------------*/
+int player_get_bitrate(int pid)
+{
+    int vrate = 0, arate = 0;
+    play_para_t *player_para;
+
+    player_para = player_open_pid_data(pid);
+    if (player_para == NULL) {
+        return PLAYER_NOT_VALID_PID;    /*this data is 0 for default!*/
+    }
+    if (player_para->codec) {
+        codec_get_audio_checkin_bitrate(player_para->codec, &arate);
+        codec_get_video_checkin_bitrate(player_para->codec, &vrate);
+    } else {
+        if (player_para->vcodec) {
+            codec_get_video_checkin_bitrate(player_para->vcodec, &vrate);
+        }
+        if (player_para->acodec) {
+            codec_get_audio_checkin_bitrate(player_para->acodec, &arate);
+        }
+    }
+    player_close_pid_data(pid);
+    //log_print("[player_get_bitrate] vrate %d, arate %d, total rate %d\n", vrate, arate, vrate+arate);
+    return vrate + arate;
+}
+
+/* --------------------------------------------------------------------------*/
+/**
  * @function    audio_set_mute
  *
  * @brief       volume mute switch
@@ -1854,7 +1893,7 @@ int player_get_sub_odata(int pid, amsub_info_t *amsub_info)
     p = get_subtitle_codec(player_para);
 
     if (p) {
-        ret = codec_amsub_read_outdata(p,amsub_info);
+        ret = codec_amsub_read_outdata(p, amsub_info);
         if (ret != 0) {
             log_print("player_get_sub_odata,get amsub data failed!\n");
             player_close_pid_data(pid);
@@ -1909,7 +1948,7 @@ int player_get_sub_start_pts(int pid, unsigned int *start_pts)
         player_close_pid_data(pid);
         return -1;
     }
-    log_print("%s: start_pts=%d!\n",__FUNCTION__,*start_pts);
+    log_print("%s: start_pts=%d!\n", __FUNCTION__, *start_pts);
     player_close_pid_data(pid);
 
     return 0;
@@ -1938,7 +1977,7 @@ int player_set_sub_filename(int pid, const char* filename)
     int ret = 0;
     play_para_t *player_para;
     codec_para_t *p;
-    log_print("player_set_sub_filename,pid=%d,filename=%s !\n",pid,filename);
+    log_print("player_set_sub_filename,pid=%d,filename=%s !\n", pid, filename);
 
     player_para = player_open_pid_data(pid);
     if (player_para == NULL) {
@@ -1975,7 +2014,7 @@ int player_get_current_time(int pid, unsigned int* curr_timeMs)
 {
     int ret = 0;
     play_para_t *player_para;
-    log_print("[%s]: pid=%d.\n",__FUNCTION__,pid);
+    log_print("[%s]: pid=%d.\n", __FUNCTION__, pid);
 
     player_para = player_open_pid_data(pid);
     if (player_para == NULL) {
@@ -2023,7 +2062,7 @@ int player_get_curr_sub_id(int pid, int *curr_sub_id)
 
     *curr_sub_id = player_para->sstream_info.sub_pid;
 
-    log_print("sstream_info.sub_pid=%d !\n",player_para->sstream_info.sub_pid);
+    log_print("sstream_info.sub_pid=%d !\n", player_para->sstream_info.sub_pid);
 
     player_close_pid_data(pid);
 

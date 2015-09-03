@@ -272,13 +272,15 @@ static void get_av_codec_type(play_para_t *p_para)
                 p_para->vstream_info.video_rate = (int64_t)UNIT_FREQ * pStream->r_frame_rate.den / pStream->r_frame_rate.num;
             }
             log_print("[%s:%d]video_codec_rate=%d,video_rate=%d\n", __FUNCTION__, __LINE__, p_para->vstream_info.video_codec_rate, p_para->vstream_info.video_rate);
-            if (( p_para->pFormatCtx->pb != NULL && p_para->pFormatCtx->pb->is_slowmedia) && (p_para->vstream_info.video_format == VFORMAT_MPEG4) && ( p_para->vstream_info.video_rate < 10))
-            {
-               // in network playback. fast switch might causes stream video_rate info  not correct . then set it to 0.
-               p_para->vstream_info.video_rate = 0;
-               log_print(" video_rate might not be correct. set it to 0  video_rate =%d\n", p_para->vstream_info.video_rate);
+            if ((p_para->pFormatCtx->pb != NULL && p_para->pFormatCtx->pb->is_slowmedia) && (p_para->vstream_info.video_format == VFORMAT_MPEG4) && (p_para->vstream_info.video_rate < 10)) {
+                // in network playback. fast switch might causes stream video_rate info  not correct . then set it to 0.
+                p_para->vstream_info.video_rate = 0;
+                log_print(" video_rate might not be correct. set it to 0  video_rate =%d\n", p_para->vstream_info.video_rate);
             }
             if (p_para->vstream_info.video_format != VFORMAT_MPEG12) {
+                p_para->vstream_info.extradata_size = pCodecCtx->extradata_size;
+                p_para->vstream_info.extradata      = pCodecCtx->extradata;
+            } else if (MKV_FILE == p_para->file_type) {
                 p_para->vstream_info.extradata_size = pCodecCtx->extradata_size;
                 p_para->vstream_info.extradata      = pCodecCtx->extradata;
             }
@@ -868,13 +870,13 @@ static void get_stream_info(play_para_t *p_para)
                     log_print("[%s:%d]hevc long term ref pic, not support now!\n", __FUNCTION__, __LINE__);
                 }
                 if (!unsupported_video) {
-                    unsupported_video= (p_para->pFormatCtx->streams[video_index]->codec->bit_depth == 9 &&
-                               !p_para->vdec_profile.hevc_para.support_9bit) ||
-                               (p_para->pFormatCtx->streams[video_index]->codec->bit_depth == 10 &&
-                               !p_para->vdec_profile.hevc_para.support_10bit);
+                    unsupported_video = (p_para->pFormatCtx->streams[video_index]->codec->bit_depth == 9 &&
+                                         !p_para->vdec_profile.hevc_para.support_9bit) ||
+                                        (p_para->pFormatCtx->streams[video_index]->codec->bit_depth == 10 &&
+                                         !p_para->vdec_profile.hevc_para.support_10bit);
                     if (unsupported_video) {
                         log_print("[%s]hevc 9/10 bit profile, not support for this chip configure!,bit_depth=%d\n", __FUNCTION__,
-                            p_para->pFormatCtx->streams[video_index]->codec->bit_depth);
+                                  p_para->pFormatCtx->streams[video_index]->codec->bit_depth);
                     }
                 }
             }
@@ -1675,8 +1677,8 @@ int player_dec_init(play_para_t *p_para)
             }
         }
 
-        if (p_para->playctrl_info.lowbuffermode_flag || am_getconfig_bool("media.libplayer.wfd") || 
-	        av_strstart(p_para->file_name, "udp://", NULL) || av_strstart(p_para->file_name, "rtsp://", NULL)) {
+        if (p_para->playctrl_info.lowbuffermode_flag || am_getconfig_bool("media.libplayer.wfd") ||
+            av_strstart(p_para->file_name, "udp://", NULL) || av_strstart(p_para->file_name, "rtsp://", NULL)) {
             if (!p_para->start_param->is_ts_soft_demux && stream_type != STREAM_TS) {
                 log_print("Player reconfig use hwdemux for wfd now\n");
                 file_type = MPEG_FILE;
@@ -1944,8 +1946,8 @@ int player_decoder_init(play_para_t *p_para)
     } else {
         if (p_para->vstream_info.has_video && p_para->astream_info.has_audio && (p_para->astream_num > 1) && (p_para->state.full_time > 0)) {
             p_para->playctrl_info.buf_limited_time_ms = am_getconfig_float_def("media.libplayer.limittime", 2000);
-            if((p_para->vstream_info.video_height * p_para->vstream_info.video_width) > 1920 *1088){
-            /**/
+            if ((p_para->vstream_info.video_height * p_para->vstream_info.video_width) > 1920 * 1088) {
+                /**/
                 p_para->playctrl_info.buf_limited_time_ms = p_para->playctrl_info.buf_limited_time_ms * 2;
             }
             log_print("[%s:%d]multiple audio switch, set buffer time to %d ms\n", __FUNCTION__, __LINE__, p_para->playctrl_info.buf_limited_time_ms);
@@ -1976,9 +1978,9 @@ int player_decoder_init(play_para_t *p_para)
         }
     }
     if (p_para->pFormatCtx && p_para->pFormatCtx->iformat && p_para->pFormatCtx->iformat->name &&
-            (((p_para->pFormatCtx->flags & AVFMT_FLAG_DRMLEVEL1) && (memcmp(p_para->pFormatCtx->iformat->name,"DRMdemux",8) == 0)) ||
-            (p_para->pFormatCtx->flags & AVFMT_FLAG_PR_TVP) ||
-            (p_para->pFormatCtx->pb && p_para->pFormatCtx->pb->isprtvp))) {
+        (((p_para->pFormatCtx->flags & AVFMT_FLAG_DRMLEVEL1) && (memcmp(p_para->pFormatCtx->iformat->name, "DRMdemux", 8) == 0)) ||
+         (p_para->pFormatCtx->flags & AVFMT_FLAG_PR_TVP) ||
+         (p_para->pFormatCtx->pb && p_para->pFormatCtx->pb->isprtvp))) {
         log_print("DRMdemux :: LOCAL_OEMCRYPTO_LEVEL -> L1 or PlayReady TVP\n");
         if (p_para->vcodec) {
             log_print("DRMdemux setdrmmodev vcodec\n");

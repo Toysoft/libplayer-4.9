@@ -75,7 +75,7 @@
 #define AMSTREAM_IOC_PORT_INIT   _IO((AMSTREAM_IOC_MAGIC), 0x11)
 #define AMSTREAM_IOC_TRICKMODE  _IOW((AMSTREAM_IOC_MAGIC), 0x12, int)
 
-#define AMSTREAM_IOC_AUDIO_INFO	_IOW((AMSTREAM_IOC_MAGIC), 0x13, int)
+#define AMSTREAM_IOC_AUDIO_INFO _IOW((AMSTREAM_IOC_MAGIC), 0x13, int)
 #define AMSTREAM_IOC_TRICK_STAT  _IOR((AMSTREAM_IOC_MAGIC), 0x14, int)
 #define AMSTREAM_IOC_AUDIO_RESET _IO((AMSTREAM_IOC_MAGIC), 0x15)
 #define AMSTREAM_IOC_SID         _IOW((AMSTREAM_IOC_MAGIC), 0x16, int)
@@ -110,8 +110,8 @@
 #define  AMSTREAM_IOC_SET_3D_TYPE  _IOW((AMSTREAM_IOC_MAGIC), 0x3c, unsigned int)
 #define  AMSTREAM_IOC_GET_3D_TYPE  _IOW((AMSTREAM_IOC_MAGIC), 0x3d, unsigned int)
 
-#define AMSTREAM_IOC_SUB_NUM	_IOR((AMSTREAM_IOC_MAGIC), 0x50, int)
-#define AMSTREAM_IOC_SUB_INFO	_IOR((AMSTREAM_IOC_MAGIC), 0x51, int)
+#define AMSTREAM_IOC_SUB_NUM    _IOR((AMSTREAM_IOC_MAGIC), 0x50, int)
+#define AMSTREAM_IOC_SUB_INFO   _IOR((AMSTREAM_IOC_MAGIC), 0x51, int)
 #define AMSTREAM_IOC_GET_BLACKOUT_POLICY   _IOR((AMSTREAM_IOC_MAGIC), 0x52, int)
 #define AMSTREAM_IOC_SET_BLACKOUT_POLICY   _IOW((AMSTREAM_IOC_MAGIC), 0x53, int)
 #define AMSTREAM_IOC_UD_LENGTH _IOR((AMSTREAM_IOC_MAGIC), 0x54, int)
@@ -159,6 +159,9 @@
 
 #define AMSTREAM_IOC_GET_TRICK_VPTS _IOR((AMSTREAM_IOC_MAGIC), 0xf0, int)
 #define AMSTREAM_IOC_DISABLE_SLOW_SYNC _IOW((AMSTREAM_IOC_MAGIC), 0xf1, int)
+
+#define AMSTREAM_IOC_GET_AUDIO_CHECKIN_BITRATE_BPS _IOR(AMSTREAM_IOC_MAGIC, 0xf2, int)
+#define AMSTREAM_IOC_GET_VIDEO_CHECKIN_BITRATE_BPS _IOR(AMSTREAM_IOC_MAGIC, 0xf3, int)
 
 #define AMSTREAM_IOC_GET_VERSION _IOR((AMSTREAM_IOC_MAGIC), 0xc0, int)
 #define AMSTREAM_IOC_GET _IOWR((AMSTREAM_IOC_MAGIC), 0xc1, struct am_ioctl_parm)
@@ -234,20 +237,20 @@ struct am_io_param {
 };
 struct subtitle_info {
 
-	unsigned char id;
+    unsigned char id;
 
-	unsigned char width;
+    unsigned char width;
 
-	unsigned char height;
+    unsigned char height;
 
-	unsigned char type;
+    unsigned char type;
 };
 
 struct userdata_poc_info_t {
 
-	unsigned int poc_info;
+    unsigned int poc_info;
 
-	unsigned int poc_number;
+    unsigned int poc_number;
 };
 
 /*******************************************************************
@@ -367,40 +370,40 @@ struct userdata_poc_info_t {
 #define AMSTREAM_GET_PTR_SUB_INFO 0xA00
 
 struct am_ioctl_parm {
-	union {
-		unsigned int data_32;
-		unsigned long long data_64;
-		vformat_t data_vformat;
-		aformat_t data_aformat;
-		char data[8];
-	};
-	unsigned int cmd;
-	char reserved[4];
+    union {
+        unsigned int data_32;
+        unsigned long long data_64;
+        vformat_t data_vformat;
+        aformat_t data_aformat;
+        char data[8];
+    };
+    unsigned int cmd;
+    char reserved[4];
 };
 
 struct am_ioctl_parm_ex {
-	union {
-		struct buf_status status;
-		struct vdec_status vstatus;
-		struct adec_status astatus;
+    union {
+        struct buf_status status;
+        struct vdec_status vstatus;
+        struct adec_status astatus;
 
-		struct userdata_poc_info_t data_userdata_info;
-		char data[24];
+        struct userdata_poc_info_t data_userdata_info;
+        char data[24];
 
-	};
-	unsigned int cmd;
-	char reserved[4];
+    };
+    unsigned int cmd;
+    char reserved[4];
 };
 
 struct am_ioctl_parm_ptr {
-	union {
-		struct audio_info *pdata_audio_info;
-		struct subtitle_info *pdata_sub_info;
-		void *pointer;
-		char data[8];
-	};
-	unsigned int cmd;
-	char reserved[4];
+    union {
+        struct audio_info *pdata_audio_info;
+        struct subtitle_info *pdata_sub_info;
+        void *pointer;
+        char data[8];
+    };
+    unsigned int cmd;
+    char reserved[4];
 };
 
 void set_vdec_func(int (*vdec_func)(struct vdec_status *));

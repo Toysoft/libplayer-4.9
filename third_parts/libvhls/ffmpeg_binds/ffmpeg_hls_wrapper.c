@@ -82,10 +82,17 @@ static int ffmpeg_hls_open(URLContext *h, const char *filename, int flags)
     int ret = -1;
     void* session = NULL;
     int prop_prefix_size = strlen("vhls:");
+    int retrycnt = 10;
+openretry:
     ret = m3u_session_open(filename + prop_prefix_size, h->headers, &session, h);
     if (ret < 0) {
-        RLOG("Failed to open session\n");
-        return ret;
+        RLOG("Failed to open session and retrycnt %d \n", retrycnt);
+        retrycnt--;
+        if (retrycnt > 0 && url_interrupt_cb() <= 0) {
+            goto openretry;
+        } else {
+            return ret;
+        }
     }
 
     FFMPEG_HLS_CONTEXT* f = av_mallocz(sizeof(FFMPEG_HLS_CONTEXT));
@@ -435,30 +442,40 @@ static int ffmpeg_hls_getopt(URLContext *h, uint32_t  cmd, uint32_t flag, int64_
         return -1;
     }
     FFMPEG_HLS_CONTEXT* ctx = (FFMPEG_HLS_CONTEXT*)h->priv_data;
-
+    int val = 0;
     if (cmd == AVCMD_GET_NETSTREAMINFO) {
         if (flag == 1) {
-
-            int bps = 0;
-            m3u_session_get_estimate_bandwidth(ctx->hls_ctx, &bps);
-            *info = bps / 1000;
-
-            if (ctx->debug_level > 3) {
+            m3u_session_get_estimate_bandwidth(ctx->hls_ctx, &val);
+            *info = val;
+            if (ctx->debug_level > 5) {
                 RLOG("Get measured bandwidth: %0.3f kbps\n", (float)*info / 1000.000);
             }
         } else if (flag == 2) {
-            int bw = 0;
-            m3u_session_get_cur_bandwidth(ctx->hls_ctx, &bw);
-
-            *info = bw;
-            if (ctx->debug_level > 3) {
+            m3u_session_get_cur_bandwidth(ctx->hls_ctx, &val);
+            *info = val;
+            if (ctx->debug_level > 5) {
                 RLOG("Get current bandwidth: %0.3f kbps\n", (float)*info / 1000.000);
             }
         } else if (flag == 3) {
-            int val = 0;
             m3u_session_get_error_code(ctx->hls_ctx, &val);
             *info = val;
-            RLOG("Get cache http error code: %d\n", val);
+
+            if (ctx->debug_level > 5) {
+                RLOG("Get cache http error code: %d\n", val);
+            }
+        } else if (flag == 5) {
+            m3u_session_get_livemode(ctx->hls_ctx, &val);
+            *info = val;
+
+            if (ctx->debug_level > 5) {
+                RLOG("Get current hls livemode: %d\n", *info);
+            }
+        } else if (flag == 6) {
+            m3u_session_get_estimate_bps(ctx->hls_ctx, &val);
+            *info = val;
+            if (ctx->debug_level > 5) {
+                RLOG("Get measured bps: %0.3f kbps\n", (float)*info / 1000.000);
+            }
         }
 
     } else if (cmd == AVCMD_HLS_STREAMTYPE) {

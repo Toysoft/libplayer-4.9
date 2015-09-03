@@ -35,8 +35,48 @@ typedef struct _M3UParser {
     pthread_mutex_t parser_lock;
 } M3UParser;
 
+char PR_METHOD[10] = "PRAESCTR";
 
+static int  keyInfo_init(M3uKeyInfo *keyinfo)
+{
+    int ret = 0;
 
+    memset(keyinfo->keyUrl, 0, sizeof(keyinfo->keyUrl));
+    memset(keyinfo->method, 0, sizeof(keyinfo->method));
+    memset(keyinfo->iv, 0, sizeof(keyinfo->iv));
+    keyinfo->extDrminfo = NULL;
+    return ret;
+}
+static int  keyInfo_free(M3uKeyInfo *keyinfo)
+{
+    int ret = 0;
+    if (keyinfo && keyinfo->extDrminfo) {
+        free(keyinfo->extDrminfo);
+        keyinfo->extDrminfo = NULL;
+    }
+    return ret;
+}
+static int  keyInfo_copy(M3uKeyInfo *dstkeyinfo, M3uKeyInfo *scrkeyinfo)
+{
+    int ret = 0;
+
+    strncpy(dstkeyinfo->keyUrl, scrkeyinfo->keyUrl, sizeof(scrkeyinfo->keyUrl));
+    strncpy(dstkeyinfo->method, scrkeyinfo->method, sizeof(scrkeyinfo->method));
+    strncpy(dstkeyinfo->iv, scrkeyinfo->iv, sizeof(scrkeyinfo->iv));
+    dstkeyinfo->extDrminfo = strdup(scrkeyinfo->extDrminfo);
+    return ret;
+}
+
+M3uKeyInfo * dup_keyInfo(M3uKeyInfo *scrkeyinfo)
+{
+    M3uKeyInfo * keyinfo = NULL;
+    keyinfo = (M3uKeyInfo*)malloc(sizeof(M3uKeyInfo));
+    if (keyinfo) {
+        keyInfo_init(keyinfo);
+        keyInfo_copy(keyinfo, scrkeyinfo);
+    }
+    return keyinfo;
+}
 //====================== list abouts===============================
 #define BASE_NODE_MAX  8*1024 //max to 8k
 
@@ -71,6 +111,24 @@ static M3uBaseNode* get_node_by_time(M3UParser* var, int64_t timeUs)
     return NULL;
 }
 
+static M3uBaseNode* get_node_by_datatime(M3UParser* var, int64_t dataTime)
+{
+    M3uBaseNode* pos = NULL;
+    M3uBaseNode* tmp = NULL;
+
+    LOGV("get_node_by_datatime, dataTime: %lld\n", dataTime);
+    pthread_mutex_lock(&var->parser_lock);
+    list_for_each_entry_safe_reverse(pos, tmp, &var->head, list) {
+        LOGV("pos->dataTime = %lld, tmp->dataTime = %lld\n", pos->dataTime, tmp->dataTime);
+        if ((pos->dataTime <= dataTime) && (dataTime < tmp->dataTime)) {
+            pthread_mutex_unlock(&var->parser_lock);
+            LOGV("get_node_by_datatime, index: %d\n", pos->index);
+            return pos;
+        }
+    }
+    pthread_mutex_unlock(&var->parser_lock);
+    return NULL;
+}
 
 static M3uBaseNode* get_node_by_index(M3UParser* var, int index)
 {
@@ -184,10 +242,11 @@ static int clean_all_nodes(M3UParser* var)
         } else {
             LOGV("***Release node index:%d\n", pos->index);
         }
-        if (pos->flags&CIPHER_INFO_FLAG && pos->key != NULL) {
+        if (pos->flags & CIPHER_INFO_FLAG && pos->key != NULL) {
             if (var->log_level >= HLS_SHOW_URL) {
                 LOGV("***Release encrypt key info,url:%s\n", pos->key->keyUrl);
             }
+            keyInfo_free(pos->key);
             free(pos->key);
             pos->key = NULL;
         }
@@ -220,7 +279,7 @@ static int parseDouble(const char *s, double *x)
     return 0;
 }
 
-static int parseInt32(const char *s, int32_t *x)
+int parseInt32(const char *s, int32_t *x)
 {
     char *end;
     long lval = strtol(s, &end, 10);
@@ -234,6 +293,15 @@ static int parseInt32(const char *s, int32_t *x)
 
 }
 
+int parseInt64(const char *s, int64_t *x)
+{
+    if (s == NULL) {
+        return -1;
+    }
+    sscanf(s, "%lld", x);
+    return 0;
+
+}
 static int trimInvalidSpace(char* line)
 {
     const char* emptyString = "";
@@ -277,7 +345,51 @@ static int parseMetaData(const char*line)
         return err;
     }
 
+    return x;
+}
 
+static int64_t parseDataTime(const char*line)
+{
+
+    const char *match = strstr(line, ":");
+
+    if (match == NULL) {
+        return -1;
+    }
+    ssize_t colonPos = match - line;
+
+    if (colonPos < 0) {
+        return -1;
+    }
+
+    char *dataTime = strdup(line + colonPos + 1);
+    if (dataTime == NULL) {
+        return -1;
+    }
+
+    int len = strlen(dataTime);
+    LOGV("parseDataTime start dataTime: %s, len: %d\n", dataTime, len);
+    int i = 0, j = 0;
+    for (i = 0; i < len; i++) {
+        if ((*(dataTime + i) < '0') || (*(dataTime + i) > '9')) {
+            *(dataTime + i) = 0;
+            for (j = i + 1; j < len; j++) {
+                if ((*(dataTime + j) >= '0') && (*(dataTime + j) <= '9')) {
+                    *(dataTime + i) = *(dataTime + j);
+                    *(dataTime + j) = 0;
+                    break;
+                }
+            }
+        }
+    }
+    LOGV("parseDataTime end dataTime: %s\n", dataTime);
+
+    int64_t x = 0;
+    int err = parseInt64(dataTime, &x);
+    free(dataTime);
+    if (err != 0) {
+        return err;
+    }
 
     return x;
 }
@@ -641,6 +753,7 @@ static int parseCipherInfo(const char* line, const char* baseUrl, M3uKeyInfo* in
 #define EXT_X_DISCONTINUITY         "#EXT-X-DISCONTINUITY"
 #define EXT_X_VERSION               "#EXT-X-VERSION"
 #define EXT_X_BYTERANGE             "#EXT-X-BYTERANGE"  //>=version 4
+#define EXT_X_PLAYREADYHEADER       "#EXT-X-PLAYREADYHEADER"  //PlayReady DRM  tag
 
 #define LINE_SIZE_MAX (1024*16)//according to description, Playready header object should not exceed 15 KB
 
@@ -648,7 +761,7 @@ static int parseCipherInfo(const char* line, const char* baseUrl, M3uKeyInfo* in
 
 static int fast_parse(M3UParser* var, const void *_data, int size)
 {
-    char line[LINE_SIZE_MAX];
+    char * line = NULL;
     const char* data = (const char *)_data;
     int offset = 0;
     int offsetLF = 0;
@@ -669,6 +782,14 @@ static int fast_parse(M3UParser* var, const void *_data, int size)
     tmpNode.range_offset = -1;
     tmpNode.durationUs = -1;
 
+    int PRflag = 0;
+    M3uKeyInfo PRkeyinfo;
+    PRkeyinfo.extDrminfo = NULL;
+
+    line = (char *)malloc(LINE_SIZE_MAX);
+    if (!line) {
+        return -1;
+    }
     //cut BOM header
     if (data[0] == 0xEF && data[1] == 0xBB && data[2] == 0xBF) {
         LOGV("Cut file BOM header with UTF8 encoding\n");
@@ -707,6 +828,10 @@ static int fast_parse(M3UParser* var, const void *_data, int size)
         if (var->is_extm3u > 0) {
             if (startsWith(line, EXT_X_TARGETDURATION)) {
                 if (isVariantPlaylist) {
+                    if (line) {
+                        free(line);
+                    }
+                    line = NULL;
                     return -1;
                 }
 
@@ -714,12 +839,20 @@ static int fast_parse(M3UParser* var, const void *_data, int size)
                 LOGV("Got target duration:%d\n", var->target_duration);
             } else if (startsWith(line, EXT_X_MEDIA_SEQUENCE)) {
                 if (isVariantPlaylist) {
+                    if (line) {
+                        free(line);
+                    }
+                    line = NULL;
                     return -1;
                 }
                 tmpNode.media_sequence = parseMetaData(line);
 
             } else if (startsWith(line, EXT_X_KEY)) {
                 if (isVariantPlaylist) {
+                    if (line) {
+                        free(line);
+                    }
+                    line = NULL;
                     return -1;
                 }
                 keyinfo = (M3uKeyInfo*)malloc(sizeof(M3uKeyInfo));
@@ -728,12 +861,13 @@ static int fast_parse(M3UParser* var, const void *_data, int size)
                     var->is_initcheck = -1;
                     break;
                 }
-                memset(keyinfo, 0, sizeof(M3uKeyInfo));
+                keyInfo_init(keyinfo);
                 ret = parseCipherInfo(line, var->baseUrl, keyinfo);
                 if (ret != 0) {
                     LOGE("Failed to parse cipher info\n");
 
                     var->is_initcheck = -1;
+                    keyInfo_free(keyinfo);
                     free(keyinfo);
                     keyinfo = NULL;
                     break;
@@ -780,6 +914,13 @@ static int fast_parse(M3UParser* var, const void *_data, int size)
                 ptr = line + strlen(EXT_X_VERSION) + 1;
                 int version = atoi(ptr);
                 LOGV("M3u8 version is :%d\n", version);
+            } else if (startsWith(line, EXT_X_PROGRAM_DATE_TIME)) {
+                if (isVariantPlaylist) {
+                    return -1;
+                }
+
+                tmpNode.dataTime = parseDataTime(line);
+                LOGV("M3u8 dataTime is :%lld\n", tmpNode.dataTime);
             } else if (startsWith(line, "#EXT-X-BYTERANGE")) {
                 if (isVariantPlaylist) {
                     var->is_initcheck = -1;
@@ -794,6 +935,29 @@ static int fast_parse(M3UParser* var, const void *_data, int size)
                     segmentRangeOffset = offset + length;
                 }
 
+            } else if (startsWith(line, EXT_X_PLAYREADYHEADER)) {
+                keyinfo = (M3uKeyInfo*)malloc(sizeof(M3uKeyInfo));
+                if (NULL == keyinfo) {
+                    LOGE("Failed to allocate memory for keyinfo\n");
+                    var->is_initcheck = -1;
+                    break;
+                }
+
+                keyInfo_init(keyinfo);
+                char *matchext = strstr(line, ":");
+                if (matchext == NULL) {
+                    break;
+                }
+
+                strncpy(keyinfo->method, PR_METHOD, sizeof(PR_METHOD));
+                keyinfo->extDrminfo = strdup(matchext + 1);
+                hasKey = 1;
+                tmpNode.flags |= CIPHER_INFO_FLAG;
+                //variant playlist need save PLAYREADYHEADER info for follow node
+                keyInfo_init(&PRkeyinfo);
+                keyInfo_copy(&PRkeyinfo, keyinfo);
+                PRflag = 1;
+                LOGE("Cipher info,method:%s\n", keyinfo->method);
             }
         }
         if (strlen(line) > 0 && !startsWith(line, "#")) {
@@ -814,6 +978,16 @@ static int fast_parse(M3UParser* var, const void *_data, int size)
             }
 
             memcpy(node, &tmpNode, sizeof(M3uBaseNode));
+            if (!hasKey && PRflag) { //add PLAYREADYHEADER info in basic script to other PR variant node
+                M3uKeyInfo* tmpkeyinfo = (M3uKeyInfo*)malloc(sizeof(M3uKeyInfo));
+                if (tmpkeyinfo) {
+                    keyInfo_init(tmpkeyinfo);
+                    keyInfo_copy(tmpkeyinfo, &PRkeyinfo);
+                    node->key = tmpkeyinfo;
+                    LOGV("Assign PLAYREADYHEADER info to other variant node !\n");
+                    node->flags |= CIPHER_INFO_FLAG;
+                }
+            }
             tmpNode.durationUs = -1;
             if (hasKey && keyinfo) {
                 node->key = keyinfo;
@@ -841,6 +1015,7 @@ static int fast_parse(M3UParser* var, const void *_data, int size)
     }
     if (var->is_initcheck < 0) {
         if (hasKey > 0 && keyinfo) {
+            keyInfo_free(keyinfo);
             free(keyinfo);
             keyinfo = NULL;
         }
@@ -851,6 +1026,14 @@ static int fast_parse(M3UParser* var, const void *_data, int size)
     }
 
     //dump_all_nodes(var);
+    if (line) {
+        free(line);
+    }
+    line = NULL;
+    if (PRkeyinfo.extDrminfo) {
+        free(PRkeyinfo.extDrminfo);
+        PRkeyinfo.extDrminfo = NULL;
+    }
     return 0;
 
 }
@@ -944,6 +1127,22 @@ M3uBaseNode* m3u_get_node_by_index(void* hParse, int index)
     node = get_node_by_index(p, index);
     return node;
 }
+int  m3u_install_keyinfo2playlist(void* hParse, M3uKeyInfo *baseScriptkeyinfo)
+{
+    if (NULL == hParse || NULL == baseScriptkeyinfo) {
+        return 0;
+    }
+    M3UParser* p = (M3UParser*)hParse;
+    M3uBaseNode* node = NULL;
+    node = get_node_by_index(p, 0);
+    if (node && node->key == NULL) {
+        node->key = baseScriptkeyinfo;
+        node->flags |= CIPHER_INFO_FLAG;
+        return 1;
+    } else {
+        return 0;
+    }
+}
 M3uBaseNode* m3u_get_node_by_time(void* hParse, int64_t timeUs)
 {
     if (NULL == hParse || timeUs < 0) {
@@ -952,6 +1151,17 @@ M3uBaseNode* m3u_get_node_by_time(void* hParse, int64_t timeUs)
     M3UParser* p = (M3UParser*)hParse;
     M3uBaseNode* node = NULL;
     node = get_node_by_time(p, timeUs);
+    return node;
+
+}
+M3uBaseNode* m3u_get_node_by_datatime(void* hParse, int64_t dataTime)
+{
+    if (NULL == hParse || dataTime < 0) {
+        return NULL;
+    }
+    M3UParser* p = (M3UParser*)hParse;
+    M3uBaseNode* node = NULL;
+    node = get_node_by_datatime(p, dataTime);
     return node;
 
 }

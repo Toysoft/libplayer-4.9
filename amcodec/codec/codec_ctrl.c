@@ -777,16 +777,14 @@ int codec_init(codec_para_t *pcodec)
     int untimed_text = am_getconfig_bool_def("sys.timedtext.disable", 1);
     CODEC_PRINT("%s,untimed_text=%d\n", __FUNCTION__, untimed_text);
 
-    if (pcodec->has_sub && !untimed_text)
-    {
+    if (pcodec->has_sub && !untimed_text) {
         CODEC_PRINT("codec_init: has_sub\n");
         amsub_info_t amsub_info;
         memset(&amsub_info, 0, sizeof(amsub_info));
         amsub_info.sub_pid = pcodec->sub_pid;
         amsub_info.sub_type = pcodec->sub_type;
         amsub_info.stream_type = pcodec->stream_type;
-        if (pcodec->sub_filename)
-        {
+        if (pcodec->sub_filename) {
             amsub_info.sub_filename = pcodec->sub_filename;
             CODEC_PRINT("sub_filename=%s\n", amsub_info.sub_filename);
         }
@@ -846,14 +844,12 @@ int codec_read(codec_para_t *pcodec, void *buffer, int len)
 int codec_close(codec_para_t *pcodec)
 {
     int res = 0;
-    if (pcodec->has_audio)
-    {
+    if (pcodec->has_audio) {
         audio_stop(&pcodec->adec_priv);
         CODEC_PRINT("[%s]audio stop OK!\n", __FUNCTION__);
     }
 #ifdef SUBTITLE_EVENT
-    if (pcodec->has_sub && pcodec->sub_handle >= 0)
-    {
+    if (pcodec->has_sub && pcodec->sub_handle >= 0) {
         res |= codec_close_sub_fd(pcodec->sub_handle);
     }
 #endif
@@ -862,15 +858,11 @@ int codec_close(codec_para_t *pcodec)
     CODEC_PRINT("%s,untimed_text=%d\n", __FUNCTION__, untimed_text);
 
     //CODEC_PRINT("[%s]pcodec->has_sub=%d,pcodec->amsub_priv=%p\n", __FUNCTION__,pcodec->has_sub,pcodec->amsub_priv);
-    if (pcodec->has_sub && !untimed_text)
-    {
-        if (pcodec->amsub_priv)
-        {
+    if (pcodec->has_sub && !untimed_text) {
+        if (pcodec->amsub_priv) {
             amsub_stop(&pcodec->amsub_priv);
             CODEC_PRINT("[%s],amsub stop ok\n", __FUNCTION__);
-        }
-        else
-        {
+        } else {
             CODEC_PRINT("codec_close,subtitle not crate ok,no need close-\n");
         }
     }
@@ -2365,6 +2357,32 @@ int codec_get_audio_cur_bitrate(codec_para_t *pcodec, int *bitrate)
 {
     return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_AUDIO_AVG_BITRATE_BPS, bitrate);
 }
+/* --------------------------------------------------------------------------*/
+/**
+* @brief  codec_get_video_checkin_bitrate   get vido   latest bitrate.
+*
+* @param[in]  pcodec  Pointer of codec parameter structure
+*
+* @return     0 for success, or fail type if < 0
+*/
+/* --------------------------------------------------------------------------*/
+int codec_get_video_checkin_bitrate(codec_para_t *pcodec, int *bitrate)
+{
+    return codec_h_control(pcodec->handle, AMSTREAM_IOC_GET_VIDEO_CHECKIN_BITRATE_BPS, bitrate);
+}
+/* --------------------------------------------------------------------------*/
+/**
+* @brief  codec_get_audio_checkin_bitrate  get audio  latest bitrate.
+*
+* @param[in]  pcodec  Pointer of codec parameter structure
+*
+* @return     0 for success, or fail type if < 0
+*/
+/* --------------------------------------------------------------------------*/
+int codec_get_audio_checkin_bitrate(codec_para_t *pcodec, int *bitrate)
+{
+    return codec_h_control(pcodec->handle, AMSTREAM_IOC_GET_AUDIO_CHECKIN_BITRATE_BPS, bitrate);
+}
 
 /* --------------------------------------------------------------------------*/
 /**
@@ -2506,12 +2524,9 @@ int codec_utils_set_video_position(int x, int y, int w, int h, int rotation)
 int codec_amsub_read_outdata(codec_para_t *pcodec, amsub_info_t *amsub_info)
 {
     //CODEC_PRINT("---pcodec->amsub_priv=%p---\n",pcodec->amsub_priv);
-    if (pcodec->amsub_priv)
-    {
+    if (pcodec->amsub_priv) {
         return amsub_outdata_read(&pcodec->amsub_priv, amsub_info);
-    }
-    else
-    {
+    } else {
         CODEC_PRINT("codec_amsub_read_outdata,can not get amsub_handle\n");
         return -1;
     }
@@ -2529,18 +2544,14 @@ int codec_amsub_read_outdata(codec_para_t *pcodec, amsub_info_t *amsub_info)
 
 void codec_close_subtitle(codec_para_t *pcodec)
 {
-    if (pcodec)
-    {
+    if (pcodec) {
         pcodec->has_sub = 0;
     }
     CODEC_PRINT("enter [%s]\n", __FUNCTION__);
-    if (pcodec->amsub_priv)
-    {
+    if (pcodec->amsub_priv) {
         amsub_stop(&pcodec->amsub_priv);
         CODEC_PRINT("[%s]amsub stop ok !\n", __FUNCTION__);
-    }
-    else
-    {
+    } else {
         CODEC_PRINT("codec_close,subtitle not crate ok,no need close !\n");
     }
     return;
@@ -2559,15 +2570,13 @@ void codec_resume_subtitle(codec_para_t *pcodec, unsigned int has_sub)
 {
     pcodec->has_sub = has_sub;
     CODEC_PRINT("codec_resume_subtitle, has_sub=%d !\n", has_sub);
-    if (pcodec->has_sub)
-    {
+    if (pcodec->has_sub) {
         amsub_info_t amsub_info;
         memset(&amsub_info, 0, sizeof(amsub_info));
         amsub_info.sub_pid = pcodec->sub_pid;
         amsub_info.sub_type = pcodec->sub_type;
         amsub_info.stream_type = pcodec->stream_type;
-        if (pcodec->sub_filename)
-        {
+        if (pcodec->sub_filename) {
             amsub_info.sub_filename = pcodec->sub_filename;
             CODEC_PRINT("codec_resume_subtitle,sub_filename=%s\n", amsub_info.sub_filename);
         }

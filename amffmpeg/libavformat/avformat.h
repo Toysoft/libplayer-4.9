@@ -155,7 +155,7 @@ attribute_deprecated int av_metadata_set2(AVDictionary **pm, const char *key, co
  * This function is provided for compatibility reason and currently does nothing.
  */
 attribute_deprecated void av_metadata_conv(struct AVFormatContext *ctx, const AVMetadataConv *d_conv,
-                                                                        const AVMetadataConv *s_conv);
+        const AVMetadataConv *s_conv);
 
 /**
  * Copy metadata from one AVDictionary struct into another.
@@ -229,7 +229,7 @@ typedef struct AVProbeData {
     const char *filename;
     unsigned char *buf; /**< Buffer must have AVPROBE_PADDING_SIZE of extra allocated bytes filled with zero. */
     int buf_size;       /**< Size of buf except extra allocated bytes */
-    AVIOContext *s;		
+    AVIOContext *s;
     unsigned long pads[8];
 } AVProbeData;
 
@@ -246,12 +246,12 @@ typedef struct AVFormatParameters {
     attribute_deprecated enum PixelFormat pix_fmt;
     attribute_deprecated int channel; /**< Used to select DV channel. */
     attribute_deprecated const char *standard; /**< deprecated, use demuxer-specific options instead. */
-    attribute_deprecated unsigned int mpeg2ts_raw:1;  /**< deprecated, use mpegtsraw demuxer */
+    attribute_deprecated unsigned int mpeg2ts_raw: 1; /**< deprecated, use mpegtsraw demuxer */
     /**< deprecated, use mpegtsraw demuxer-specific options instead */
-    attribute_deprecated unsigned int mpeg2ts_compute_pcr:1;
-    attribute_deprecated unsigned int initial_pause:1;       /**< Do not begin to play the stream
+    attribute_deprecated unsigned int mpeg2ts_compute_pcr: 1;
+    attribute_deprecated unsigned int initial_pause: 1;       /**< Do not begin to play the stream
                                                                   immediately (RTSP only). */
-    attribute_deprecated unsigned int prealloced_context:1;
+    attribute_deprecated unsigned int prealloced_context: 1;
 #endif
 } AVFormatParameters;
 
@@ -273,7 +273,7 @@ typedef struct AVFormatParameters {
 #define AVFMT_TS_NONSTRICT  0x8000 /**< Format does not require strictly
                                           increasing timestamps, but they must
                                           still be monotonic */
-#define AVFMT_TS_HASPMT  0x10000                                           
+#define AVFMT_TS_HASPMT  0x10000
 
 typedef struct AVOutputFormat {
     const char *name;
@@ -435,7 +435,7 @@ typedef struct AVInputFormat {
      */
     int (*read_seek2)(struct AVFormatContext *s, int stream_index, int64_t min_ts, int64_t ts, int64_t max_ts, int flags);
 
-    int (*bufferingdata)(struct AVFormatContext *,int size);
+    int (*bufferingdata)(struct AVFormatContext *, int size);
 #if FF_API_OLD_METADATA2
     const AVMetadataConv *metadata_conv;
 #endif
@@ -458,8 +458,8 @@ typedef struct AVIndexEntry {
     int64_t pos;
     int64_t timestamp;
 #define AVINDEX_KEYFRAME 0x0001
-    int flags:2;
-    int size:30; //Yeah, trying to keep the size of this small to reduce memory requirements (it is 24 vs. 32 bytes due to possible 8-byte alignment).
+    int flags: 2;
+    int size: 30; //Yeah, trying to keep the size of this small to reduce memory requirements (it is 24 vs. 32 bytes due to possible 8-byte alignment).
     int min_distance;         /**< Minimum distance between this and the previous keyframe, used to avoid unneeded searching. */
 } AVIndexEntry;
 
@@ -566,7 +566,7 @@ typedef struct AVStream {
 
     AVProbeData probe_data;
 #define MAX_REORDER_DELAY 16
-    int64_t pts_buffer[MAX_REORDER_DELAY+1];
+    int64_t pts_buffer[MAX_REORDER_DELAY + 1];
 
     /**
      * sample aspect ratio (0 if unknown)
@@ -653,12 +653,12 @@ typedef struct AVStream {
      * added by Chen.Zhang
      * Add this member to mark the offset of the stream in the file
      */
-     unsigned int stream_offset;
-     int no_extra_offset;
-     float special_fps;  // for some special stream
-     int rotation_degree;
+    unsigned int stream_offset;
+    int no_extra_offset;
+    float special_fps;  // for some special stream
+    int rotation_degree;
     int encrypt;
-     int no_program;
+    int no_program;
     int stream_valid;
 
     int need_check_avs_version; //check avs version
@@ -726,7 +726,7 @@ typedef struct AVFormatContext {
      * streams.
      */
     struct AVPacketList *packet_buffer;
-	
+
     /**
      * Decoding: position of the first frame of the component, in
      * AV_TIME_BASE fractional seconds. NEVER set this value directly:
@@ -797,6 +797,7 @@ typedef struct AVFormatContext {
 #define AVFMT_FLAG_SS_PR    0x1000000 ///< Smoothstreaing + Playready;
 #define AVFMT_FLAG_PR_WMV   0x2000000 ///< PlayReady WMV;
 #define AVFMT_FLAG_RTSP_PROTOCOL 0x800000 ///< only use for rtsp protocol
+#define AVFMT_FLAG_NETWORK_VOD 0x400000 ///< network vod stream
 
     int loop_input;
 
@@ -919,29 +920,29 @@ typedef struct AVFormatContext {
     /* added by Z.C for some media types' media data offset, avoid to use the same data_offset above */
     int64_t media_dataoffset;
 
-	int support_seek;
+    int support_seek;
 
-	uint64_t video_avg_frame_time, audio_avg_frame_time;
+    uint64_t video_avg_frame_time, audio_avg_frame_time;
 
-	//--***********************************************
+    //--***********************************************
     /* added by C.S for divx drm certification:drm information */
     drm_t       drm;
-//--***********************************************  
+    //--***********************************************
 
     /* added by GP for storing music's embedded picture */
     int cover_data_len;
     uint8_t *cover_data;
 
-	/* 
-	 *added by XH for avoid repeat seek binary failed
-	 */
-	int seek_binary_failed;
+    /*
+     *added by XH for avoid repeat seek binary failed
+     */
+    int seek_binary_failed;
 
     /* added by Z.C for DRM content */
     int drmcontent;
-	int skip_extradata;
-	
-    // ts header packet for mpeg seq, 264/hevc sps/pps/vps 
+    int skip_extradata;
+
+    // ts header packet for mpeg seq, 264/hevc sps/pps/vps
     int ts_video_header_valid;
     uint8_t ts_video_header_packet[188];
     int64_t seek_pos_min;
@@ -1059,7 +1060,7 @@ void av_pkt_dump_log2(void *avcl, int level, AVPacket *pkt, int dump_payload,
 #if FF_API_PKT_DUMP
 attribute_deprecated void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
 attribute_deprecated void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt,
-                                          int dump_payload);
+        int dump_payload);
 #endif
 
 /**
@@ -1154,8 +1155,8 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
  * @deprecated use avformat_open_input instead.
  */
 attribute_deprecated int av_open_input_stream(AVFormatContext **ic_ptr,
-                         AVIOContext *pb, const char *filename,
-                         AVInputFormat *fmt, AVFormatParameters *ap);
+        AVIOContext *pb, const char *filename,
+        AVInputFormat *fmt, AVFormatParameters *ap);
 
 /**
  * Open a media file as input. The codecs are not opened. Only the file
@@ -1172,14 +1173,14 @@ attribute_deprecated int av_open_input_stream(AVFormatContext **ic_ptr,
  * @deprecated use avformat_open_input instead.
  */
 attribute_deprecated int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
-                       AVInputFormat *fmt,
-                       int buf_size,
-                       AVFormatParameters *ap);
+        AVInputFormat *fmt,
+        int buf_size,
+        AVFormatParameters *ap);
 attribute_deprecated int av_open_input_file_header(AVFormatContext **ic_ptr, const char *filename,
-                       AVInputFormat *fmt,
-                       int buf_size,
-                       AVFormatParameters *ap,
-                       const char *headers);
+        AVInputFormat *fmt,
+        int buf_size,
+        AVFormatParameters *ap,
+        const char *headers);
 typedef int (*player_notify_t)(int pid, int msg, unsigned long ext1, unsigned long ext2);
 int ffmpeg_register_notify(const player_notify_t notify_fn);
 int ffmpeg_notify(URLContext *h, int msg, unsigned long ext1, unsigned long ext2);
@@ -1206,7 +1207,7 @@ int ffmpeg_notify(URLContext *h, int msg, unsigned long ext1, unsigned long ext2
  * @note If you want to use custom IO, preallocate the format context and set its pb field.
  */
 int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputFormat *fmt, AVDictionary **options);
-int avformat_open_input_header(AVFormatContext **ps, const char *filename, AVInputFormat *fmt, AVDictionary **options,const char * headers);
+int avformat_open_input_header(AVFormatContext **ps, const char *filename, AVInputFormat *fmt, AVDictionary **options, const char * headers);
 
 int av_demuxer_open(AVFormatContext *ic, AVFormatParameters *ap);
 
@@ -1223,8 +1224,8 @@ AVFormatContext *avformat_alloc_context(void);
  */
 attribute_deprecated
 AVFormatContext *avformat_alloc_output_context(const char *format,
-                                               AVOutputFormat *oformat,
-                                               const char *filename);
+        AVOutputFormat *oformat,
+        const char *filename);
 #endif
 
 /**
@@ -1491,7 +1492,7 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index,
                       int64_t pos_max, int64_t pos_limit,
                       int64_t ts_min, int64_t ts_max,
                       int flags, int64_t *ts_ret,
-                      int64_t (*read_timestamp)(struct AVFormatContext *, int , int64_t *, int64_t ));
+                      int64_t (*read_timestamp)(struct AVFormatContext *, int , int64_t *, int64_t));
 
 /**
  * media file output
@@ -1713,5 +1714,5 @@ int av_match_ext(const char *filename, const char *extensions);
 
 
 /*cal low level buffering data.*/
-int av_buffering_data(AVFormatContext *s,int size);
+int av_buffering_data(AVFormatContext *s, int size);
 #endif /* AVFORMAT_AVFORMAT_H */
