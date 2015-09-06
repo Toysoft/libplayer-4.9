@@ -57,7 +57,7 @@
 /* toolchain:           MSFT Visual C++
  * target architecture: x86
  */
-#if (defined (_WIN32) && !defined (_WIN32_WCE)) || (defined (__WINS__) && defined (_SYMBIAN)) || (defined (WINCE_EMULATOR)) || (defined (_OPENWAVE_SIMULATOR))
+#if 0//(defined (_WIN32) && !defined (_WIN32_WCE)) || (defined (__WINS__) && defined (_SYMBIAN)) || (defined (WINCE_EMULATOR)) || (defined (_OPENWAVE_SIMULATOR))
 
 #pragma warning( disable : 4035 )       /* complains about inline asm not returning a value */
 
@@ -163,9 +163,9 @@ static __inline Word64 MADD64(Word64 sum64, int x, int y)
 /* toolchain:           MSFT Embedded Visual C++
  * target architecture: ARM v.4 and above (require 'M' type processor for 32x32->64 multiplier)
  */
-#elif defined (_WIN32) && defined (_WIN32_WCE) && defined (ARM)
+#elif 1//defined (_WIN32) && defined (_WIN32_WCE) && defined (ARM)
 
-static __inline short CLIPTOSHORT(int x)
+static  short CLIPTOSHORT(int x)
 {
     int sign;
 
@@ -178,7 +178,7 @@ static __inline short CLIPTOSHORT(int x)
     return (short)x;
 }
 
-static __inline int FASTABS(int x)
+static  int FASTABS(int x)
 {
     int sign;
 
@@ -189,7 +189,7 @@ static __inline int FASTABS(int x)
     return x;
 }
 
-static __inline int CLZ(int x)
+static  int CLZ(int x)
 {
     int numZeros;
 
@@ -226,7 +226,7 @@ static __inline int CLZ(int x)
 extern "C" {
 #endif
 
-    typedef __int64 Word64;
+    typedef long long Word64;
 
     typedef union _U64 {
         Word64 w64;
@@ -238,11 +238,20 @@ extern "C" {
     } U64;
 
     /* manual name mangling for just this platform (must match labels in .s file) */
-#define MULSHIFT32      raac_MULSHIFT32
-#define MADD64          raac_MADD64
+//#define MULSHIFT32      raac_MULSHIFT32
+//#define MADD64          raac_MADD64
+static  int MULSHIFT32(int x, int y)
+{
+	long c;
+	c = (long long)x * y;
+	return (int)c;
+}
 
-    int MULSHIFT32(int x, int y);
-    Word64 MADD64(Word64 sum64, int x, int y);
+static  Word64 MADD64(Word64 sum64, int x, int y)
+{
+	sum64 += (long long)x * y;
+	return sum64;
+}
 
 #ifdef __cplusplus
 }

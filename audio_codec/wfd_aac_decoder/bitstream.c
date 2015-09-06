@@ -82,7 +82,7 @@ void SetBitstreamPointer(BitStreamInfo *bsi, int nBytes, unsigned char *buf)
  *              always loads 4 new bytes except when bsi->nBytes < 4 (end of buffer)
  *              stores data as big-endian in cache, regardless of machine endian-ness
  **************************************************************************************/
-static __inline void RefillBitstreamCache(BitStreamInfo *bsi)
+static  void RefillBitstreamCache(BitStreamInfo *bsi)
 {
     int nBytes = bsi->nBytes;
 
