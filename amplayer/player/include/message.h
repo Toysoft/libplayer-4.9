@@ -20,6 +20,7 @@ typedef enum {
     CMD_FB              = (1 << 11),
     CMD_SWITCH_AID      = (1 << 12),
     CMD_SWITCH_SID      = (1 << 13),
+    CMD_SWITCH_TSPROGRAM= (1 << 14),
     CMD_CTRL_MAX        = (1 << 31),
 } ctrl_cmd_t;
 

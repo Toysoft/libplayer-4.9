@@ -627,6 +627,29 @@ int player_aid(int pid, int audio_id)
 
 }
 
+int player_switch_program(int pid, int video_pid, int audio_pid)
+{
+    player_cmd_t cmd;
+
+    int ret;
+
+    log_print("[player_switch_program:enter]pid=%d video_pid=%d audio_pid=%d CMD_SWITCH_TSPROGRAM:%x\n",
+        pid, video_pid, audio_pid, CMD_SWITCH_TSPROGRAM);
+
+    MEMSET(&cmd, 0, sizeof(player_cmd_t));
+
+    cmd.ctrl_cmd = CMD_SWITCH_TSPROGRAM;
+    cmd.param = video_pid;
+    cmd.param1= audio_pid;
+
+    ret = player_send_message(pid, &cmd);
+    log_print("[player_switch_program:exit]pid=%d ret=%d\n", pid, ret);
+
+    return ret;
+
+}
+
+
 /* --------------------------------------------------------------------------*/
 /**
  * @function    player_sid

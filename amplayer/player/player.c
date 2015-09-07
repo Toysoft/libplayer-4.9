@@ -522,6 +522,10 @@ void check_msg(play_para_t *para, player_cmd_t *msg)
     else if (msg->ctrl_cmd & CMD_SWITCH_SID) {
         para->playctrl_info.switch_sub_id = msg->param;
         player_switch_sub(para);
+    }else if (msg->ctrl_cmd & CMD_SWITCH_TSPROGRAM) {
+        para->playctrl_info.switch_ts_video_pid = msg->param;
+        para->playctrl_info.switch_ts_audio_pid = msg->param1;
+        para->playctrl_info.switch_ts_program_flag = 1;
     }
 #endif
 }
@@ -753,6 +757,10 @@ int check_flag(play_para_t *p_para)
             p_para->sstream_info.cur_subindex = subtitle_curr;
             player_switch_sub(p_para);
         }
+    }
+
+    if (p_para->playctrl_info.switch_ts_program_flag == 1) {
+        return BREAK_FLAG;
     }
 
     return NONO_FLAG;
@@ -1539,22 +1547,23 @@ write_packet:
             update_player_states(player, 0);
         }
 
-        log_print("pid[%d]::loop=%d search=%d ff=%d fb=%d reset=%d step=%d\n",
+        log_print("pid[%d]::loop=%d search=%d ff=%d fb=%d reset=%d step=%d switch_ts_program_flag:%d\n",
                   player->player_id,
                   player->playctrl_info.loop_flag, player->playctrl_info.search_flag,
                   player->playctrl_info.fast_forward, player->playctrl_info.fast_backward,
-                  player->playctrl_info.reset_flag, player->playctrl_info.f_step);
+                  player->playctrl_info.reset_flag, player->playctrl_info.f_step, player->playctrl_info.switch_ts_program_flag);
 
         exit_flag = (!player->playctrl_info.loop_flag)   &&
                     (!player->playctrl_info.search_flag) &&
                     (!player->playctrl_info.fast_forward) &&
                     (!player->playctrl_info.fast_backward) &&
-                    (!player->playctrl_info.reset_flag);
+                    (!player->playctrl_info.reset_flag) &&
+                    (!player->playctrl_info.switch_ts_program_flag);
 
         if (exit_flag) {
             break;
         } else {
-            if (get_player_state(player) != PLAYER_SEARCHING) {
+            if (get_player_state(player) != PLAYER_SEARCHING && player->playctrl_info.switch_ts_program_flag == 0) {
                 set_auto_refresh_rate(0);
                 set_player_state(player, PLAYER_SEARCHING);
                 update_playing_info(player);
@@ -1598,6 +1607,7 @@ write_packet:
             player->playctrl_info.search_flag = 0;
             player->playctrl_info.reset_flag = 0;
             player->playctrl_info.end_flag = 0;
+            player->playctrl_info.switch_ts_program_flag = 0;
             av_packet_release(pkt);
         }
     } while (1);

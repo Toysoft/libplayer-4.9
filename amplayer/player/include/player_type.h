@@ -147,6 +147,18 @@ typedef struct {
 } msub_info_t;
 
 typedef struct {
+    int video_pid;
+    int audio_track_num;
+    int audio_pid[MAX_AUDIO_STREAMS]; //max audio streams is 16 per programe
+    char programe_name[64];
+} ts_programe_detail_t;
+
+typedef struct {
+    int programe_num;
+    ts_programe_detail_t ts_programe_detail[MAX_VIDEO_STREAMS];
+} ts_programe_info_t;
+
+typedef struct {
     char *filename;
     int  duration;
     long long  file_size;
@@ -172,6 +184,7 @@ typedef struct {
     mvideo_info_t *video_info[MAX_VIDEO_STREAMS];
     maudio_info_t *audio_info[MAX_AUDIO_STREAMS];
     msub_info_t *sub_info[MAX_SUB_STREAMS];
+    ts_programe_info_t ts_programe_info;
 } media_info_t;
 
 typedef struct player_info {

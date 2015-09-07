@@ -16,6 +16,7 @@
 #include "player_ffmpeg_ctrl.h"
 #include "system/systemsetting.h"
 #include <cutils/properties.h>
+#include <iconv.h>
 
 extern es_sub_t es_sub_buf[SSTREAM_MAX_NUM];
 
@@ -555,6 +556,129 @@ static int check_same_program(play_para_t *p_para, int vproginx, int audiopid, i
     return 0;
 }
 
+static void get_ts_program(play_para_t *p_para, int program_num)
+{
+    int i, j, index;
+    AVStream *pStream;
+    AVProgram *pPrograms;
+    AVFormatContext *pFormat;
+    ts_programe_info_t *ts_programe_info;
+    ts_programe_detail_t *ts_programe_detail;
+    AVDictionaryEntry *tag = NULL;
+
+    pFormat = p_para->pFormatCtx;
+    pPrograms = pFormat->programs[program_num];
+
+    ts_programe_info = &p_para->media_info.ts_programe_info;
+    ts_programe_detail = &ts_programe_info->ts_programe_detail[ts_programe_info->programe_num];
+
+    for (i = 0; i < pPrograms->nb_stream_indexes; i++) {
+        index = pPrograms->stream_index[i];
+        pStream = pFormat->streams[index];
+
+        if (pStream->id == 0)//drop 0 pid
+            continue;
+
+        if (pStream->codec->codec_type == CODEC_TYPE_VIDEO) {
+            ts_programe_detail->video_pid = pStream->id;
+            tag = av_dict_get(pPrograms->metadata, "service_name", NULL, 0);
+
+            char* strGB = tag->value;
+            int lenSrc = strlen(tag->value);
+            int lenSrc_o = lenSrc;
+            int lenDst = lenSrc*5;
+            char* output_p  = (char*) malloc(lenDst);
+            char* pFreeOut = output_p;
+
+            iconv_t cd = iconv_open("UTF-8", "GBK");
+            iconv(cd, &strGB, &lenSrc,  &output_p, &lenDst);
+            iconv_close(cd);
+
+            memcpy(&(ts_programe_detail->programe_name), pFreeOut, lenSrc_o*5 - lenDst);
+            free(pFreeOut);
+        } else if (pStream->codec->codec_type == CODEC_TYPE_AUDIO) {
+            for (j = 0; j < MAX_AUDIO_STREAMS; j++) {
+                if (ts_programe_detail->audio_pid[j] == pStream->id)
+                    break;
+
+                ts_programe_detail->audio_pid[ts_programe_detail->audio_track_num] = pStream->id;
+                ts_programe_detail->audio_track_num++;
+                j++;
+                break;
+            }
+        }
+    }
+    ts_programe_info->programe_num++;
+}
+
+static int ts_program_exist(play_para_t *p_para, int pid)
+{
+    int i;
+    ts_programe_info_t *ts_programe_info;
+
+    ts_programe_info = &p_para->media_info.ts_programe_info;
+
+    for (i = 0; i < ts_programe_info->programe_num; i++) {
+        if (ts_programe_info->ts_programe_detail[i].video_pid == pid)
+            return 0;
+    }
+
+    return -1;
+}
+
+int player_get_ts_index_of_pid(play_para_t *p_para, int pid){
+    int i;
+    AVStream *pStream;
+    AVFormatContext *pFormat = p_para->pFormatCtx;
+
+    for (i = 0; i < pFormat->nb_streams; i++) {
+        pStream = pFormat->streams[i];
+        if (pid == pStream->id)
+            return i;
+    }
+
+    return 0xffff;
+}
+
+int player_get_ts_pid_of_index(play_para_t *p_para, int index){
+    int i;
+    AVStream *pStream;
+    AVFormatContext *pFormat = p_para->pFormatCtx;
+
+    if (index < pFormat->nb_streams && index >= 0) {
+        pStream = pFormat->streams[index];
+        return (pStream != NULL)?(pStream->id):(-1);
+    }
+
+    return -1;
+}
+
+static void get_ts_program_info(play_para_t *p_para)
+{
+    int i, j, index;
+    AVStream *pStream;
+    int ts_program;
+    ts_programe_info_t *ts_programe_info;
+
+    AVFormatContext *pFormat = p_para->pFormatCtx;
+
+    ts_programe_info = &p_para->media_info.ts_programe_info;
+    memset(ts_programe_info, 0, sizeof(ts_programe_info_t));
+
+    for (i = 0; i < pFormat->nb_programs; i++) {
+        for (j = 0; j < pFormat->programs[i]->nb_stream_indexes; j++) {
+            index = pFormat->programs[i]->stream_index[j];
+            pStream = pFormat->streams[index];
+            if (pStream->codec->codec_type == CODEC_TYPE_VIDEO) {
+                ts_program = ts_program_exist(p_para, pStream->id);
+                if (ts_program != 0 && pStream->codec->width != 0 && pStream->codec->height != 0)
+                   get_ts_program(p_para, i);
+                break;
+            }
+        }
+    }
+}
+
 static void get_stream_info(play_para_t *p_para)
 {
     unsigned int i, k, j;
@@ -590,6 +714,7 @@ static void get_stream_info(play_para_t *p_para)
     p_para->sstream_num = 0;
 
     check_no_program(p_para);
+    get_ts_program_info(p_para);
 
     //for mutil programs TS, get the first video stream PID and program index, we will filter all the audio & subtitle streams are not in the same program.
     if (!strcmp(pFormat->iformat->name, "mpegts") && pFormat->nb_programs > 1) {
@@ -1276,6 +1401,31 @@ int player_dec_reset(play_para_t *p_para)
     float time_point = p_para->playctrl_info.time_point;
     int64_t timestamp = 0;
     int mute_flag = 0;
+
+    int video_index, audio_index;
+
+    if (p_para->playctrl_info.switch_ts_program_flag == 1) {
+
+        log_print("[%s %d] video_index:%d audio_index:%d total:%d\n", __FUNCTION__, __LINE__, video_index, audio_index, pFormatCtx->nb_streams);
+
+        video_index = player_get_ts_index_of_pid(p_para, p_para->playctrl_info.switch_ts_video_pid);
+        audio_index = player_get_ts_index_of_pid(p_para, p_para->playctrl_info.switch_ts_audio_pid);
+
+        log_print("[%s %d] switch to video_index:%d audio_index:%d\n", __FUNCTION__, __LINE__, video_index, audio_index);
+
+        if (video_index < pFormatCtx->nb_streams)
+            p_para->vstream_info.video_index = video_index;
+        else
+            video_index = p_para->vstream_info.video_index;
+
+        if (audio_index < pFormatCtx->nb_streams)
+            p_para->astream_info.audio_index = audio_index;
+        else
+        audio_index = p_para->astream_info.audio_index;
+
+        p_para->playctrl_info.switch_ts_video_pid = 0;
+        p_para->playctrl_info.switch_ts_audio_pid = 0;
+    }
 
     player_startsync_set(); // maybe reset
     timestamp = (int64_t)(time_point * AV_TIME_BASE);

@@ -88,6 +88,7 @@ typedef  struct {
     unsigned int pts_valid;
     unsigned int sync_flag;
     unsigned int reset_flag;
+    unsigned int switch_ts_program_flag;
     unsigned int no_audio_flag;
     unsigned int no_video_flag;
     unsigned int has_sub_flag;
@@ -108,6 +109,8 @@ typedef  struct {
     unsigned int audio_switch_smatch;
     unsigned int switch_audio_id;
     unsigned int switch_sub_id;
+    unsigned int switch_ts_video_pid;
+    unsigned int switch_ts_audio_pid;
     unsigned int is_playlist;
     unsigned int lowbuffermode_flag;
     unsigned int ignore_ffmpeg_errors;
@@ -154,4 +157,7 @@ void player_para_reset(struct play_para *para);
 int player_dec_reset(struct play_para *p_para);
 void player_clear_ctrl_flags(p_ctrl_info_t *cflag);
 int player_offset_init(struct play_para *p_para);
+int player_get_ts_pid_of_index(struct play_para *p_para, int index);
+int player_get_ts_index_of_pid(struct play_para *p_para, int pid);
+
 #endif

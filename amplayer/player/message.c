@@ -319,6 +319,10 @@ int cmd2str(player_cmd_t *cmd, char *buf)
             len = sprintf(buf, "%s:%d", "SWITCH_SUBTITLE", cmd->param);
             break;
 
+        case CMD_SWITCH_TSPROGRAM:
+            len = sprintf(buf, "%s:%d", "SWITCH_TSPROGRAM", cmd->param);
+            break;
+
         default:
             len = sprintf(buf, "%s", "UNKNOW_PLAYER_CTRL_COMMAND");
             break;

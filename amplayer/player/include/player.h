@@ -24,6 +24,7 @@ int     player_forward(int pid, int speed);
 int     player_backward(int pid, int speed);
 int     player_aid(int pid, int audio_id);
 int     player_sid(int pid, int sub_id);
+int     player_switch_program(int pid, int video_pid, int audio_pid);
 int     player_progress_exit(void);
 int     player_list_allpid(pid_info_t *pid);
 int     check_pid_valid(int pid);
