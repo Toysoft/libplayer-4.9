@@ -47,7 +47,7 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/include \
 	$(LOCAL_PATH)/../../amadec/include \
 	$(LOCAL_PATH)/../../amffmpeg\
 	$(LOCAL_PATH)/../../amavutils/include \
-        $(TOP)/packages/amlogic/LibPlayer/third_parts/libiconv-1.12/include
+	$(LOCAL_PATH)/../../third_parts/libiconv-1.12/include
 
 LOCAL_MODULE := libamplayer
 
@@ -84,7 +84,7 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/include \
 	$(LOCAL_PATH)/../common\
         $(LOCAL_PATH)/../../amffmpeg\
         $(LOCAL_PATH)/../../amavutils/include \
-        $(TOP)/packages/amlogic/LibPlayer/third_parts/libiconv-1.12/include
+		$(LOCAL_PATH)/../../third_parts/libiconv-1.12/include
 
 LOCAL_CFLAGS+=-DHAVE_VERSION_INFO
 LOCAL_CFLAGS+=-DLIBPLAYER_GIT_VERSION=\"${LIBPLAYER_GIT_VERSION}${LIBPLAYER_GIT_DIRTY}\"
