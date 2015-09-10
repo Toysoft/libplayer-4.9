@@ -589,7 +589,6 @@ int curl_wrapper_perform(CURLWContext *con)
     curl_multi_timeout(con->multi_curl, &multi_timeout);
     curl_multi_perform(con->multi_curl, &running_handle_cnt);
 
-RETRY:
     while (running_handle_cnt) {
         struct timeval tv;
         tv.tv_sec = 0;
@@ -632,7 +631,8 @@ RETRY:
             }
             break;
         }
-        if (con->connected && !con->chunked && select_zero_cnt == SELECT_RETRY_TIMES) {
+        // need to do read seek in upper layer if chunked.
+        if (con->connected/* && !con->chunked */&& select_zero_cnt == SELECT_RETRY_TIMES) {
             select_breakout_flag = 1;
             break;
         }
@@ -665,10 +665,6 @@ RETRY:
                 CLOGI("curl_multi_info_read curl not found\n");
             } else {
                 CLOGI("[perform done]: completed with status: [%d]\n", msg->data.result);
-                if (con->chunked == 1 && msg->data.result == 18) {
-                    running_handle_cnt = 1;
-                    goto RETRY;
-                }
                 if (CURLE_OK != msg->data.result) {
                     tmp_h->perform_error_code = CURLERROR(msg->data.result + C_ERROR_PERFORM_BASE_ERROR);
                     ret = tmp_h->perform_error_code;
@@ -802,7 +798,7 @@ int curl_wrapper_seek(CURLWContext * con, CURLWHandle * h, int64_t off, Curl_Dat
             return -1;
         }
 #else
-        if (h->chunk_size > 0) {  // not support this when transfer in trunk mode.
+        if (h->chunk_size > 0) {  // not support this when transfer in chunked mode.
             ret = curl_easy_setopt(h->curl, CURLOPT_RESUME_FROM_LARGE, (curl_off_t)off);
         }
 #endif
