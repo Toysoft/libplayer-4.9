@@ -44,7 +44,11 @@ static void vcodec_info_init(play_para_t *p_para, codec_para_t *v_codec)
         || (vinfo->video_format == VFORMAT_H264MVC)
         || (vinfo->video_format == VFORMAT_H264_4K2K)
         || (vinfo->video_format == VFORMAT_HEVC)) {
-        if (((vinfo->video_format == VFORMAT_H264) || (vinfo->video_format == VFORMAT_H264MVC) || (vinfo->video_format == VFORMAT_H264_4K2K)) && (p_para->file_type == AVI_FILE)) {
+        if (((vinfo->video_format == VFORMAT_H264)
+            || (vinfo->video_format == VFORMAT_H264MVC)
+            || (vinfo->video_format == VFORMAT_H264_4K2K)
+            || (vinfo->video_format == VFORMAT_MPEG4))
+            && (p_para->file_type == AVI_FILE)) {
             v_codec->am_sysinfo.param     = (void *)(EXTERNAL_PTS | SYNC_OUTSIDE);
         }
         if ((vinfo->video_format == VFORMAT_H264) && (p_para->file_type == MKV_FILE)) {
