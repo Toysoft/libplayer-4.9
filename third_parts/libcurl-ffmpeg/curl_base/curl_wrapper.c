@@ -154,13 +154,20 @@ static size_t curl_dl_chunkdata_callback(void *ptr, size_t size, size_t nmemb, v
                 return -1;
             }
         }
+        if (mem->handle->interruptwithpid) {
+            if ((*(mem->handle->interruptwithpid))(mem->handle->parent_thread_id) && !mem->ctx->ignore_interrupt) {
+                CLOGI("curl_dl_chunkdata_callback interruptedwithpid\n");
+                pthread_mutex_unlock(&mem->handle->fifo_mutex);
+                return -1;
+            }
+        }
 
         struct timeval now;
         struct timespec timeout;
         gettimeofday(&now, NULL);
-        timeout.tv_sec = now.tv_sec + (200 * 1000 + now.tv_usec) / 1000000;
+        timeout.tv_sec = now.tv_sec + (100 * 1000 + now.tv_usec) / 1000000;
         timeout.tv_nsec = now.tv_usec * 1000;
-        pthread_cond_timedwait(&mem->handle->pthread_cond, &mem->handle->fifo_mutex, &timeout); // 200ms
+        pthread_cond_timedwait(&mem->handle->pthread_cond, &mem->handle->fifo_mutex, &timeout); // 100ms
         left = curl_fifo_space(mem->handle->cfifo);
     }
     curl_fifo_generic_write(mem->handle->cfifo, ptr, realsize, NULL);
@@ -432,6 +439,8 @@ CURLWContext * curl_wrapper_init(int flags)
         return NULL;
     }
     handle->interrupt = NULL;
+    handle->interruptwithpid = NULL;
+    handle->parent_thread_id = NULL;
     handle->curl_h_num = 0;
     handle->curl_handle = NULL;
     return handle;
@@ -455,6 +464,8 @@ CURLWHandle * curl_wrapper_open(CURLWContext *h, const char * uri, const char * 
     }
     curl_h->infonotify = NULL;
     curl_h->interrupt = NULL;
+    curl_h->interruptwithpid = NULL;
+    curl_h->parent_thread_id = NULL;
     if (curl_wrapper_add_curl_handle(h, curl_h) == -1) {
         return NULL;
     }
@@ -577,7 +588,13 @@ int curl_wrapper_perform(CURLWContext *con)
 
     if (con->interrupt) {
         if ((*(con->interrupt))() && !con->ignore_interrupt) {
-            CLOGI("curl_wrapper_perform interrupted when multi perform\n");
+            CLOGI("[%s:%d] interrupted when multi perform\n", __FUNCTION__, __LINE__);
+            return C_ERROR_OK; // prevent read fail.
+        }
+    }
+    if (con->interruptwithpid) {
+        if ((*(con->interruptwithpid))(con->parent_thread_id) && !con->ignore_interrupt) {
+            CLOGI("[%s:%d] interruptedwithpid when multi perform\n", __FUNCTION__, __LINE__);
             return C_ERROR_OK; // prevent read fail.
         }
     }
@@ -605,7 +622,13 @@ int curl_wrapper_perform(CURLWContext *con)
         }
         if (con->interrupt) {
             if ((*(con->interrupt))() && !con->ignore_interrupt) {
-                CLOGI("curl_wrapper_perform interrupted when multi perform\n");
+                CLOGI("[%s:%d] interrupted when multi perform\n", __FUNCTION__, __LINE__);
+                break;
+            }
+        }
+        if (con->interruptwithpid) {
+            if ((*(con->interruptwithpid))(con->parent_thread_id) && !con->ignore_interrupt) {
+                CLOGI("[%s:%d] interruptedwithpid when multi perform\n", __FUNCTION__, __LINE__);
                 break;
             }
         }

@@ -12,13 +12,13 @@ typedef struct _CFContext {
     int perform_retval;
     int http_code;
     int seekable;
-    //int is_seeking;
-    //int thread_first_run;
     int64_t filesize;
     pthread_t pid;
     pthread_mutex_t quit_mutex;
     pthread_cond_t quit_cond;
     int (*interrupt)(void);
+    int (*interruptwithpid)(void *);
+    void * parent_thread_id;
     CURLWContext * cwc_h;
     CURLWHandle * cwh_h;
     Curl_Data * cwd;
@@ -39,7 +39,10 @@ int curl_fetch_http_set_headers(CFContext * handle, const char * headers);
 int curl_fetch_http_set_cookie(CFContext * handle, const char * cookie);
 int curl_fetch_get_info(CFContext * handle, curl_info cmd, uint32_t flag, void * info);
 void curl_fetch_register_interrupt(CFContext * handle, interruptcallback pfunc);
-//int curl_fetch_interrupt(CFContext * handle);
+
+////////////// interrupt with pid for nuplayer //////////////
+void curl_fetch_register_interrupt_pid(CFContext * handle, interruptcallbackwithpid pfunc);
+void curl_fetch_set_parent_pid(CFContext * handle, void * thread_id);
 
 #ifdef __cplusplus
 }

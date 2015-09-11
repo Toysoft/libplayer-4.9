@@ -105,6 +105,8 @@ CFContext * curl_fetch_init(const char * uri, const char * headers, int flags)
     handle->relocation = NULL;
     handle->headers = NULL;
     handle->interrupt = NULL;
+    handle->interruptwithpid = NULL;
+    handle->parent_thread_id = NULL;
     pthread_mutex_init(&handle->quit_mutex, NULL);
     pthread_cond_init(&handle->quit_cond, NULL);
     if (headers) {
@@ -140,6 +142,12 @@ int curl_fetch_open(CFContext * h)
         if (h->interrupt) {
             if ((*(h->interrupt))()) {
                 CLOGE("***** CURL INTERRUPTED *****");
+                return -1;  // consider for seek interrupt
+            }
+        }
+        if (h->interruptwithpid) {
+            if ((*(h->interruptwithpid))(h->parent_thread_id)) {
+                CLOGE("***** CURL INTERRUPTED WITH PID *****");
                 return -1;  // consider for seek interrupt
             }
         }
@@ -231,6 +239,12 @@ int curl_fetch_http_keepalive_open(CFContext * h, const char * uri)
         if (h->interrupt) {
             if ((*(h->interrupt))()) {
                 CLOGE("***** CURL INTERRUPTED *****");
+                return -1;  // consider for seek interrupt
+            }
+        }
+        if (h->interruptwithpid) {
+            if ((*(h->interruptwithpid))(h->parent_thread_id)) {
+                CLOGE("***** CURL INTERRUPTED WITH PID *****");
                 return -1;  // consider for seek interrupt
             }
         }
@@ -530,5 +544,28 @@ void curl_fetch_register_interrupt(CFContext * h, interruptcallback pfunc)
         h->cwc_h->interrupt = pfunc;
         h->cwh_h->interrupt = pfunc;
     }
+    return;
+}
+
+void curl_fetch_register_interrupt_pid(CFContext * h, interruptcallbackwithpid pfunc)
+{
+    if (!h || !h->cwc_h || !h->cwh_h) {
+        return;
+    }
+    if (pfunc) {
+        h->interruptwithpid = pfunc;
+        h->cwc_h->interruptwithpid = pfunc;
+        h->cwh_h->interruptwithpid = pfunc;
+    }
+    return;
+}
+
+void curl_fetch_set_parent_pid(CFContext * h, void * thread_id) {
+    if (!h || !h->cwc_h || !h->cwh_h) {
+        return;
+    }
+    h->parent_thread_id = thread_id;
+    h->cwc_h->parent_thread_id = thread_id;
+    h->cwh_h->parent_thread_id = thread_id;
     return;
 }

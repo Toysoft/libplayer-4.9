@@ -17,6 +17,7 @@
 
 typedef void (*infonotifycallback)(void * info, int * ext);
 typedef int (*interruptcallback)(void);
+typedef int (*interruptcallbackwithpid)(void *);
 
 typedef struct _CURLWHandle {
     char uri[MAX_CURL_URI_SIZE];
@@ -38,6 +39,8 @@ typedef struct _CURLWHandle {
     double dl_speed;
     void (*infonotify)(void * info, int * ext);
     int (*interrupt)(void);
+    int (*interruptwithpid)(void *);
+    void * parent_thread_id;
     pthread_mutex_t fifo_mutex;
     pthread_mutex_t info_mutex;
     pthread_cond_t pthread_cond;
@@ -54,6 +57,8 @@ typedef struct _CURLWContext {
     int connected;
     int ignore_interrupt;
     int (*interrupt)(void);
+    int (*interruptwithpid)(void *);
+    void * parent_thread_id;
     CURLM *multi_curl;
     CURLWHandle * curl_handle;
 } CURLWContext;
