@@ -363,6 +363,7 @@ static void momo2_mode_mix(short*buf, int nsamps, int channels)
     }
 }
 
+#define  RESAMPLE_THRESHOLD     (30 * TIME_UNIT90K / 1000)
 void audioCallback(int event, void* user, void *info)
 {
     int len, i;
@@ -376,6 +377,7 @@ void audioCallback(int event, void* user, void *info)
 	struct am_io_param am_io;
 
     if (event != AudioTrack::EVENT_MORE_DATA) {
+        adec_refresh_pts(audec);
         adec_print(" ****************** audioCallback: event = %d g_bst->buf_level/%d g_bst_raw->buf_level/%d [-1:mean unknown] \n", event,audec->g_bst==NULL?-1:audec->g_bst->buf_level,audec->g_bst_raw==NULL?-1:audec->g_bst_raw->buf_level);
         return;
     }
@@ -509,22 +511,21 @@ void audioCallback(int event, void* user, void *info)
                     }
                 }
         
-                if (audec->apts64 - audec->last_apts64 > TIME_UNIT90K/10) {
+                if (audec->apts64 - audec->last_apts64 > RESAMPLE_THRESHOLD) {
                     int64_t diff_discontinue = abs(pcrscr64 - apts64);
-			if (diff_discontinue > (int64_t)(TIME_UNIT90K*3)){
-			    adec_print("discontinue: #pcrmaster: %lld, %lld, %lld, %d,%d,--------\n", 
-                            apts64,pcrscr64,apts64-pcrscr64,(100*TIME_UNIT90K/1000),((pcrscr64 - apts64) > (int64_t)(100*TIME_UNIT90K/1000)));
+                    if (diff_discontinue > (int64_t)(TIME_UNIT90K * 3)) {
+                        adec_print("discontinue: #pcrmaster: %lld, %lld, %lld, %d,%d,--------\n", apts64, pcrscr64,
+                        apts64 - pcrscr64, RESAMPLE_THRESHOLD, ((pcrscr64 - apts64) > (int64_t)(100 * TIME_UNIT90K / 1000)));
                         af_set_resample_type(RESAMPLE_TYPE_NONE);
-			}
-                    else if ((pcrscr64 - apts64) > (int64_t)(100*TIME_UNIT90K/1000)) {
+                    } else if ((pcrscr64 - apts64) > (int64_t)RESAMPLE_THRESHOLD) {
                         af_set_resample_type(RESAMPLE_TYPE_DOWN);
                         adec_print("down: #pcrmaster enable:%d, %lld, %lld, %lld,  --------\n", af_get_resample_enable_flag(),apts64,pcrscr64,pcrscr64-apts64);
-                    } else if ((apts64 - pcrscr64) > (int64_t)(100*TIME_UNIT90K/1000)) {
+                    } else if ((apts64 - pcrscr64) > (int64_t)RESAMPLE_THRESHOLD) {
                         af_set_resample_type(RESAMPLE_TYPE_UP);
                         adec_print("up: #pcrmaster enable:%d, %lld, %lld, %lld, --------\n", af_get_resample_enable_flag(), apts64,pcrscr64,apts64-pcrscr64);
                     } else {
-                        adec_print("none: #pcrmaster: %lld, %lld, %lld, %d,%d,--------\n", 
-                            apts64,pcrscr64,apts64-pcrscr64,(100*TIME_UNIT90K/1000),((pcrscr64 - apts64) > (int64_t)(100*TIME_UNIT90K/1000)));
+                        adec_print("none: #pcrmaster: %lld, %lld, %lld, %d,%d,--------\n",
+                        apts64,pcrscr64,apts64-pcrscr64,RESAMPLE_THRESHOLD,((pcrscr64 - apts64) > (int64_t)(100*TIME_UNIT90K/1000)));
                         af_set_resample_type(RESAMPLE_TYPE_NONE);
                     }
                     audec->last_apts64 = apts64;

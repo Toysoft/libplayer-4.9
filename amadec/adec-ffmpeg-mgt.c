@@ -204,6 +204,7 @@ unsigned long  armdec_get_pts(dsp_operations_t *dsp_ops)
     int data_width, channels, samplerate;
     unsigned long long frame_nums ;
     unsigned long delay_pts;
+    char value[PROPERTY_VALUE_MAX];
     aml_audio_dec_t *audec = (aml_audio_dec_t *)dsp_ops->audec;
     switch (audec->g_bst->data_width) {
     case AV_SAMPLE_FMT_U8:
@@ -218,6 +219,13 @@ unsigned long  armdec_get_pts(dsp_operations_t *dsp_ops)
     default:
         data_width = 16;
     }
+
+    int pts_delta = 0;
+    if ( property_get("media.libplayer.pts_delta",value,NULL) > 0)
+    {
+        pts_delta = atoi(value);
+    }
+
     channels = audec->g_bst->channels;
     samplerate = audec->g_bst->samplerate;
     if (!channels || !samplerate) {
@@ -269,6 +277,9 @@ unsigned long  armdec_get_pts(dsp_operations_t *dsp_ops)
         }
         frame_nums = (audec->out_len_after_last_valid_pts * 8 / (data_width * channels));
         pts += (frame_nums * 90000 / samplerate);
+        pts += 90000 / 1000 * pts_delta;
+        if (pts < 0)
+            pts = 0;
         //adec_print("decode_offset:%d out_pcm:%d   pts:%d \n",decode_offset,out_len_after_last_valid_pts,pts);
         return pts;
     }
@@ -284,6 +295,10 @@ unsigned long  armdec_get_pts(dsp_operations_t *dsp_ops)
     audec->last_valid_pts = pts;
     audec->out_len_after_last_valid_pts = 0;
     //adec_print("====get pts:%ld offset:%ld frame_num:%lld delay:%ld \n",val,decode_offset,frame_nums,delay_pts);
+
+    val += 90000 / 1000 * pts_delta; // for a/v sync test,some times audio ahead video +28ms.so add +15ms to apts to .....
+    if (val < 0)
+        val = 0;
     return val;
 }
 
