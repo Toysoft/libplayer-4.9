@@ -48,7 +48,8 @@ static void response_process(char * line, Curl_Data * buf)
         if (!strncasecmp(line, "Transfer-Encoding", 17) && strstr(line, "chunked")) {
             buf->ctx->chunked = 1;
         }
-        if (!strncasecmp(line, "\r\n", 2)) {
+        if (!strncasecmp(line, "\n", 1)
+            || !strncasecmp(line, "\r", 1)) {
             buf->handle->open_quited = 1;
         }
         return;
