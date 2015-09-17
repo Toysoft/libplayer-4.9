@@ -117,7 +117,7 @@ size_t c_strlcat(char *dst, const char *src, size_t size)
     if (size <= len + 1) {
         return len + strlen(src);
     }
-    return len + av_strlcpy(dst + len, src, size - len);
+    return len + c_strlcpy(dst + len, src, size - len);
 }
 
 size_t c_strlcatf(char *dst, size_t size, const char *fmt, ...)

@@ -123,18 +123,17 @@ int curl_fetch_open(CFContext * h)
         CLOGE("CFContext invalid\n");
         return -1;
     }
-#if 1
     if (h->prot_type == C_PROT_HTTP || h->prot_type == C_PROT_HTTPS) {
         curl_wrapper_set_para(h->cwh_h, NULL, C_MAX_REDIRECTS, 10, NULL);
-        //curl_wrapper_set_para(h->cwh_h, NULL, C_USER_AGENT, 0, IPAD_IDENT);
         curl_wrapper_set_para(h->cwh_h, (void *)h->cwd, C_HEADERS, 0, NULL);
-    }
-#endif
-    if (h->headers) {
-        curl_fetch_http_set_headers(h, h->headers);
+        if (h->headers) {
+            curl_fetch_http_set_headers(h, h->headers);
+        }
+        if (!h->headers || !strstr(h->headers, "User-Agent:")) {
+            curl_wrapper_set_para(h->cwh_h, NULL, C_USER_AGENT, 0, IPAD_IDENT);
+        }
     }
 
-    //h->thread_first_run = 1;
     curl_fetch_start_local_run(h);
 
     int timeout = 0;
@@ -297,16 +296,6 @@ static void * curl_fetch_thread_run(void *_handle)
 {
     CLOGI("curl_fetch_thread_run enter\n");
     CFContext * h = (CFContext *)_handle;
-#if 0
-    if (h->thread_first_run) {  // care of instant seeking after open
-        h->thread_first_run = 0;
-        usleep(20 * 1000);
-        if (h->is_seeking) {
-            h->thread_quited = 1;
-            return NULL;
-        }
-    }
-#endif
     h->perform_retval = curl_wrapper_perform(h->cwc_h);
     pthread_mutex_lock(&h->quit_mutex);
     h->thread_quited = 1;
@@ -417,16 +406,16 @@ int64_t curl_fetch_seek(CFContext * h, int64_t off, int whence)
         CLOGE("curl_wrapper_seek failed\n");
         return -1;
     }
-    if (h->headers) {
-        curl_fetch_http_set_headers(h, h->headers);
-    }
-#if 1
     if (h->prot_type == C_PROT_HTTP || h->prot_type == C_PROT_HTTPS) {
         curl_wrapper_set_para(h->cwh_h, NULL, C_MAX_REDIRECTS, 10, NULL);
-        //curl_wrapper_set_para(h->cwh_h, NULL, C_USER_AGENT, 0, IPAD_IDENT);
         curl_wrapper_set_para(h->cwh_h, (void *)h->cwd, C_HEADERS, 0, NULL);
+        if (h->headers) {
+            curl_fetch_http_set_headers(h, h->headers);
+        }
+        if (!h->headers || !strstr(h->headers, "User-Agent:")) {
+            curl_wrapper_set_para(h->cwh_h, NULL, C_USER_AGENT, 0, IPAD_IDENT);
+        }
     }
-#endif
     h->cwc_h->ignore_interrupt = 1;
     ret = curl_fetch_start_local_run(h);
     if (ret) {
