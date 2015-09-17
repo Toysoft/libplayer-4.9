@@ -96,7 +96,7 @@ void af_resample_linear_init(struct aml_audio_dec *audec)
             paf_resampe_ctl->enable_resample = atoi(value);
         }
         amsysfs_set_sysfs_int("sys/class/amaudio/enable_resample", paf_resampe_ctl->enable_resample);
-        property_set("media.libplayer.resampledelta", "1");
+        //property_set("media.libplayer.resampledelta", "1");
         audec->fill_trackzero_thrsh = TIME_UNIT90K / 2;
         if (property_get("media.libplayer.fillzerothrsh", value, NULL) > 0) {
             audec->fill_trackzero_thrsh = atoi(value);
