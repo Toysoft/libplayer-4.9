@@ -413,6 +413,9 @@ static int flv_read_avcodec_info(AVFormatContext *s)
     int i = 0;
 
     if ((!s->seekable) || (!s->support_seek)) {
+        // We couldn't get av codec info in advance, this resulted in no info found.
+        // So set AVFMTCTX_NOHEADER to parse from packets read in av_find_stream_info.
+        s->ctx_flags |= AVFMTCTX_NOHEADER;
         return 0;
     }
 

@@ -1448,7 +1448,10 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if (delay == 1 && pkt->dts == pkt->pts && pkt->dts != AV_NOPTS_VALUE && presentation_delayed)
     {
         av_log(s, AV_LOG_DEBUG, "invalid dts/pts combination\n");
-        pkt->dts = pkt->pts = AV_NOPTS_VALUE;
+        if (strcmp(s->iformat->name, "mov,mp4,m4a,3gp,3g2,mj2")
+            && strcmp(s->iformat->name, "flv")) {
+            pkt->dts = pkt->pts = AV_NOPTS_VALUE;
+        }
     }
     if (pkt->duration == 0 && st->need_parsing && st->parser != NULL && st->codec->codec_id == CODEC_ID_DTS && st->codec->sample_rate > 0
             && st->time_base.den != 0 && st->time_base.num != 0)
@@ -3435,7 +3438,7 @@ static int has_codec_parameters_ex(AVCodecContext *enc, int fastmode)
                         (enc->codec_id == CODEC_ID_AC3) ||
                         (enc->codec_id == CODEC_ID_DTS))
                 {
-                    if (FLV_PARSE_MODE == fastmode)
+                    if (FLV_PARSE_MODE == fastmode && enc->codec_id == CODEC_ID_AAC)
                         val = enc->extradata_size;
                     else
                         val = 1;
@@ -3834,7 +3837,6 @@ int av_find_stream_info(AVFormatContext *ic)
     }
     count = 0;
     read_size = 0;
-    int stream_parser_count = 0;
     int continue_parse_count = 0;
     for (;;)
     {
@@ -3844,10 +3846,6 @@ int av_find_stream_info(AVFormatContext *ic)
             av_log(ic, AV_LOG_DEBUG, "interrupted\n");
             break;
         }
-        //if(ic->pb->is_streamed&&!strcmp(ic->iformat->name, "mpegts")&&stream_parser_count ==ic->nb_streams){
-        //    av_log(NULL,AV_LOG_WARNING,"Do fast parser.\n");
-        //    break;
-        // }
         //bug on some mpegts file..,netflix
         /* check if one codec still needs to be handled */
         for (i = 0; i < ic->nb_streams; i++)
@@ -3878,10 +3876,6 @@ int av_find_stream_info(AVFormatContext *ic)
             {
                 break;
             }
-            else
-            {
-                stream_parser_count = i + 1;
-            }
             av_log(ic, AV_LOG_DEBUG, "[%s:%d]on pos=%lld,stream.index=%d\n", __FUNCTION__, __LINE__, avio_tell(ic->pb), i);
             if (ic->pb && ic->pb->fastdetectedinfo)
                 continue;
@@ -3910,7 +3904,8 @@ int av_find_stream_info(AVFormatContext *ic)
         for (int j = 0; j < ic->nb_streams; j++)
         {
             st = ic->streams[j];
-            if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO || st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+            if ((st->codec->codec_type == AVMEDIA_TYPE_AUDIO && st->codec->codec_id != 0)
+                || (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && st->codec->codec_id != 0))
             {
                 need_continue_parse++;
             }

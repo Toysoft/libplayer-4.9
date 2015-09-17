@@ -751,8 +751,8 @@ int curl_wrapper_clean_after_perform(CURLWContext *con)
             CURLWHandle * tmp_h = NULL;
             for (tmp_h = con->curl_handle; tmp_h; tmp_h = tmp_h->next) {
                 curl_multi_remove_handle(con->multi_curl, tmp_h->curl);
-                //curl_easy_cleanup(tmp_h->curl);
-                //tmp_h->curl = NULL;
+                curl_easy_cleanup(tmp_h->curl);
+                tmp_h->curl = NULL;
             }
         }
     }
@@ -787,8 +787,8 @@ int curl_wrapper_set_to_quit(CURLWContext * con, CURLWHandle * h)
                     tmp_h->quited = 1;
                     if (tmp_h->curl) {
                         curl_multi_remove_handle(con->multi_curl, tmp_h->curl);
-                        //curl_easy_cleanup(tmp_h->curl);
-                        //tmp_h->curl = NULL;
+                        curl_easy_cleanup(tmp_h->curl);
+                        tmp_h->curl = NULL;
                     }
                     ret = curl_wrapper_del_curl_handle(con, h);
                     break;
@@ -822,7 +822,7 @@ int curl_wrapper_seek(CURLWContext * con, CURLWHandle * h, int64_t off, Curl_Dat
             return -1;
         }
 #else
-        if (h->chunk_size > 0) {  // not support this when transfer in chunked mode.
+        if (h->chunk_size > 0 && off > 0) {  // not support this when transfer in chunked mode.
             ret = curl_easy_setopt(h->curl, CURLOPT_RESUME_FROM_LARGE, (curl_off_t)off);
         }
 #endif

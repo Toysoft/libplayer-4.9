@@ -178,7 +178,9 @@ static int curl_ffmpeg_read(URLContext *h, uint8_t *buf, int size)
                 }
             } else if (ret == CURLERROR(33 + C_ERROR_PERFORM_BASE_ERROR)) {
                 /*live stream with file size > 0, return -33 CURLE_RANGE_ERROR*/
+                curl_fetch_seek(s->cfc_h, 0, SEEK_SET); // reset
                 ret = AVERROR(ENOSR);
+                break;
             } else {
                 ret = AVERROR(ENETRESET);
                 break;

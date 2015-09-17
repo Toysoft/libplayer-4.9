@@ -176,7 +176,7 @@ int curl_fetch_open(CFContext * h)
         return -1;
     }
 
-    if (h->filesize > 0 || h->cwh_h->seekable) {
+    if ((h->filesize > 0 && h->filesize != 2147483647) || h->cwh_h->seekable) {
         h->seekable = 1;
     }
 
