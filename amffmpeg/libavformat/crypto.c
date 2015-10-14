@@ -175,12 +175,27 @@ static int64_t crypto_seek(URLContext *h, int64_t off, int whence){
         return -1;
     }
 }
+
+static int crypto_get_info(URLContext *h, uint32_t cmd, uint32_t flag, int64_t *info){
+    if (h == NULL) {
+        return -1;
+    }
+
+    CryptoContext *c = h->priv_data;
+    if (c != NULL) {
+        return c->hd->prot->url_getinfo(c->hd, cmd, flag, info);
+    }
+
+    return -1;
+}
+
 URLProtocol ff_crypto_protocol = {
     .name            = "crypto",
     .url_open        = crypto_open,
     .url_read        = crypto_read,
     .url_seek        = crypto_seek,
     .url_close       = crypto_close,
+    .url_getinfo     = crypto_get_info,
     .priv_data_size  = sizeof(CryptoContext),
     .priv_data_class = &crypto_class,
     .flags           = URL_PROTOCOL_FLAG_NESTED_SCHEME,
