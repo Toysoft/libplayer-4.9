@@ -2695,8 +2695,8 @@ static AVIndexEntry *mov_find_next_sample(AVFormatContext *s, AVStream **st)
             }else if(msc->pb != s->pb && dts < best_dts){/*read from different file,*/
                wantnew=1;
             }else if((s->pb->seekable && !s->pb->is_slowmedia) && /*local files.,*/
-            ((FFABS(best_dts - dts) <= AV_TIME_BASE && current_sample->pos < sample->pos) ||
-            (FFABS(best_dts - dts) > AV_TIME_BASE && dts < best_dts))) {
+            ((FFABS(best_dts - dts) <= AV_TIME_BASE/2 && current_sample->pos < sample->pos) ||
+            (FFABS(best_dts - dts) > AV_TIME_BASE/2 && dts < best_dts))) {
                 wantnew=1;
             }else if((s->pb->seekable && s->pb->is_slowmedia)){/*seekable network,seek is slow...*/
                 int64_t curentpos=avio_tell(s->pb); 
