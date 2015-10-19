@@ -163,6 +163,11 @@ static int check_decoder_worksta(play_para_t *para)
                 if (vdec.status & DECODER_ERROR_MASK) {
                     log_error("pid:[%d]:: decoder error vdec.status: %x\n", para->player_id, vdec.status);
                     int is_decoder_fatal_error = vdec.status & (DECODER_FATAL_ERROR_SIZE_OVERFLOW | DECODER_FATAL_ERROR_UNKNOW);
+                    if (vdec.status & DECODER_FATAL_ERROR_NO_MEM) {
+                        log_error("pid:[%d]::not enough codec memory for this file.\n", para->player_id);
+                        send_event(para, PLAYER_EVENTS_ERROR, PLAYER_NOMEM, "not enough memory!");
+                        return PLAYER_NOMEM;
+                    }
                     if (!para->vbuffer.rp_is_changed) {
                         if (check_time_interrupt(&para->playctrl_info.vbuf_rpchanged_Old_time, 100)) {
                             para->vbuffer.check_rp_change_cnt --;
