@@ -361,7 +361,7 @@ int64_t ff_gen_syncpoint_search(AVFormatContext *s,
             sp->last_pos = curpos;
         }
         first_iter = 0;
-        av_log(NULL,AV_LOG_INFO,"search_hi_lo_keyframes :lo:%d hi:%d ,step %lld\n",
+        av_log(NULL,AV_LOG_INFO,"[%s:%d] search_hi_lo_keyframes :lo:%d hi:%d ,step %lld\n",
             __FUNCTION__, __LINE__, found_lo, found_hi,
             step);
     }

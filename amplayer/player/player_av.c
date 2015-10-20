@@ -641,12 +641,19 @@ static int raw_read(play_para_t *para)
     unsigned char *pbuf ;
     static int try_count = 0;
     int64_t cur_offset = 0;
+    int64_t max_keyframe_seeksize = 0;
     float value;
     int dump_data_mode = 0;
     char dump_path[128];
 
     if (am_getconfig_float("media.libplayer.dumpmode", &value) == 0) {
         dump_data_mode = (int)value;
+    }
+
+    if (para->pFormatCtx->bit_rate > 0) {
+        max_keyframe_seeksize = MAX(SEEK_KEYFRAME_MAXSIZE, para->pFormatCtx->bit_rate * 10ll / 8);
+    } else {
+        max_keyframe_seeksize = SEEK_KEYFRAME_MAXSIZE;
     }
 
     if (dump_data_mode == DUMP_READ_RAW_DATA) {
@@ -718,7 +725,7 @@ static int raw_read(play_para_t *para)
                 int64_t start_time = gettime();
                 int64_t cur_time = 0;
                 int fd_keyframe = -1;
-                log_print("[%s:%d] old_offset=%lld, \n", __FUNCTION__, __LINE__, old_offset);
+                log_print("[%s:%d] old_offset=%lld, seek keyframe maxsize=%lld \n", __FUNCTION__, __LINE__, old_offset, max_keyframe_seeksize);
 
                 if ((fd_keyframe == -1) && (am_getconfig_bool("media.amplayer.keyframedump"))) {
                     fd_keyframe = open("/data/temp/keyframe.dat", O_CREAT | O_RDWR, 0666);
@@ -737,7 +744,7 @@ static int raw_read(play_para_t *para)
                     cur_offset = avio_tell(pb);
                     cur_time   = gettime();
 
-                    if (cur_offset - old_offset >= SEEK_KEYFRAME_MAXSIZE || (cur_time - start_time) >= SEEK_KEYFRAME_MAXTIME) {
+                    if (cur_offset - old_offset >= max_keyframe_seeksize || (cur_time - start_time) >= SEEK_KEYFRAME_MAXTIME) {
                         log_error("[%s:%d] seek key frame reached %lld bytes, use %lld us! \n", __FUNCTION__, __LINE__, cur_offset - old_offset, cur_time - start_time);
                         break;
                     }
@@ -762,7 +769,7 @@ static int raw_read(play_para_t *para)
 
                 log_print("find key frame: cur_offset:%lld, stream_index = %d, size = %10d, pos = %lld, pts=%lld, dts=%lld, flags:%d, \n", cur_offset, pkt->avpkt->stream_index, pkt->avpkt->size, pkt->avpkt->pos, pkt->avpkt->pts, pkt->avpkt->dts, pkt->avpkt->flags);
 
-                if ((pkt->avpkt->flags & AV_PKT_FLAG_KEY) && (pkt->avpkt->pos >= 0) && (pkt->avpkt->pos < cur_offset + SEEK_KEYFRAME_MAXSIZE)) {
+                if ((pkt->avpkt->flags & AV_PKT_FLAG_KEY) && (pkt->avpkt->pos >= 0) && (pkt->avpkt->pos < cur_offset + max_keyframe_seeksize)) {
                     if (check_video_header(para, pkt->avpkt->data, pkt->avpkt->size) == -1) { // need to add header
                         pre_header_feeding(para);
                     }
@@ -905,9 +912,16 @@ static int non_raw_read(play_para_t *para)
     float value;
     int dump_data_mode = 0;
     char dump_path[128];
+    int64_t max_keyframe_seeksize = 0;
 
     if (am_getconfig_float("media.libplayer.dumpmode", &value) == 0) {
         dump_data_mode = (int)value;
+    }
+
+    if (para->pFormatCtx->bit_rate > 0) {
+        max_keyframe_seeksize = MAX(SEEK_KEYFRAME_MAXSIZE, para->pFormatCtx->bit_rate * 10ll / 8);
+    } else {
+        max_keyframe_seeksize = SEEK_KEYFRAME_MAXSIZE;
     }
 
     if (pkt->data_size > 0) {
@@ -946,7 +960,7 @@ static int non_raw_read(play_para_t *para)
                 int64_t cur_time = 0;
                 int fd_keyframe = -1;
                 int rev_byte = -1;
-                log_print("[%s:%d] old_offset=%lld, \n", __FUNCTION__, __LINE__, old_offset);
+                log_print("[%s:%d] old_offset=%lld, seek keyframe maxsize=%lld \n", __FUNCTION__, __LINE__, old_offset, max_keyframe_seeksize);
                 if ((fd_keyframe == -1) && (am_getconfig_bool("media.amplayer.keyframedump"))) {
                     fd_keyframe = open("/data/temp/keyframe.dat", O_CREAT | O_RDWR, 0666);
                     if (fd_keyframe < 0) {
@@ -960,7 +974,7 @@ static int non_raw_read(play_para_t *para)
                     }
                     cur_offset = avio_tell(pb);
                     cur_time   = gettime();
-                    if (cur_offset - old_offset >= SEEK_KEYFRAME_MAXSIZE || (cur_time - start_time) >= SEEK_KEYFRAME_MAXTIME) {
+                    if (cur_offset - old_offset >= max_keyframe_seeksize || (cur_time - start_time) >= SEEK_KEYFRAME_MAXTIME) {
                         log_error("[%s:%d] seek key frame reached %lld bytes, use %lld us! \n", __FUNCTION__, __LINE__, cur_offset - old_offset, cur_time - start_time);
                         break;
                     }
@@ -979,7 +993,7 @@ static int non_raw_read(play_para_t *para)
                     }
                     //log_print("find key frame: rev_byte:%d, stream_index = %d, size = %10d, pos = %lld, pts=%lld, dts=%lld, flags:%d, \n", rev_byte, pkt->avpkt->stream_index, pkt->avpkt->size, pkt->avpkt-
                 } while (!url_feof(pb) && ((pkt->avpkt->stream_index != video_idx) || ((pkt->avpkt->stream_index == video_idx) && !(pkt->avpkt->flags & AV_PKT_FLAG_KEY))));
-                if ((pkt->avpkt->flags & AV_PKT_FLAG_KEY) && (pkt->avpkt->pos >= 0) && (pkt->avpkt->pos < cur_offset + SEEK_KEYFRAME_MAXSIZE)) {
+                if ((pkt->avpkt->flags & AV_PKT_FLAG_KEY) && (pkt->avpkt->pos >= 0) && (pkt->avpkt->pos < cur_offset + max_keyframe_seeksize)) {
 
                     if (check_video_header(para, pkt->avpkt->data, pkt->avpkt->size) == -1) { // need to add header
                         pre_header_feeding(para);

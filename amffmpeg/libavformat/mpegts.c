@@ -2778,9 +2778,13 @@ static int mpegts_read_seek(AVFormatContext *s, int stream_index, int64_t target
     if(!flags) {
         flags = AVSEEK_FLAG_BACKWARD;
     }
+    // comment this because of find keyframe too slow.
+    // we would read seek to keyframe.
+#if 0
     if(!s->pb->is_slowmedia && ts->is_hevc == 1){ // only local h625 playback
         return read_seek2(s, stream_index, target_ts, flags);
     }
+#endif
     return read_seek(s, stream_index, target_ts, flags);
 }
 
