@@ -1734,7 +1734,7 @@ int time_search(play_para_t *am_p, int flags)
             timestamp = (int64_t)(time_point * AV_TIME_BASE);
 
             /* add the stream start time */
-            if (s->start_time != (int64_t)AV_NOPTS_VALUE) {
+            if (s->start_time != (int64_t)AV_NOPTS_VALUE && am_p->file_type != AVI_FILE && am_p->file_type != MKV_FILE) {
                 timestamp += s->start_time;
             }
 
