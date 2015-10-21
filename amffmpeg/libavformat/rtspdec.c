@@ -496,8 +496,10 @@ redo:
             return 0;
     }
     ret = ffurl_read_complete(rt->rtsp_hd, buf, 3);
-    if (ret != 3)
-        return -1;
+    if (ret != 3) {
+        av_log(NULL, AV_LOG_ERROR, "[%s:%d] read fail, ret=%d", __FUNCTION__, __LINE__, ret);
+        return ret;
+    }
     id  = buf[0];
     len = AV_RB16(buf + 1);
     av_dlog(s, "id=%d len=%d\n", id, len);
@@ -505,8 +507,14 @@ redo:
         goto redo;
     /* get the data */
     ret = ffurl_read_complete(rt->rtsp_hd, buf, len);
-    if (ret != len)
-        return -1;
+    if (ret != len) {
+        av_log(NULL, AV_LOG_ERROR, "[%s:%d] read fail, ret=%d, len=%d", __FUNCTION__, __LINE__, ret, len);
+        if (ret > 0) {
+            return -1;
+        } else {
+            return ret;
+        }
+    }
     if (rt->transport == RTSP_TRANSPORT_RDT &&
         ff_rdt_parse_header(buf, len, &id, NULL, NULL, NULL, NULL) < 0)
         return -1;
@@ -668,6 +676,28 @@ retry:
                     goto retry;
                 }
             }
+        }
+
+        // try to reset.
+        if (ret == AVERROR(ETIMEDOUT) && rt->lower_transport == RTSP_LOWER_TRANSPORT_TCP) {
+            RTSPMessageHeader reply1, *reply = &reply1;
+            if (rtsp_read_pause(s) != 0) {
+                av_log(NULL, AV_LOG_ERROR, "[%s:%d] read pause fail !", __FUNCTION__, __LINE__);
+                return -1;
+            }
+            ff_rtsp_send_cmd(s, "TEARDOWN", rt->control_uri, NULL, reply, NULL);
+            rt->session_id[0] = '\0';
+            if (resetup_tcp(s) == 0) {
+                rt->state = RTSP_STATE_IDLE;
+                rt->need_subscription = 1;
+                if (rtsp_read_play(s) != 0) {
+                    av_log(NULL, AV_LOG_ERROR, "[%s:%d] read play fail !", __FUNCTION__, __LINE__);
+                    return -1;
+                }
+                av_log(NULL, AV_LOG_ERROR, "[%s:%d] resetup success !", __FUNCTION__, __LINE__);
+                goto retry;
+            }
+            av_log(NULL, AV_LOG_ERROR, "[%s:%d] resetup fail !", __FUNCTION__, __LINE__);
         }
         return ret;
     }

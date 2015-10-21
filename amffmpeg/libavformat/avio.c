@@ -431,7 +431,7 @@ int ffurl_read(URLContext *h, unsigned char *buf, int size)
 
 int ffurl_read_complete(URLContext *h, unsigned char *buf, int size)
 {
-#define MAX_RETRY (6*60) //10S*6*60=60MIN;
+#define MAX_RETRY (6) //10S*6=1MIN;
     int maxretry=MAX_RETRY;
     int toread=size;
     int readedlen=0;

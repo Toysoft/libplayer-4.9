@@ -901,8 +901,10 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
         for (;;) {
             ret = ffurl_read_complete(rt->rtsp_hd, &ch, 1);
             av_dlog(s, "ret=%d c=%02x [%c]\n", ret, ch, ch);
-            if (ret != 1)
-                return AVERROR_EOF;
+            if (ret != 1) {
+                av_log(NULL, AV_LOG_ERROR, "[%s:%d] read fail, ret=%d", __FUNCTION__, __LINE__, ret);
+                return ret;
+            }
             if (ch == '\n')
                 break;
             if (ch == '$') {
