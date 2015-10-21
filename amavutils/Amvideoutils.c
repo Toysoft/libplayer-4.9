@@ -382,11 +382,21 @@ void amvideo_setscreenmode()
     float ratio4_3 = 1.3333;
     float ratio16_9 = 1.7778;
     float offset = 0.2;
-
+    char val[PROPERTY_VALUE_MAX];
+    memset(val, 0, sizeof(val));
     int enable_fullscreen = 1;
+    int default_screen_mode = -1;
 
     /*if(x<0 || y<0)
         return;*/
+
+    if (property_get("tv.default.screen.mode", val, "-1") && (!(strcmp(val, "-1") == 0))) {
+        default_screen_mode = atoi(val);
+        if (default_screen_mode >= 0 && default_screen_mode <=3) {
+            amvideo_utils_set_screen_mode(default_screen_mode);
+            return ;
+        }
+    }
 
     int fs_x = 0, fs_y = 0, fs_w = 0, fs_h = 0;
     get_axis(FREE_SCALE_AXIS_PATH, &fs_x, &fs_y, &fs_w, &fs_h);
