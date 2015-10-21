@@ -336,6 +336,8 @@ OUT:
 
 static int alsa_get_spdif_port()
 {
+/* for pcm output,i2s/958 share the same data from i2s,so always use device 0 as i2s output */
+    return 0;
     int port = -1, err = 0;
     int fd = -1;
     unsigned fileSize = 512;
