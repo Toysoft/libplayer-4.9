@@ -39,7 +39,6 @@ static void vcodec_info_init(play_para_t *p_para, codec_para_t *v_codec)
     v_codec->am_sysinfo.ratio   = vinfo->video_ratio;
     v_codec->am_sysinfo.ratio64 = vinfo->video_ratio64;
     v_codec->noblock = !!p_para->buffering_enable;
-    a_codec->has_video = p_para->vstream_info.has_video;
     if ((vinfo->video_format == VFORMAT_MPEG4)
         || (vinfo->video_format == VFORMAT_H264)
         || (vinfo->video_format == VFORMAT_H264MVC)
@@ -98,6 +97,7 @@ static void acodec_info_init(play_para_t *p_para, codec_para_t *a_codec)
     a_codec->avsync_threshold = p_para->start_param->avsync_threshold;
     a_codec->stream_type = stream_type_convert(p_para->stream_type, 0, a_codec->has_audio);
     a_codec->switch_audio_flag = 0;
+    a_codec->has_video = p_para->vstream_info.has_video;
     if (p_para->astream_info.has_audio == 1 &&
         p_para->vstream_info.has_video == 0 &&
         (a_codec->audio_type == AFORMAT_COOK || a_codec->audio_type == AFORMAT_SIPR)) {
