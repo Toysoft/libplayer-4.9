@@ -463,7 +463,8 @@ static inline int codec_ps_init(codec_para_t *pcodec)
             goto error1;
         }
         if ((pcodec->video_type == VFORMAT_H264)
-            || (pcodec->video_type == VFORMAT_VC1)) {
+            || (pcodec->video_type == VFORMAT_VC1)
+            || (pcodec->video_type == VFORMAT_MPEG12)) {
             r = set_video_codec_info(pcodec);
             if (r < 0) {
                 /*codec_h_close(handle);

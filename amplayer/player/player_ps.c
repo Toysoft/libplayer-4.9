@@ -43,6 +43,9 @@ static int stream_ps_init(play_para_t *p_para)
             codec->am_sysinfo.rate = vinfo->video_rate;
             codec->am_sysinfo.ratio = vinfo->video_ratio;
         }
+        if (codec->video_type == VFORMAT_MPEG12) {
+            codec->am_sysinfo.rate = vinfo->video_rate;
+        }
     }
     codec->noblock = !!p_para->buffering_enable;
     if (ainfo->has_audio) {
