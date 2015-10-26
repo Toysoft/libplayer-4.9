@@ -717,7 +717,7 @@ static int raw_read(play_para_t *para)
             tryread_size = para->max_raw_size;
         }
 
-        if (am_getconfig_bool("media.amplayer.seekkeyframe")) {
+        if (am_getconfig_bool("media.amplayer.seekkeyframe") && !memcmp(para->pFormatCtx->iformat->name, "mpegts", 6)) {
             if (para->vstream_info.has_video && para->playctrl_info.seek_keyframe && !url_is_segment_media(para->pFormatCtx->pb) && (para->vstream_info.video_format != VFORMAT_REAL)) {
                 para->playctrl_info.seek_keyframe = 0;
                 int64_t old_offset = avio_tell(pb);
@@ -949,7 +949,7 @@ static int non_raw_read(play_para_t *para)
     }
 
     if (!para->playctrl_info.read_end_flag && (0 == pkt->data_size)) {
-        if (am_getconfig_bool("media.amplayer.seekkeyframe")) {
+        if (am_getconfig_bool("media.amplayer.seekkeyframe") && !memcmp(para->pFormatCtx->iformat->name, "mpegts", 6)) {
             if (para->vstream_info.has_video && para->playctrl_info.seek_keyframe && !url_is_segment_media(para->pFormatCtx->pb) && (para->vstream_info.video_format != VFORMAT_REAL)) {
                 para->playctrl_info.seek_keyframe = 0;
 
