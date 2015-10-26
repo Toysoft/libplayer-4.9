@@ -471,7 +471,8 @@ int adec_refresh_pts(aml_audio_dec_t *audec)
         // 170 ms  audio hal have  triggered the output hw.
         if (audec->pcm_bytes_readed * 1000 / (samplerate * channels * 2) >= pre_filltime) {
             audec->apts_start_flag =  1;
-            enable_slowsync_repeate();
+            if (!am_getconfig_bool("libplayer.slowsync.disable"))
+                enable_slowsync_repeate();
         }
     }
     memset(buf, 0, sizeof(buf));
