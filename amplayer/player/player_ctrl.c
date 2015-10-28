@@ -39,6 +39,9 @@
 
 extern void print_version_info();
 int auto_refresh_rate_enable = 0;
+
+static pthread_mutex_t player_stop_mutex;
+static pthread_mutex_t player_exit_mutex;
 /* --------------------------------------------------------------------------*/
 /**
  * @function    player_init
@@ -77,6 +80,8 @@ int player_init(void)
     rm_register_stream_decoder();
     audio_register_stream_decoder();
     video_register_stream_decoder();
+    pthread_mutex_init(&player_stop_mutex, NULL);
+    pthread_mutex_init(&player_exit_mutex, NULL);
     return PLAYER_SUCCESS;
 }
 
@@ -222,9 +227,10 @@ int player_stop(int pid)
     player_status sta;
 
     log_print("[player_stop:enter]pid=%d\n", pid);
-
+    pthread_mutex_lock(&player_stop_mutex);
     player_para = player_open_pid_data(pid);
     if (player_para == NULL) {
+        pthread_mutex_unlock(&player_stop_mutex);
         return PLAYER_NOT_VALID_PID;
     }
     sta = get_player_state(player_para);
@@ -232,6 +238,7 @@ int player_stop(int pid)
     if (PLAYER_THREAD_IS_STOPPED(sta)) {
         player_close_pid_data(pid);
         log_print("[player_stop]pid=%d thread is already stopped\n", pid);
+        pthread_mutex_unlock(&player_stop_mutex);
         return PLAYER_SUCCESS;
     }
     /*if (player_para->pFormatCtx) {
@@ -253,6 +260,7 @@ int player_stop(int pid)
 
     player_close_pid_data(pid);
     log_print("[player_stop:exit]pid=%d\n", pid);
+    pthread_mutex_unlock(&player_stop_mutex);
     tcppool_refresh_link_and_check();
     log_print("[tcppool_refresh_link_and_check]pid=%d\n", pid);
     return r;
@@ -333,7 +341,7 @@ int player_exit(int pid)
     play_para_t *para;
 
     log_print("[player_exit:enter]pid=%d\n", pid);
-
+    pthread_mutex_lock(&player_exit_mutex);
     para = player_open_pid_data(pid);
     if (para != NULL) {
         log_print("[player_exit]player_state=0x%x\n", get_player_state(para));
@@ -349,6 +357,7 @@ int player_exit(int pid)
     }
     player_close_pid_data(pid);
     player_release_pid(pid);
+    pthread_mutex_unlock(&player_exit_mutex);
     log_print("[player_exit:exit]pid=%d\n", pid);
 
     return ret;
