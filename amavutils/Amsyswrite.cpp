@@ -201,4 +201,17 @@ int amSystemWriteWriteSysfs(const char* path, char* value)
     //ALOGD("[false]amSystemWriteWriteSysfs%s,",path);
     return -1;
 }
+
+#if ANDROID_PLATFORM_SDK_VERSION >= 21 //5.0
+extern "C" int amSystemControlSetNativeWindowRect(int x, int y, int w, int h) {
+    const sp<ISystemControlService>& sws = getSystemWriteService();
+    if (sws != 0) {
+        sws->setNativeWindowRect(x, y, w, h);
+        return 0;
+    }
+
+    return -1;
+}
+#endif
+
 #endif

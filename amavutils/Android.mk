@@ -106,6 +106,8 @@ LOCAL_CFLAGS += -DSINGLE_EXTERNAL_DISPLAY_USE_FB1
 endif
 endif
 
+LOCAL_CFLAGS += -DANDROID_PLATFORM_SDK_VERSION=$(PLATFORM_SDK_VERSION)
+
 LOCAL_SRC_FILES := $(notdir $(wildcard $(LOCAL_PATH)/*.c)) 	
 LOCAL_SRC_FILES += $(notdir $(wildcard $(LOCAL_PATH)/*.cpp)) 
 
@@ -127,6 +129,7 @@ LOCAL_SHARED_LIBRARIES += libsystemwriteservice
 endif
 
 LOCAL_SHARED_LIBRARIES += libui libgui 
+LOCAL_SHARED_LIBRARIES += libamavutils
 
 
 LOCAL_MODULE := libamavutils_alsa
@@ -150,6 +153,8 @@ ifeq ($(TARGET_SINGLE_EXTERNAL_DISPLAY_USE_FB1),true)
 LOCAL_CFLAGS += -DSINGLE_EXTERNAL_DISPLAY_USE_FB1
 endif
 endif
+
+LOCAL_CFLAGS += -DANDROID_PLATFORM_SDK_VERSION=$(PLATFORM_SDK_VERSION)
 
 LOCAL_SRC_FILES := $(notdir $(wildcard $(LOCAL_PATH)/*.c)) 	
 LOCAL_SRC_FILES += $(notdir $(wildcard $(LOCAL_PATH)/*.cpp))
