@@ -80,7 +80,9 @@ static int parse_h264_param(char *str, sys_h264_profile_t *para, int size)
     para->exist = 1;
 
     log_info("h264 decoder exist.");
-
+    if (strstr(str, "4k")) {
+        para->support_4k= 1;
+    }
     return 0;
 }
 
@@ -105,7 +107,6 @@ static int parse_hevc_param(char *str, sys_hevc_profile_t *para, int size)
     if (strstr(str, "compressed")) {
         para->support_compressed = 1;
     }
-
     return 0;
 }
 
