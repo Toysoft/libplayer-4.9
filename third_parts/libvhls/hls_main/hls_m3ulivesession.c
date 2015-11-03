@@ -44,21 +44,6 @@ static VERIMATRIXgetkeyFunc* verimatrix_get_key()
 
     return (VERIMATRIXgetkeyFunc*)dlsym(mLibHandle, "getvrkey");
 }
-
-typedef int PRgetkeyFunc(char* keyurl, uint8_t* keydat);
-static PRgetkeyFunc* PRgetkey = NULL;
-static PRgetkeyFunc* pr_get_key()
-{
-    void * mLibHandle = dlopen("libprdrmpluginwrapper.so", RTLD_NOW);
-
-    if (mLibHandle == NULL) {
-        av_log(NULL, AV_LOG_ERROR, "Unable to locate libprdrmpluginwrapper.so\n");
-        return NULL;
-    }
-    av_log(NULL, AV_LOG_ERROR, "pr_get_key\n");
-
-    return (PRgetkeyFunc*)dlsym(mLibHandle, "_ZN7android8prgetkeyEPcPh");
-}
 /*----------------------------------------------*
  * 内部函数原型说明                             *
  *----------------------------------------------*/
@@ -111,7 +96,6 @@ typedef struct _BandwidthItem {
     unsigned long mBandwidth;
     int program_id;
     void* playlist;
-    M3uKeyInfo * baseScriptkeyinfo;
 } BandwidthItem_t;
 
 
@@ -666,7 +650,7 @@ static int _get_decrypt_key(M3ULiveSession* s, int playlistIndex, AESKeyInfo_t* 
 
     if (!strcmp(method, "NONE")) {
         return 0;
-    } else if (strcmp(method, "AES-128") && strcmp(method, "PRAESCTR")) { //"PRAESCTR" for PlayReady DRM
+    } else if (strcmp(method, "AES-128") ) { //"PRAESCTR" for PlayReady DRM
         LOGE("Unsupported cipher method '%s'", method);
         return -1;
     }
@@ -724,26 +708,7 @@ static int _get_decrypt_key(M3ULiveSession* s, int playlistIndex, AESKeyInfo_t* 
                 return -1;
             }
 #endif
-        } else if (!strcmp(node->key->method, "PRAESCTR")) {
-            if (PRgetkey == NULL) {
-                PRgetkey =  pr_get_key();
-                if (PRgetkey == NULL) {
-                    LOGE("pr_get_key dlsym fail\n");
-                    return -1;
-                }
-            }
-            keydat = malloc(AES_BLOCK_SIZE);
-            if (keydat && node->key->extDrminfo) {
-                int pr = PRgetkey(node->key->extDrminfo, keydat);
-                if (pr) {
-                    free(keydat);
-                    LOGE("Failed to get playready aes key\n");
-                    return -1;
-                }
-            } else {
-                return -1;
-            }
-        } else {
+        }  else {
 
             int isize = 0;
             int ret = -1;
@@ -826,11 +791,9 @@ static int _get_decrypt_key(M3ULiveSession* s, int playlistIndex, AESKeyInfo_t* 
 
     }
 
-    if (!strcmp(node->key->method, "PRAESCTR")) {
-        key->type = AES128_CTR;
-    } else {
-        key->type = AES128_CBC;
-    }
+
+    key->type = AES128_CBC;
+
     key->key_info = (AES128KeyInfo_t*)malloc(sizeof(AES128KeyInfo_t));
     if (key->key_info == NULL) {
         ERROR_MSG();
@@ -1098,11 +1061,6 @@ static int _choose_bandwidth_and_init_playlist(M3ULiveSession* s)
             s->bandwidth_list[bandwidthIndex]->playlist = playlist;
             s->prev_bandwidth_index = bandwidthIndex;
             s->playlist = playlist;
-            //PlayReady install keyinfo from base script to playlist
-            if (s->bandwidth_list[bandwidthIndex]->baseScriptkeyinfo
-                && !strcmp(s->bandwidth_list[bandwidthIndex]->baseScriptkeyinfo->method, "PRAESCTR")) {
-                m3u_install_keyinfo2playlist(playlist, s->bandwidth_list[bandwidthIndex]->baseScriptkeyinfo);
-            }
         }
 
     }
@@ -1448,13 +1406,6 @@ rinse_repeat: {
                         pthread_mutex_unlock(&s->session_lock);
                         _thread_wait_timeUs(s, 100 * 1000);
                         return -1;
-                    }
-                } else {
-                    //PlayReady install keyinfo from base script to playlist
-                    if (s->bandwidth_list && (s->bandwidth_list[bandwidthIndex]->baseScriptkeyinfo)
-                        && !strcmp(s->bandwidth_list[bandwidthIndex]->baseScriptkeyinfo->method, "PRAESCTR")) {
-                        m3u_install_keyinfo2playlist(new_playlist, s->bandwidth_list[bandwidthIndex]->baseScriptkeyinfo);
-                        LOGV("m3u_install_keyinfo2playlist when refresh!!!\n");
                     }
                 }
             }
@@ -2622,13 +2573,9 @@ int m3u_session_open(const char* baseUrl, const char* headers, void** hSession, 
             item->mBandwidth = node->bandwidth;
             item->program_id = node->program_id;
             item->playlist = NULL;
-            item->baseScriptkeyinfo = NULL;
 
             if (!session->stbId_string) {
                 session->stbId_string = _get_stbid_string(item->url);
-            }
-            if (node->key && !strcmp(node->key->method, "PRAESCTR")) { //PlayReady keyinfo in base url script{
-                item->baseScriptkeyinfo = dup_keyInfo(node->key);
             }
             item->redirect = NULL;
 

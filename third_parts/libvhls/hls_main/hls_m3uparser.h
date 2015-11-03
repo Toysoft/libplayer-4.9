@@ -22,7 +22,6 @@ typedef struct _M3uKeyInfo {
     char keyUrl[MAX_URL_SIZE];
     char method[10];
     char iv[35];
-    char * extDrminfo;
 } M3uKeyInfo;
 typedef struct _M3uBaseNode {
     int index;
@@ -56,8 +55,6 @@ M3uBaseNode* m3u_get_node_by_datatime(void* hParse, int64_t dataTime);
 M3uBaseNode* m3u_get_node_by_url(void* hParse, char *srcurl);
 int64_t m3u_get_node_span_size(void* hParse, int start_index, int end_index);
 int m3u_release(void* hParse);
-M3uKeyInfo * dup_keyInfo(M3uKeyInfo *scrkeyinfo);
-int  m3u_install_keyinfo2playlist(void* hParse, M3uKeyInfo *baseScriptkeyinfo);
 
 
 #ifdef __cplusplus
