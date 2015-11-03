@@ -193,6 +193,8 @@ static int parse_sysparam_str(vdec_profile_t *m_vdec_profiles, char *str)
     char *p;
     char *substr[] = {"vc1:", "h264:", "real:", "mpeg12:", "mpeg4:", "mjpeg:", "h264_4k2k:", "hmvc:", "hevc:", "avs:"};
     for (j = 0; j < sizeof(substr) / sizeof(char *); j ++) {
+        char line[256];
+        int line_len=0;
         p = strstr(str, substr[j]);
         if (p != NULL) {
             pos_start = p - str;
@@ -201,8 +203,12 @@ static int parse_sysparam_str(vdec_profile_t *m_vdec_profiles, char *str)
                 i ++;
             }
             pos_end = i;
-            log_print("[%s]j=%d %s start:%d end:%d\n", __FUNCTION__, j, substr[j], pos_start, pos_end);
-            parse_param(str + pos_start, &substr[j], pos_end - pos_start, m_vdec_profiles);
+            line_len = pos_end - pos_start;
+            line_len = MIN(line_len,255);
+            strncpy(line, str + pos_start, line_len);
+            line[line_len] = '\0';
+            log_print("[%s]parser tag:%s line:%s\n", __FUNCTION__, substr[j], line);
+            parse_param(line, &substr[j], line_len, m_vdec_profiles);
         }
     }
     return 0;
