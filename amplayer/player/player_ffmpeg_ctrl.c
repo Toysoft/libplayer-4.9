@@ -331,6 +331,14 @@ int ffmpeg_parse_file_type(play_para_t *am_p, player_file_type_t *type)
                     }
                 }
 
+                if (st->codec->codec_id == CODEC_ID_RV10 || st->codec->codec_id == CODEC_ID_RV20) {
+                    if (rm_flag == 0) {
+                        rm_flag = 1;
+                        sprintf(vpx_string, "%s", "rmsoft");
+                        log_print("[%s %d]\n", __FUNCTION__, __LINE__);
+                    }
+                }
+
                 type->video_tracks++;
             } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
                 type->audio_tracks++;

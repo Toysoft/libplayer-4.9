@@ -759,7 +759,9 @@ static void get_stream_info(play_para_t *p_para)
                 if (pCodec->bit_rate > bitrate) {
                     /* only support RV30 and RV40 */
                     if ((pCodec->codec_id == CODEC_ID_RV30)
-                        || (pCodec->codec_id == CODEC_ID_RV40)) {
+                        || (pCodec->codec_id == CODEC_ID_RV40)
+                        || (pCodec->codec_id == CODEC_ID_RV20)
+                        || (pCodec->codec_id == CODEC_ID_RV10)) {
                         ret = try_decode_picture(p_para, i);
                         if (ret == 0) {
                             bitrate = pCodec->bit_rate;
