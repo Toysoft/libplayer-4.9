@@ -14,6 +14,9 @@ extern "C" {
     int amSystemWriteReadNumSysfs(const char* path, char* value, int size);
     int amSystemWriteWriteSysfs(const char* path, char* value);
 
+#if ANDROID_PLATFORM_SDK_VERSION >= 21 //5.0
+    int amSystemControlSetNativeWindowRect(int x, int y, int w, int h);
+#endif
 
 
 #ifdef  __cplusplus

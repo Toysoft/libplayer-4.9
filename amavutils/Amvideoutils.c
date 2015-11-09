@@ -11,6 +11,7 @@
 #include "include/Amvideoutils.h"
 #include "include/Amsysfsutils.h"
 #include "include/Amdisplayutils.h"
+#include "include/Amsyswrite.h"
 
 #include "amports/amstream.h"
 #include "ppmgr/ppmgr.h"
@@ -451,6 +452,9 @@ int amvideo_utils_set_virtual_position(int32_t x, int32_t y, int32_t w, int32_t 
     if (osd_rotation > 0) {
         amvideo_convert_axis(&x, &y, &w, &h, &rotation, osd_rotation);
     }
+#if ANDROID_PLATFORM_SDK_VERSION >= 21 //5.0
+    amSystemControlSetNativeWindowRect(x, y, w, h);
+#endif
 
     int dev_w, dev_h, disp_w, disp_h, video_global_offset;
     int dst_x, dst_y, dst_w, dst_h;
