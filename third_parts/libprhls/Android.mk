@@ -12,6 +12,6 @@ ifeq ($(BUILD_WITH_PLAYREADY_DRM),true)
  LOCAL_PROPRIETARY_MODULE := true
  LOCAL_STRIP_MODULE := false
  LOCAL_MODULE_TAGS := optional
+ include $(BUILD_PREBUILT)
 
 endif
-include $(BUILD_PREBUILT)
