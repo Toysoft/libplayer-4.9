@@ -1,31 +1,17 @@
-LOCAL_PATH := $(call my-dir)
+LOCAL_PATH:= $(call my-dir)
+
 include $(CLEAR_VARS)
 
+ifeq ($(BUILD_WITH_PLAYREADY_DRM),true)
 
-LOCAL_ARM_MODE := arm
-LOCAL_PRELINK_MODULE := false
+ LOCAL_MODULE := libprhls_mod
+ LOCAL_MODULE_SUFFIX := .so
+ LOCAL_MODULE_CLASS := SHARED_LIBRARIES
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)$(LOCAL_MODULE_SUFFIX)
+ LOCAL_MODULE_PATH:=$(TARGET_OUT_SHARED_LIBRARIES)/amplayer
+ LOCAL_PROPRIETARY_MODULE := true
+ LOCAL_STRIP_MODULE := false
+ LOCAL_MODULE_TAGS := optional
 
-
-LOCAL_SRC_FILES := $(notdir $(wildcard $(LOCAL_PATH)/*.c)) 		
-
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/../include \
-        $(LOCAL_PATH)/../../amavutils/include \
-	$(LOCAL_PATH)/../../amutils/include \
-        $(LOCAL_PATH)/../../amffmpeg
-
-LOCAL_MODULE_TAGS := optional
-
-LOCAL_CFLAGS += -Wno-multichar
-
-
-LOCAL_SHARED_LIBRARIES :=libamplayer libcutils libssl libamavutils
-
-
-
-
-LOCAL_SHARED_LIBRARIES +=libdl 
-
-
-LOCAL_MODULE := libprhls_mod
-LOCAL_MODULE_PATH:=$(TARGET_OUT_SHARED_LIBRARIES)/amplayer
-include $(BUILD_SHARED_LIBRARY)
+endif
+include $(BUILD_PREBUILT)
