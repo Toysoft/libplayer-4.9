@@ -1047,8 +1047,12 @@ static int non_raw_read(play_para_t *para)
                         if (audio_idx >= 0) {
                             st = para->pFormatCtx->streams[audio_idx];
 
-                            if ((st->codec->codec_type == CODEC_TYPE_AUDIO && (st->codec->codec_id == CODEC_ID_APE || st->codec->codec_id == CODEC_ID_AAC || st->codec->codec_id == CODEC_ID_AMR_NB || st->codec->codec_id == CODEC_ID_MP3 || st->codec->codec_id == CODEC_ID_AMR_WB))
-                                || (para->astream_info.has_audio == 1 && para->vstream_info.has_video == 0 && para->file_type == RM_FILE && para->astream_info.audio_format == AFORMAT_AC3)) {
+                             if ((st->codec->codec_type == CODEC_TYPE_AUDIO && (st->codec->codec_id == CODEC_ID_APE ||
+                                 st->codec->codec_id == CODEC_ID_AAC || st->codec->codec_id == CODEC_ID_AMR_NB ||
+                                 st->codec->codec_id == CODEC_ID_MP3 || st->codec->codec_id == CODEC_ID_AMR_WB ||
+                                 st->codec->codec_id == CODEC_ID_EAC3 || st->codec->codec_id == CODEC_ID_AC3))
+                                    || (para->astream_info.has_audio == 1 && para->vstream_info.has_video == 0 && para->file_type == RM_FILE && para->astream_info.audio_format == AFORMAT_AC3))
+                            {
                                 int r;
                                 //if (st->codec->codec_type==CODEC_TYPE_AUDIO) {
                                 //set attr
@@ -1057,7 +1061,6 @@ static int non_raw_read(play_para_t *para)
                                 if (r < 0) {
                                     return r;
                                 }
-
                                 memset(pkt->avpkt->data, 0, 2048);
                                 //pkt->avpkt->data = av_mallocz(2048);
                                 //strncpy(pkt->avpkt->data,"FREND",5);
@@ -2554,7 +2557,6 @@ int write_av_packet(play_para_t *para)
             && (para->vstream_info.video_format == VFORMAT_H264)) {
             h264_write_end_header(para);
         }
-
         if (fdw_raw >= 0) {
             close(fdw_raw);
         }
