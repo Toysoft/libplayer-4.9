@@ -842,7 +842,7 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
 						continue;
 					}
                     if (len == AVERROR(EAGAIN)) {
-                        av_log(NULL, AV_LOG_ERROR, "[%s:%d]retry timeout, read packet failed\n", __FUNCTION__, __LINE__);
+                        av_log(NULL, AV_LOG_DEBUG, "[%s:%d]retry timeout, read packet failed\n", __FUNCTION__, __LINE__);
                     }
                     break;
                 } else {
@@ -853,13 +853,16 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
                     s->buf_end = s->buffer;
                 }
             }else{
+                int64_t read_startUs = av_gettime();
                 do {
                     fill_buffer(s);
                     len = s->buf_end - s->buf_ptr;
-                } while ((len == 0) && (retry_num-- > 0) && !url_interrupt_cb());
+                } while ((len == 0) &&
+                        (retry_num-- > 0 || (s->mhls_inner_format > 0 && (av_gettime() - read_startUs) / 1000000 < s->mhls_read_retry_s)) &&
+                        !url_interrupt_cb());
 
                 if (len == 0) {
-                    av_log(NULL, AV_LOG_ERROR, "[%s:%d]retry timeout, fill buffer failed\n", __FUNCTION__, __LINE__);
+                    av_log(NULL, AV_LOG_DEBUG, "[%s:%d]retry timeout, fill buffer failed\n", __FUNCTION__, __LINE__);
                     break;
                 }
             }

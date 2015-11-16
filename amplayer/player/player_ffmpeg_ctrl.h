@@ -19,5 +19,8 @@ int ffmpeg_buffering_data(play_para_t *para);
 int ffmpeg_seturl_buffered_level(play_para_t *para, int levelx1000);
 int ffmepg_seturl_codec_buf_info(play_para_t *para, int type, int value);
 int ffmpeg_geturl_netstream_info(play_para_t* para, int type, void* value);
+
+// for hls demuxer
+int ffmpeg_set_format_codec_buffer_info(play_para_t * para, int type, int value);
 #endif
 

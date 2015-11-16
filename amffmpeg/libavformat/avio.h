@@ -105,6 +105,9 @@ typedef struct {
 	int is_segment_media;
 	int iscmf;
 	int isprtvp;
+    int is_mhls; // hls media group.
+    int mhls_inner_format; // hack
+    int mhls_read_retry_s;
 	int flags;
 	int seekflags;
 	int local_playback;  /**local playback flag, 1 local media playback*/
@@ -147,6 +150,9 @@ typedef struct URLContext {
 
     void *invoke_para;
     void (*invoke)(void * para);
+
+    // hls demuxer
+    int stream_index;
 } URLContext;
 
 #define FLAGS_ISCMF	1<<0 
@@ -158,6 +164,8 @@ typedef struct URLContext {
 #define MEDIA_INFO_DOWNLOAD_START           (10086)
 #define MEDIA_INFO_DOWNLOAD_END             (10087)
 #define MEDIA_INFO_DOWNLOAD_ERROR           (10088)
+
+#define HLS_STREAM_EOF (-1011) // hls demuxer eof.
 
 /**
  * @deprecated This struct is to be made private. Use the higher-level

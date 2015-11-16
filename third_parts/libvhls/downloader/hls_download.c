@@ -35,7 +35,7 @@ typedef struct _HLSHttpContext {
     int error_code;
     char* redirect_url;
 #ifdef SAVE_BACKUP
-#define BACK_FILE_PATH "/cached"
+#define BACK_FILE_PATH "/data/tmp"
     FILE* mBackupFile;
 #endif
 } HLSHttpContext;

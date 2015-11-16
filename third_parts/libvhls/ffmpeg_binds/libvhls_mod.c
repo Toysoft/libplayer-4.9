@@ -1,6 +1,7 @@
 //by peter,2012,1121
 #include "ammodule.h"
 #include "libavformat/url.h"
+#include "libavformat/avformat.h"
 #include <android/log.h>
 #define  LOG_TAG    "libvhls_mod"
 #define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
@@ -31,12 +32,14 @@ reserved :
 
 extern URLProtocol vhls_protocol;
 extern URLProtocol vrwc_protocol;
+extern AVInputFormat ff_mhls_demuxer; // hls demuxer for media group
 
 int libvhls_mod_init(const struct ammodule_t* module, int flags)
 {
     LOGI("libvhls module init\n");
     av_register_protocol(&vhls_protocol);
     av_register_protocol(&vrwc_protocol);//add for verimatrix drm link
+    av_register_input_format(&ff_mhls_demuxer);
     return 0;
 }
 

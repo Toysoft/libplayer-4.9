@@ -2105,19 +2105,23 @@ static int read_packet(AVFormatContext *s, uint8_t *buf, int raw_packet_size)
     int pkt_size;
     int total;
     int retry_count = 0;
+    uint8_t * buf_read = buf;
 
     for(;;) {
         pkt_size = TS_PACKET_SIZE;
         total = 0;
 RETRY:
-        len = avio_read(pb, buf, pkt_size);
+        len = avio_read(pb, buf_read, pkt_size);
         if (len <= 0 && ((len == AVERROR_EOF)
             || (len == AVERROR_EXIT)
             || (len == AVERROR(EIO))
             || (len == AVERROR(EINTR))
             || (len == AVERROR(EAGAIN))
+            || (len == HLS_STREAM_EOF)
             || (retry_count >= RETRY_MAX))) {
-            av_log(s, AV_LOG_ERROR, "avio read error, retry_cout = %d!, len = %x\n", retry_count, len);
+            if (len != AVERROR(EAGAIN)) {
+                av_log(s, AV_LOG_ERROR, "avio read error, retry_cout = %d!, len = %x\n", retry_count, len);
+            }
             return len < 0 ? len : AVERROR_EOF;
         } else if (len == AVERROR(ENOSR)) {
             av_log(s, AV_LOG_ERROR, "avio read %d, return ENOSR\n", len);
@@ -2131,9 +2135,11 @@ RETRY:
         if (total != TS_PACKET_SIZE && len >= 0) { // need retry
             retry_count++;
             amthreadpool_thread_usleep(1000);
-            pkt_size = TS_PACKET_SIZE-len;
-            if (retry_count%100==1)
+            pkt_size = TS_PACKET_SIZE - total;
+            buf_read += len;
+            if (retry_count % 100 == 1) {
                 av_log(s, AV_LOG_ERROR, "avio reading , retry_cout = %d, read total size = %d, pkt_size = %d, len = %x !\n", retry_count, total, pkt_size, len);
+            }
             goto RETRY;
         }
 

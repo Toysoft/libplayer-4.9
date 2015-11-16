@@ -17,15 +17,47 @@ extern "C" {
 #define ALLOW_CACHE_FLAG                (1<<1)
 #define CIPHER_INFO_FLAG                (1<<5)
 
+// must keep sync with mediadefs.cpp
+#define M3U_MEDIA_WEBVTT_MIME_TYPE "text/vtt"
+
+typedef enum {
+    TYPE_NONE        = 0,
+    TYPE_AUDIO       = 1,
+    TYPE_VIDEO       = 2,
+    TYPE_SUBS        = 4,
+    TYPE_CC          = 8,
+} MediaType;
+
+typedef enum {
+    FLAG_AUTOSELECT         = 1,
+    FLAG_DEFAULT            = 2,
+    FLAG_FORCED             = 4,
+    FLAG_HAS_LANGUAGE       = 8,
+    FLAG_HAS_URI            = 16,
+} MediaFlags;
+
+// Keep M3U_MEDIA_TRACK_TYPE_* sync with MediaPlayer.h.
+typedef enum {
+    M3U_MEDIA_TRACK_TYPE_UNKNOWN = 0,
+    M3U_MEDIA_TRACK_TYPE_VIDEO = 1,
+    M3U_MEDIA_TRACK_TYPE_AUDIO = 2,
+    M3U_MEDIA_TRACK_TYPE_TIMEDTEXT = 3,
+    M3U_MEDIA_TRACK_TYPE_SUBTITLE = 4,
+} MediaTrackType;
 
 typedef struct _M3uKeyInfo {
     char keyUrl[MAX_URL_SIZE];
     char method[10];
     char iv[35];
 } M3uKeyInfo;
+
 typedef struct _M3uBaseNode {
     int index;
     char fileUrl[MAX_URL_SIZE];
+    char audio_groupID[128];
+    char video_groupID[128];
+    char sub_groupID[128];
+    char codec[128];
     int bandwidth;
     int program_id;
     int64_t startUs;
@@ -36,8 +68,42 @@ typedef struct _M3uBaseNode {
     int media_sequence;
     int flags;
     M3uKeyInfo* key;
-    struct list_head  list;
+    struct list_head list;
 } M3uBaseNode;
+
+typedef struct _M3uMediaItem {
+    char name[128];
+    char mediaUrl[MAX_URL_SIZE];
+    char language[128];
+    uint32_t flags;
+    struct list_head mediaItem_list;
+} M3uMediaItem;
+
+typedef struct _M3uMediaGroup {
+    MediaType type;
+    char groupID[128];
+    int selectedIndex;
+    int mediaItem_num;
+    struct list_head mediaGroup_item_head;
+    struct list_head mediaGroup_parser_list;
+} M3uMediaGroup;
+
+typedef struct _M3uTrackInfo {
+    int track_type;
+    char * track_lang;
+    char * track_mime;
+    int track_auto;
+    int track_default;
+    int track_forced;
+} M3uTrackInfo;
+
+typedef struct _M3uSubtitleData {
+    int64_t sub_timeUs;
+    int64_t sub_durationUs;
+    int sub_trackIndex;
+    int sub_size;
+    uint8_t * sub_buffer;
+} M3uSubtitleData;
 
 int parseInt32(const char *s, int32_t *x);
 int parseInt64(const char *s, int64_t *x);
@@ -55,6 +121,17 @@ M3uBaseNode* m3u_get_node_by_datatime(void* hParse, int64_t dataTime);
 M3uBaseNode* m3u_get_node_by_url(void* hParse, char *srcurl);
 int64_t m3u_get_node_span_size(void* hParse, int start_index, int end_index);
 int m3u_release(void* hParse);
+
+////////////////////////// media group api ///////////////////////////////
+int m3u_get_mediaGroup_num(void * hParse);
+M3uMediaItem* m3u_get_media_by_groupID(void * hParse, MediaType type, const char * groupID);
+MediaType m3u_get_media_type_by_codec(const char * codec);
+MediaType m3u_get_media_type_by_index(void * hParse, int index);
+int m3u_get_track_count(void * hParse);
+M3uTrackInfo * m3u_get_track_info(void * hParse, int index);
+int m3u_select_track(void * hParse, int index, int select);
+int m3u_get_selected_track(void * hParse, MediaTrackType type);
+//////////////////////////////////////////////////////////////////////////
 
 
 #ifdef __cplusplus

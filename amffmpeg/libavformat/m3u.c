@@ -42,6 +42,7 @@
 #define EXT_X_ALLOW_CACHE			"#EXT-X-ALLOW-CACHE"
 #define EXT_X_ENDLIST				"#EXT-X-ENDLIST"
 #define EXT_X_STREAM_INF			"#EXT-X-STREAM-INF"
+#define EXT_X_MEDIA                 "#EXT-X-MEDIA:"
 
 #define EXT_X_DISCONTINUITY		"#EXT-X-DISCONTINUITY"
 
@@ -632,27 +633,31 @@ static int match_ext(const char *filename, const char *extensions)//get file typ
 
 static int m3u_probe(ByteIOContext *s,const char *file)
 {
-	if(s)
-	{
-		char line[1024];
-		if(m3u_format_get_line(s,line,1024)>0)
-		{
-
-			if(memcmp(line,EXTM3U,strlen(EXTM3U))==0)
-			{				
-				RLOG("Get m3u file tag\n");
-				return 100;
-			}
-		}	
-	}
-	else
-	{
-		if((match_ext(file, "m3u"))||(match_ext(file, "m3u8"))) 
-		{
-			return 50;
-		}
-	}
-	return 0;
+    int score = 0;
+    if (s)
+    {
+        int probe_loop = 10;
+        char line[1024];
+        while (probe_loop-- > 0 && m3u_format_get_line(s, line, 1024) > 0) {
+            if (!memcmp(line, EXTM3U, strlen(EXTM3U))) {
+                RLOG("probe m3u8 success !");
+                score = 100;
+            }
+            if (!memcmp(line, EXT_X_MEDIA, strlen(EXT_X_MEDIA))) {
+                s->is_mhls = 1;
+                RLOG("It's a media group m3u8 !");
+                break;
+            }
+        }
+    }
+    else
+    {
+        if ((match_ext(file, "m3u")) || (match_ext(file, "m3u8")))
+        {
+            score = 50;
+        }
+    }
+	return score;
 }
  
  struct list_demux m3u_demux = {

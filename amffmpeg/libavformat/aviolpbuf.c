@@ -740,7 +740,7 @@ int url_lp_intelligent_buffering(URLContext *s,int size)
 		size=lp->block_read_size; 
 	datalen= url_lp_getbuffering_size(s,&forward_data,&back_data);
 	if(lp->dbg_cnt%100==0)
-		lp_print( AV_LOG_INFO, "url_lp buffering:datalen=%d,forward_datad=%d,back_data=%d,lp->buffer_size=%d,size=%d\n",
+		lp_print( AV_LOG_DEBUG, "url_lp buffering:datalen=%d,forward_datad=%d,back_data=%d,lp->buffer_size=%d,size=%d\n",
 			datalen,forward_data,back_data,lp->buffer_size,size);
 	if(datalen>=0 && ((forward_data/lp->buffer_size)<lp->max_forword_level) && 
 	    ((datalen <lp->buffer_size-size-1024) || (back_data>(forward_data/2+1)) || (back_data>3*1024*1024)) )

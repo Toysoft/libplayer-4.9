@@ -34,7 +34,6 @@ extern "C" {
 #define HLSMIN(a,b) ((a) > (b) ? (b) : (a))
 #define ERROR_END_OF_STREAM 1011 // compatible for android
 
-
 #ifndef MAX_URL_SIZE
 #define MAX_URL_SIZE 4096
 #endif

@@ -2107,3 +2107,159 @@ int player_get_curr_sub_id(int pid, int *curr_sub_id)
     return 0;
 
 }
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @function    player_get_source_type
+ *
+ * @brief       judge current source is streaming protocol or not
+ *
+ * @param[in]   pid; player tag which get from player_start return value
+ *
+ * @return      1 : hls demuxer (maybe more)
+ *
+ */
+/* --------------------------------------------------------------------------*/
+
+int player_get_source_type(int pid)
+{
+    int type = 0;
+    play_para_t * player_para;
+    player_para = player_open_pid_data(pid);
+    if (player_para == NULL) {
+        return -1;    /*this data is 0 for default!*/
+    }
+    if (player_para->pFormatCtx && player_para->pFormatCtx->iformat) {
+        if (!strncmp(player_para->pFormatCtx->iformat->name, "mhls", 4)) {
+            type = 1;
+        }
+    }
+    player_close_pid_data(pid);
+    return type;
+}
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @function    player_get_streaming_track_count
+ *
+ * @brief       get number of valid track
+ *
+ * @param[in]   pid; player tag which get from player_start return value
+ *
+ * @param[in]   trackNum; number of audio/sub
+ *
+ * @return      r = 0 for success
+ *
+ */
+/* --------------------------------------------------------------------------*/
+
+int player_get_streaming_track_count(int pid, int * trackNum)
+{
+    int ret = -1;
+    play_para_t * player_para;
+    player_para = player_open_pid_data(pid);
+    if (player_para == NULL) {
+        return -1;    /*this data is 0 for default!*/
+    }
+    if (player_para->pFormatCtx && player_para->pFormatCtx->iformat && player_para->pFormatCtx->iformat->get_parameter) {
+        ret = player_para->pFormatCtx->iformat->get_parameter(player_para->pFormatCtx, 3, -1, (void *)trackNum, NULL);
+    }
+    player_close_pid_data(pid);
+    return ret;
+}
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @function    player_get_streaming_track_info
+ *
+ * @brief       get current streaming's audio/sub info
+ *
+ * @param[in]   pid; player tag which get from player_start return value
+ *
+ * @param[in]   info_num; number of audio/sub info item
+ *
+ * @param[in]   info_t; audio/sub info array
+ *
+ * @return      r = 0 for success
+ *
+ */
+/* --------------------------------------------------------------------------*/
+
+int player_get_streaming_track_info(int pid, int * info_num, AVStreamInfo *** info_t)
+{
+    int ret = -1;
+    play_para_t * player_para;
+    player_para = player_open_pid_data(pid);
+    if (player_para == NULL) {
+        return -1;    /*this data is 0 for default!*/
+    }
+    if (player_para->pFormatCtx && player_para->pFormatCtx->iformat && player_para->pFormatCtx->iformat->get_parameter) {
+        ret = player_para->pFormatCtx->iformat->get_parameter(player_para->pFormatCtx, 1, -1, (void *)info_num, (void ***)info_t);
+    }
+    player_close_pid_data(pid);
+    return ret;
+}
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @function    player_select_streaming_track
+ *
+ * @brief       switch audio/sub track
+ *
+ * @param[in]   pid; player tag which get from player_start return value
+ *
+ * @param[in]   index; audio/sub track index
+ *
+ * @param[in]   select; select or unselect
+ *
+ * @return      r = 0 for success
+ *
+ */
+/* --------------------------------------------------------------------------*/
+
+int player_select_streaming_track(int pid, int index, int select)
+{
+    int ret = -1;
+    play_para_t * player_para;
+    player_para = player_open_pid_data(pid);
+    if (player_para == NULL) {
+        return -1;    /*this data is 0 for default!*/
+    }
+    if (player_para->pFormatCtx && player_para->pFormatCtx->iformat && player_para->pFormatCtx->iformat->select_stream) {
+        ret = player_para->pFormatCtx->iformat->select_stream(player_para->pFormatCtx, index, select);
+    }
+    player_close_pid_data(pid);
+    return ret;
+}
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @function    player_get_streaming_selected_track
+ *
+ * @brief       get current selected audio/sub track index
+ *
+ * @param[in]   pid; player tag which get from player_start return value
+ *
+ * @param[in]   type; track type
+ *
+ * @param[in]   selected_track; selected audio/sub track index
+ *
+ * @return      r = 0 for success
+ *
+ */
+/* --------------------------------------------------------------------------*/
+
+int player_get_streaming_selected_track(int pid, int type, int * selected_track)
+{
+    int ret = -1;
+    play_para_t * player_para;
+    player_para = player_open_pid_data(pid);
+    if (player_para == NULL) {
+        return -1;    /*this data is 0 for default!*/
+    }
+    if (player_para->pFormatCtx && player_para->pFormatCtx->iformat && player_para->pFormatCtx->iformat->get_parameter) {
+        ret = player_para->pFormatCtx->iformat->get_parameter(player_para->pFormatCtx, 2, type, (void *)selected_track, NULL);
+    }
+    player_close_pid_data(pid);
+    return ret;
+}

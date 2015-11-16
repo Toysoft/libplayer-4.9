@@ -269,4 +269,6 @@ int update_dump_dir_path(void);
 int player_force_enter_buffering(play_para_t *player, int nForce);
 int player_pre_switch_audio(play_para_t *para, int aid);
 
+int player_read_streaming_subtitle(play_para_t * player);
+
 #endif

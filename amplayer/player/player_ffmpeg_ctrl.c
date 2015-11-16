@@ -178,6 +178,15 @@ int ffmepg_seturl_codec_buf_info(play_para_t *para, int type, int value)
     return 0;
 
 }
+
+// for hls demuxer.
+int ffmpeg_set_format_codec_buffer_info(play_para_t * para, int type, int value) {
+    if (para && para->pFormatCtx && type > 0 && value >= 0) {
+        av_set_private_parameter(para->pFormatCtx, AVCMD_SET_CODEC_BUFFER_INFO, type, value);
+    }
+    return 0;
+}
+
 int ffmpeg_close_file(play_para_t *am_p)
 {
     AVFormatContext *pFCtx = am_p->pFormatCtx;

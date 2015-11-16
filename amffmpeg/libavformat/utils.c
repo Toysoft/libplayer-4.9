@@ -325,6 +325,7 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened, int *score
 {
     AVProbeData lpd = *pd;
     AVInputFormat *fmt1 = NULL, *fmt = NULL, *cmf_fmt = NULL;
+    AVIOContext * pb = pd->s;
     int score, score_max = 0, cmf_flag = 0;
     if (lpd.buf_size > 10 && ff_id3v2_match(lpd.buf, ID3v2_DEFAULT_MAGIC))
     {
@@ -340,6 +341,11 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened, int *score
     {
         if (!is_opened == !(fmt1->flags & AVFMT_NOFILE))
             continue;
+        // iocontext that allotted in hls demuxer will crash extractor below, shield them.
+        if (pb && pb->mhls_inner_format > 0 &&
+            (!strncmp(fmt1->name, "DRMdemux", 8) || (!strncmp(fmt1->name, "Demux_no_prot", 13)))) {
+            continue;
+        }
         score = 0;
         if (fmt1->read_probe)
         {
@@ -573,6 +579,11 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
     int maxretry = 0;
     int eof_flag = 0;
     int64_t filesize = avio_size(pb);
+    int probe_time_s = 0;
+    char prop_value[PROPERTY_VALUE_MAX] = {0};
+    if (property_get("media.amplayer.probe_time_s", prop_value, "30") > 0) {
+        probe_time_s = atoi(prop_value);
+    }
     av_log(NULL, AV_LOG_INFO, "%s:size=%lld\n", pd.filename, filesize);
     if (!max_probe_size)
     {
@@ -615,7 +626,9 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
         }
         while (!(pb->error || pb->eof_reached || url_interrupt_cb()));
     }
+    int64_t probe_startUs;
 retry_probe:
+    probe_startUs = av_gettime();
     for (probe_size = PROBE_BUF_MIN; probe_size <= max_probe_size && !*fmt && ret >= 0;
             probe_size = FFMIN(FFMAX(pd.buf_size << 1, PROBE_BUF_MIN), FFMAX(max_probe_size, probe_size + 1)))
     {
@@ -640,9 +653,16 @@ retry_probe:
             {
                 eof_flag = 1;
             }
-            maxretry++;
-            if (maxretry > 1000)
-                return -1;
+            if (pb->mhls_inner_format > 0) {
+                if (((av_gettime() - probe_startUs) / 1000000) > probe_time_s) {
+                    return -1;
+                }
+            } else {
+                maxretry++;
+                if (maxretry > 1000) {
+                    return -1;
+                }
+            }
             score = 0;
             ret = 0;            /* error was end of file, nothing read */
         }
@@ -685,7 +705,7 @@ retry_probe:
         }
         else
         {
-            av_log(NULL, AV_LOG_WARNING, "[%s]no new data for probe,retry\n", __FUNCTION__);
+            av_log(NULL, AV_LOG_DEBUG, "[%s]no new data for probe,retry\n", __FUNCTION__);
         }
         if (eof_flag == 1)
         {
@@ -884,9 +904,14 @@ static int is_use_external_module(const char *mod_name)
     }
 }
 /* open input file and probe the format if necessary */
-static int init_input(AVFormatContext *s, const char *filename, const char *headers, const AVDictionary **options)
+static int init_input(AVFormatContext *s, const char *orig_filename, const char *headers, const AVDictionary **options)
 {
     int ret;
+    char * filename = orig_filename;
+    if (!strncmp(orig_filename, "vhls:", strlen("vhls:"))
+        || !strncmp(orig_filename, "list:", strlen("list:"))) { // remove vhls or list tag.
+        filename = orig_filename + 5;
+    }
     AVProbeData pd = {filename, NULL, 0, NULL};
     auto_switch_protol_t *newp = NULL;
     if (s->pb)
@@ -928,6 +953,9 @@ static int init_input(AVFormatContext *s, const char *filename, const char *head
             av_log(NULL, AV_LOG_ERROR, "[%s:%d] url to %s\n", __FUNCTION__, __LINE__, listfile);
             if ((ret = avio_open_h(&s->pb, listfile, AVIO_FLAG_READ, headers)) < 0)
                 return ret;
+            if (s->pb->filename) {
+                av_free(s->pb->filename);
+            }
             s->pb->filename = listfile;
         }
         else
@@ -941,7 +969,7 @@ static int init_input(AVFormatContext *s, const char *filename, const char *head
                 ret = avio_open_h(&s->pb, filename, flags, headers);
             if (ret < 0)
                 return ret;
-            if (!strncmp(filename, "vhls:", strlen("vhls:")) || !strncmp(filename, "rtp:", strlen("rtp:")) || !strncmp(filename, "rtsp:", strlen("rtsp:"))) //no need to try in new protocol matching
+            if (!strncmp(filename, "rtp:", strlen("rtp:")) || !strncmp(filename, "rtsp:", strlen("rtsp:"))) //no need to try in new protocol matching
             {
                 goto PASS_THROUGH;
             }
@@ -966,7 +994,11 @@ static int init_input(AVFormatContext *s, const char *filename, const char *head
         {
             if (s->pb->is_slowmedia && av_strstart(newp->prefix, "list:", &ptr) && (!strstr(filename, "AmlogicPlayerDataSouceProtocol")) && (is_use_external_module("vhls_mod") > 0))
             {
-                strcpy(listfile, "vhls:");
+                if (s->pb->is_mhls == 1) {
+                    strcpy(listfile, "mhls:");
+                } else {
+                    strcpy(listfile, "vhls:");
+                }
             }
             else
             {
@@ -981,6 +1013,25 @@ static int init_input(AVFormatContext *s, const char *filename, const char *head
                 strcpy(listfile + strlen(newp->prefix), filename);
             }
         }
+        if (s->pb->is_mhls == 1) {
+            if (s->pb->filename) {
+                av_free(s->pb->filename);
+            }
+            s->pb->filename = listfile;
+            AVProbeData pd_tmp = {listfile, NULL, 0, NULL};
+            s->iformat = av_probe_input_format(&pd_tmp, 0);
+            if (s->iformat) {
+                s->pd.filename = pd.filename;
+                s->pd.buf = pd.buf;
+                s->pd.s = pd.s;
+                memcpy(s->pd.pads, pd.pads, 8 * sizeof(long));
+                av_log(NULL, AV_LOG_INFO, "[%s:%d] mhls probe success !", __FUNCTION__, __LINE__);
+                return 0;
+            } else {
+                av_log(NULL, AV_LOG_ERROR, "[%s:%d] mhls probe failed !", __FUNCTION__, __LINE__);
+                return AVERROR(EIO);
+            }
+        }
         url_fclose(s->pb);
         s->pb = NULL;
         av_log(NULL, AV_LOG_INFO, "[%s:%d]Use new url=%s to open\n", __FUNCTION__, __LINE__, listfile);
@@ -992,14 +1043,14 @@ static int init_input(AVFormatContext *s, const char *filename, const char *head
         {
             av_log(NULL, AV_LOG_ERROR, "init_input:%s failed,line=%d err=0x%x\n", listfile, __LINE__, err);
             av_free(listfile);
-            return AVERROR(EIO);;
+            return AVERROR(EIO);
         }
         s->pb->filename = listfile;
     }
     if (s->iformat)
         return 0;
 PASS_THROUGH:
-    return av_probe_input_buffer(s->pb, &s->iformat, filename, s, 0, 0);
+    return av_probe_input_buffer(s->pb, &s->iformat, orig_filename, s, 0, 0);
 }
 
 
@@ -3745,6 +3796,9 @@ int av_find_stream_info(AVFormatContext *ic)
         {
             /*others do with fastswitch*/
         }
+        if (ic->is_hls_demuxer == 1 && !strcmp(ic->iformat->name, "mpegts")) {
+            fast_switch = 2;
+        }
     };
     av_log(NULL, AV_LOG_INFO, "[%s]iformat->name[%s]fast_switch=%d streamtype=%lld\n", \
            __FUNCTION__, ic->iformat->name, fast_switch, streamtype);
@@ -3918,7 +3972,7 @@ int av_find_stream_info(AVFormatContext *ic)
                stop here */
             if (!(ic->ctx_flags & AVFMTCTX_NOHEADER) ||
                 (((fast_switch && ic->nb_streams >= 2) || (2 == fast_switch && 1 == ic->nb_streams))
-                  && (need_continue_parse >= 2 || continue_parse_count > 10)))
+                  && ((need_continue_parse >= 2 || continue_parse_count > 10) || (ic->is_hls_demuxer == 1))))
             {
                /*
                for fast_mode
@@ -4317,6 +4371,14 @@ int av_read_pause(AVFormatContext *s)
         return s->iformat->read_pause(s);
     if (s->pb)
         return avio_pause(s->pb, 1);
+    return AVERROR(ENOSYS);
+}
+
+int av_set_private_parameter(AVFormatContext * s, int para, int type, int value)
+{
+    if (s->iformat->set_parameter) {
+        return s->iformat->set_parameter(s, para, type, value);
+    }
     return AVERROR(ENOSYS);
 }
 

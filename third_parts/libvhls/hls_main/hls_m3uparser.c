@@ -20,6 +20,8 @@
 #endif
 #include <amthreadpool.h>
 
+#define FOURCC(c1, c2, c3, c4) \
+    (c1 << 24 | c2 << 16 | c3 << 8 | c4)
 
 typedef struct _M3UParser {
     int is_variant_playlist;
@@ -28,25 +30,252 @@ typedef struct _M3UParser {
     int is_initcheck;
     int target_duration;
     int base_node_num;
+    int media_group_num;
     int log_level;
     char *baseUrl;
     int64_t durationUs;
     struct list_head  head;
-    pthread_mutex_t parser_lock;
+    struct list_head  mediaGroup_head;
 } M3UParser;
+
+//====================== media group ==============================
+
+static void codecIsType(const char * codec, MediaType * type) {
+    if (strlen(codec) < 4) {
+        return;
+    }
+    switch (FOURCC(codec[0], codec[1], codec[2], codec[3])) {
+        case 'ac-3':
+        case 'alac':
+        case 'dra1':
+        case 'dtsc':
+        case 'dtse':
+        case 'dtsh':
+        case 'dtsl':
+        case 'ec-3':
+        case 'enca':
+        case 'g719':
+        case 'g726':
+        case 'm4ae':
+        case 'mlpa':
+        case 'mp4a':
+        case 'raw ':
+        case 'samr':
+        case 'sawb':
+        case 'sawp':
+        case 'sevc':
+        case 'sqcp':
+        case 'ssmv':
+        case 'twos':
+        case 'agsm':
+        case 'alaw':
+        case 'dvi ':
+        case 'fl32':
+        case 'fl64':
+        case 'ima4':
+        case 'in24':
+        case 'in32':
+        case 'lpcm':
+        case 'Qclp':
+        case 'QDM2':
+        case 'QDMC':
+        case 'ulaw':
+        case 'vdva':
+            *type |= TYPE_AUDIO;
+            return;
+
+        case 'avc1':
+        case 'avc2':
+        case 'avcp':
+        case 'drac':
+        case 'encv':
+        case 'mjp2':
+        case 'mp4v':
+        case 'mvc1':
+        case 'mvc2':
+        case 'resv':
+        case 's263':
+        case 'svc1':
+        case 'vc-1':
+        case 'CFHD':
+        case 'civd':
+        case 'DV10':
+        case 'dvh5':
+        case 'dvh6':
+        case 'dvhp':
+        case 'DVOO':
+        case 'DVOR':
+        case 'DVTV':
+        case 'DVVT':
+        case 'flic':
+        case 'gif ':
+        case 'h261':
+        case 'h263':
+        case 'HD10':
+        case 'jpeg':
+        case 'M105':
+        case 'mjpa':
+        case 'mjpb':
+        case 'png ':
+        case 'PNTG':
+        case 'rle ':
+        case 'rpza':
+        case 'Shr0':
+        case 'Shr1':
+        case 'Shr2':
+        case 'Shr3':
+        case 'Shr4':
+        case 'SVQ1':
+        case 'SVQ3':
+        case 'tga ':
+        case 'tiff':
+        case 'WRLE':
+            *type |= TYPE_VIDEO;
+            return;
+
+        default:
+            return;
+    }
+}
+
+static void add_mediaGroup_to_head(M3UParser * var, M3uMediaGroup * group) {
+    list_add(&group->mediaGroup_parser_list, &var->mediaGroup_head);
+    var->media_group_num++;
+}
+
+static void add_mediaItem_to_group_head(M3UParser * var, M3uMediaGroup * group, M3uMediaItem * item) {
+    list_add(&item->mediaItem_list, &group->mediaGroup_item_head);
+    group->mediaItem_num++;
+}
+
+static M3uMediaGroup * get_mediaGroup_by_id(M3UParser * var, MediaType type, const char * groupID) {
+    M3uMediaGroup * pos = NULL;
+    M3uMediaGroup * tmp = NULL;
+
+    list_for_each_entry_safe(pos, tmp, &var->mediaGroup_head, mediaGroup_parser_list) {
+        if (type == pos->type && !strcmp(pos->groupID, groupID)) {
+            return pos;
+        }
+    }
+
+    return NULL;
+}
+
+static M3uMediaItem * get_mediaItem_in_group(M3uMediaGroup * group, int index_to_select) {
+    M3uMediaItem * pos = NULL;
+    M3uMediaItem * tmp = NULL;
+    int index = 0;
+    list_for_each_entry_safe(pos, tmp, &group->mediaGroup_item_head, mediaItem_list) {
+        if (index_to_select >= 0) {
+            if (index_to_select == index) {
+                return pos;
+            }
+        } else {
+            if (group->selectedIndex >= 0) {
+                if (group->selectedIndex == index) {
+                    return pos;
+                }
+            } else if ((pos->flags & FLAG_DEFAULT) != 0) {
+                return pos;
+            }
+        }
+        index++;
+    }
+
+    if (index_to_select >= 0) {
+        pos = NULL;
+    } else {
+        pos = list_first_entry(&group->mediaGroup_item_head, M3uMediaItem, mediaItem_list);
+    }
+    return pos;
+}
+
+static M3uTrackInfo * get_trackInfo_in_group(M3uMediaGroup * group, int index) {
+    M3uTrackInfo * trackInfo = (M3uTrackInfo *)malloc(sizeof(M3uTrackInfo));
+    memset(trackInfo, 0, sizeof(M3uTrackInfo));
+    int trackType;
+    switch (group->type) {
+        case TYPE_AUDIO:
+            trackType = M3U_MEDIA_TRACK_TYPE_AUDIO;
+            break;
+        case TYPE_VIDEO:
+            trackType = M3U_MEDIA_TRACK_TYPE_VIDEO;
+            break;
+        case TYPE_SUBS:
+            trackType = M3U_MEDIA_TRACK_TYPE_SUBTITLE;
+            break;
+        default:
+            trackType = M3U_MEDIA_TRACK_TYPE_UNKNOWN;
+            break;
+    }
+    trackInfo->track_type = trackType;
+    M3uMediaItem * item = get_mediaItem_in_group(group, index);
+    if (!item) {
+        free(trackInfo);
+        return NULL;
+    }
+    if (item->language[0] != '\0') {
+        trackInfo->track_lang = strdup(item->language);
+    }
+    // TODO: maybe exist other type of subtitle
+    if (group->type == TYPE_SUBS) {
+        trackInfo->track_mime = strdup(M3U_MEDIA_WEBVTT_MIME_TYPE);
+        trackInfo->track_auto = !!(item->flags & FLAG_AUTOSELECT);
+        trackInfo->track_default = !!(item->flags & FLAG_DEFAULT);
+        trackInfo->track_forced = !!(item->flags & FLAG_FORCED);
+    }
+    return trackInfo;
+}
+
+static MediaType get_media_type_by_codec(const char * codec) {
+    if (!codec) {
+        return TYPE_NONE;
+    }
+    char * ptr = codec;
+    MediaType type = TYPE_NONE;
+    do {
+        if (*ptr == ',') {
+            ptr++;
+        }
+        codecIsType(ptr, &type);
+    } while ((ptr = strstr(ptr, ",")) != NULL);
+    return type;
+}
+
+static void clean_all_mediaGroup(M3UParser * var) {
+    M3uMediaGroup * pos = NULL;
+    M3uMediaGroup * tmp = NULL;
+    M3uMediaItem * item_pos = NULL;
+    M3uMediaItem * item_tmp = NULL;
+    if (!var->media_group_num) {
+        return;
+    }
+    list_for_each_entry_safe(pos, tmp, &var->mediaGroup_head, mediaGroup_parser_list) {
+        list_del(&pos->mediaGroup_parser_list);
+        if (pos->mediaItem_num > 0) {
+            list_for_each_entry_safe(item_pos, item_tmp, &pos->mediaGroup_item_head, mediaItem_list) {
+                list_del(&item_pos->mediaItem_list);
+                free(item_pos);
+                item_pos = NULL;
+                pos->mediaItem_num--;
+            }
+        }
+        free(pos);
+        pos = NULL;
+        var->media_group_num--;
+    }
+}
+
 //====================== list abouts===============================
 #define BASE_NODE_MAX  8*1024 //max to 8k
 
 static int add_node_to_head(M3UParser* var, M3uBaseNode* item)
 {
-    pthread_mutex_lock(&var->parser_lock);
     if (var->base_node_num > BASE_NODE_MAX) {
-        pthread_mutex_unlock(&var->parser_lock);
         return -1;
     }
     list_add(&item->list, &var->head);
     var->base_node_num++;
-    pthread_mutex_unlock(&var->parser_lock);
     return 0;
 }
 
@@ -56,15 +285,12 @@ static M3uBaseNode* get_node_by_time(M3UParser* var, int64_t timeUs)
     M3uBaseNode* pos = NULL;
     M3uBaseNode* tmp = NULL;
 
-    pthread_mutex_lock(&var->parser_lock);
     list_for_each_entry_safe(pos, tmp, &var->head, list) {
         if (pos->startUs <= timeUs && timeUs < (pos->startUs + pos->durationUs)) {
-            pthread_mutex_unlock(&var->parser_lock);
             return pos;
         }
     }
 
-    pthread_mutex_unlock(&var->parser_lock);
     return NULL;
 }
 
@@ -74,16 +300,13 @@ static M3uBaseNode* get_node_by_datatime(M3UParser* var, int64_t dataTime)
     M3uBaseNode* tmp = NULL;
 
     LOGV("get_node_by_datatime, dataTime: %lld\n", dataTime);
-    pthread_mutex_lock(&var->parser_lock);
     list_for_each_entry_safe_reverse(pos, tmp, &var->head, list) {
         LOGV("pos->dataTime = %lld, tmp->dataTime = %lld\n", pos->dataTime, tmp->dataTime);
         if ((pos->dataTime <= dataTime) && (dataTime < tmp->dataTime)) {
-            pthread_mutex_unlock(&var->parser_lock);
             LOGV("get_node_by_datatime, index: %d\n", pos->index);
             return pos;
         }
     }
-    pthread_mutex_unlock(&var->parser_lock);
     return NULL;
 }
 
@@ -91,18 +314,14 @@ static M3uBaseNode* get_node_by_index(M3UParser* var, int index)
 {
     M3uBaseNode* pos = NULL;
     M3uBaseNode* tmp = NULL;
-    pthread_mutex_lock(&var->parser_lock);
     if (index > var->base_node_num - 1 || index < 0) {
-        pthread_mutex_unlock(&var->parser_lock);
         return NULL;
     }
     list_for_each_entry_safe_reverse(pos, tmp, &var->head, list) {
         if (pos->index  == index) {
-            pthread_mutex_unlock(&var->parser_lock);
             return pos;
         }
     }
-    pthread_mutex_unlock(&var->parser_lock);
     return NULL;
 }
 
@@ -128,17 +347,14 @@ static M3uBaseNode* get_node_by_url(M3UParser* var, char *srcurl)
         strncpy(tmp_url, srcurl, len);
         tmp_url[len] = '\0';
     }
-    pthread_mutex_lock(&var->parser_lock);
     list_for_each_entry_safe(pos, tmp, &var->head, list) {
         if (strstr(pos->fileUrl, tmp_url)) {
-            pthread_mutex_unlock(&var->parser_lock);
             if (is_wasu) {
                 free(tmp_url);
             }
             return pos;
         }
     }
-    pthread_mutex_unlock(&var->parser_lock);
     if (is_wasu) {
         free(tmp_url);
     }
@@ -149,9 +365,7 @@ static int dump_all_nodes(M3UParser* var)
 {
     M3uBaseNode* pos = NULL;
     M3uBaseNode* tmp = NULL;
-    pthread_mutex_lock(&var->parser_lock);
     if (var->base_node_num == 0) {
-        pthread_mutex_unlock(&var->parser_lock);
         return 0;
     }
     LOGI("*******************Dump All nodes from list start*****************************\n");
@@ -177,7 +391,6 @@ static int dump_all_nodes(M3UParser* var)
         }
     }
     LOGI("*******************Dump All nodes from list end*******************************\n");
-    pthread_mutex_unlock(&var->parser_lock);
 
     return 0;
 
@@ -186,9 +399,7 @@ static int clean_all_nodes(M3UParser* var)
 {
     M3uBaseNode* pos = NULL;
     M3uBaseNode* tmp = NULL;
-    pthread_mutex_lock(&var->parser_lock);
     if (var->base_node_num == 0) {
-        pthread_mutex_unlock(&var->parser_lock);
         return 0;
     }
     LOGV("*******************Clean All nodes from list start****************************\n");
@@ -211,7 +422,6 @@ static int clean_all_nodes(M3UParser* var)
         var->base_node_num--;
     }
 
-    pthread_mutex_unlock(&var->parser_lock);
     LOGV("*******************Clean All nodes from list end******************************\n");
     return 0;
 
@@ -456,6 +666,21 @@ static void parseKeyValue(const char *str, parse_key_val_cb callback_get_buf,
 struct variant_info {
     char bandwidth[20];
     char program_id[8];
+    char codec[128];
+    char audio_groupID[128];
+    char video_groupID[128];
+    char sub_groupID[128];
+};
+
+struct media_info {
+    char type[20];
+    char groupID[128];
+    char language[128];
+    char name[128];
+    char autoselect[8];
+    char groupDefault[8];
+    char forced[8];
+    char uri[1024];
 };
 
 static void handle_variant_args(struct variant_info *info, const char *key,
@@ -467,98 +692,49 @@ static void handle_variant_args(struct variant_info *info, const char *key,
     } else if (!strncmp(key, "PROGRAM-ID=", key_len)) {
         *dest     =        info->program_id;
         *dest_len = sizeof(info->program_id);
+    } else if (!strncmp(key, "CODECS=", key_len)) {
+        *dest     =        info->codec;
+        *dest_len = sizeof(info->codec);
+    } else if (!strncmp(key, "AUDIO=", key_len)) {
+        *dest     =        info->audio_groupID;
+        *dest_len = sizeof(info->audio_groupID);
+    } else if (!strncmp(key, "VIDEO=", key_len)) {
+        *dest     =        info->video_groupID;
+        *dest_len = sizeof(info->video_groupID);
+    } else if (!strncmp(key, "SUBTITLES=", key_len)) {
+        *dest     =        info->sub_groupID;
+        *dest_len = sizeof(info->sub_groupID);
     }
 }
 
-static int parseStreamInf(char* line, int *bandwidth, int *program_id)
-{
-
-    const char *match = strstr(line, ":");
-
-    if (match == NULL) {
-        return -1;
-    }
-    trimInvalidSpace(line);
-    ssize_t colonPos = match - line;
-    struct variant_info info;
-    memset(&info, 0, sizeof(struct variant_info));
-    //LOGV("Stream info:%s,info start pos:%d\n",line,(int)colonPos);
-    parseKeyValue(line + colonPos + 1, (parse_key_val_cb)handle_variant_args,
-                  &info);
-
-    *bandwidth = atoi(info.bandwidth);
-    *program_id = atoi(info.program_id);
-    //LOGV("Got bandwidth value:%d,program-id:%d\n",*bandwidth,*program_id);
-    return 0;
-}
-
-
-static int parseByteRange(const char* line, uint64_t curOffset, uint64_t *length, uint64_t *offset)
-{
-    const char *match = strstr(line, ":");
-
-    if (match == NULL) {
-        return -1;
-    }
-    ssize_t colonPos = match - line;
-
-    if (colonPos < 0) {
-        return -1;
-    }
-    match = strstr(line + colonPos + 1, "@");
-    ssize_t atPos = match - line;
-
-    char* lenStr = NULL;
-    if (atPos < 0) {
-        lenStr = strndup(line + colonPos + 1, strlen(line) - colonPos - 1);
-    } else {
-        lenStr = strndup(line + colonPos + 1, atPos - colonPos - 1);
-    }
-
-    trimInvalidSpace(lenStr);
-
-    const char *s = lenStr;
-    char *end;
-    *length = strtoull(s, &end, 10);
-
-    if (s == end || *end != '\0') {
-        return -1;
-    }
-
-    if (atPos >= 0) {
-        char* offStr = strndup(line + atPos + 1, strlen(line) - atPos - 1);
-        trimInvalidSpace(offStr);
-
-        const char *s = offStr;
-        *offset = strtoull(s, &end, 10);
-
-        if (s == end || *end != '\0') {
-            return -1;
-        }
-    } else {
-        *offset = curOffset;
-    }
-
-    return 0;
-}
-
-
-static void handle_key_args(M3uKeyInfo *info, const char *key,
-                            int key_len, char **dest, int *dest_len)
-{
-    if (!strncmp(key, "METHOD=", key_len)) {
-        *dest     =        info->method;
-        *dest_len = sizeof(info->method);
+static void handle_media_info(struct media_info *info, const char *key,
+                                int key_len, char **dest, int *dest_len) {
+    if (!strncmp(key, "TYPE=", key_len)) {
+        *dest     = info->type;
+        *dest_len = sizeof(info->type);
+    } else if (!strncmp(key, "GROUP-ID=", key_len)) {
+        *dest     = info->groupID;
+        *dest_len = sizeof(info->groupID);
+    } else if (!strncmp(key, "LANGUAGE=", key_len)) {
+        *dest     = info->language;
+        *dest_len = sizeof(info->language);
+    } else if (!strncmp(key, "NAME=", key_len)) {
+        *dest     = info->name;
+        *dest_len = sizeof(info->name);
+    } else if (!strncmp(key, "AUTOSELECT=", key_len)) {
+        *dest     = info->autoselect;
+        *dest_len = sizeof(info->autoselect);
+    } else if (!strncmp(key, "DEFAULT=", key_len)) {
+        *dest     = info->groupDefault;
+        *dest_len = sizeof(info->groupDefault);
+    } else if (!strncmp(key, "FORCED=", key_len)) {
+        *dest     = info->forced;
+        *dest_len = sizeof(info->forced);
     } else if (!strncmp(key, "URI=", key_len)) {
-        *dest     =        info->keyUrl;
-        *dest_len = sizeof(info->keyUrl);
-    } else if (!strncmp(key, "IV=", key_len)) {
-        *dest     =        info->iv;
-        *dest_len = sizeof(info->iv);
+        *dest     = info->uri;
+        *dest_len = sizeof(info->uri);
     }
 }
-
-
 
 static void makeUrl(char *buf, int size, const char *base, const char *rel)
 {
@@ -674,6 +850,214 @@ static void makeUrl(char *buf, int size, const char *base, const char *rel)
 
 }
 
+static int parseStreamInf(M3UParser* var, char* line, M3uBaseNode * node)
+{
+
+    const char *match = strstr(line, ":");
+
+    if (match == NULL) {
+        return -1;
+    }
+    trimInvalidSpace(line);
+    ssize_t colonPos = match - line;
+    M3uMediaGroup * group = NULL;
+    struct variant_info info;
+    memset(&info, 0, sizeof(struct variant_info));
+    parseKeyValue(line + colonPos + 1, (parse_key_val_cb)handle_variant_args, &info);
+
+    if (info.bandwidth[0] != '\0') {
+        node->bandwidth = atoi(info.bandwidth);
+    }
+    if (info.program_id[0] != '\0') {
+        node->program_id = atoi(info.program_id);
+    }
+    if (info.codec[0] != '\0') {
+        memcpy(node->codec, info.codec, sizeof(node->codec));
+    }
+    if (info.audio_groupID[0] != '\0') {
+        group = get_mediaGroup_by_id(var, TYPE_AUDIO, info.audio_groupID);
+        if (!group) {
+            LOGE("Undefined media group '%s' referenced in stream info.", info.audio_groupID);
+        } else {
+            memcpy(node->audio_groupID, info.audio_groupID, sizeof(node->audio_groupID));
+        }
+    }
+    if (info.video_groupID[0] != '\0') {
+        group = get_mediaGroup_by_id(var, TYPE_VIDEO, info.video_groupID);
+        if (!group) {
+            LOGE("Undefined media group '%s' referenced in stream info.", info.video_groupID);
+        } else {
+            memcpy(node->video_groupID, info.video_groupID, sizeof(node->video_groupID));
+        }
+    }
+    if (info.sub_groupID[0] != '\0') {
+        group = get_mediaGroup_by_id(var, TYPE_SUBS, info.sub_groupID);
+        if (!group) {
+            LOGE("Undefined media group '%s' referenced in stream info.", info.sub_groupID);
+        } else {
+            memcpy(node->sub_groupID, info.sub_groupID, sizeof(node->sub_groupID));
+        }
+    }
+    return 0;
+}
+
+
+static int parseMedia(M3UParser* var, char * line) {
+    const char * match = strstr(line, ":");
+    if (!match) {
+        return -1;
+    }
+
+    trimInvalidSpace(line);
+    ssize_t colonPos = match - line;
+    struct media_info info;
+    memset(&info, 0, sizeof(struct media_info));
+    parseKeyValue(line + colonPos + 1, (parse_key_val_cb)handle_media_info, &info);
+
+    M3uMediaGroup * group = NULL;
+    M3uMediaItem * item = (M3uMediaItem *)malloc(sizeof(M3uMediaItem));
+    memset(item, 0, sizeof(M3uMediaItem));
+    INIT_LIST_HEAD(&item->mediaItem_list);
+    int haveType = 0, haveGroupID = 0;
+    MediaType type;
+    char groupID[128] = {0};
+    if (info.type[0] != '\0') {
+        if (!strcasecmp("subtitles", info.type)) {
+            type = TYPE_SUBS;
+        } else if (!strcasecmp("audio", info.type)) {
+            type = TYPE_AUDIO;
+        } else if (!strcasecmp("video", info.type)) {
+            type = TYPE_VIDEO;
+        } else if (!strcasecmp("closed-captions", info.type)) {
+            type = TYPE_CC;
+        } else {
+            LOGE("Invalid media group type '%s'", info.type);
+            goto FREE;
+        }
+        haveType = 1;
+    }
+    if (info.groupID[0] != '\0') {
+        memcpy(groupID, info.groupID, sizeof(groupID));
+        haveGroupID = 1;
+    }
+    if (info.language[0] != '\0') {
+        memcpy(item->language, info.language, sizeof(item->language));
+        item->flags |= FLAG_HAS_LANGUAGE;
+    }
+    if (info.name[0] != '\0') {
+        memcpy(item->name, info.name, sizeof(item->name));
+    }
+    if (info.autoselect[0] != '\0') {
+        if (!strcasecmp("YES", info.autoselect)) {
+            item->flags |= FLAG_AUTOSELECT;
+        }
+    }
+    if (info.groupDefault[0] != '\0') {
+        if (!strcasecmp("YES", info.groupDefault)) {
+            item->flags |= FLAG_DEFAULT;
+        }
+    }
+    if (info.forced[0] != '\0') {
+        if (!strcasecmp("YES", info.groupDefault)) {
+            item->flags |= FLAG_FORCED;
+        }
+    }
+    if (info.uri[0] != '\0') {
+        makeUrl(item->mediaUrl, sizeof(item->mediaUrl), var->baseUrl, info.uri);
+        item->flags |= FLAG_HAS_URI;
+    }
+
+    if (!haveType || !haveGroupID) {
+        LOGE("Incomplete EXT-X-MEDIA element !");
+        goto FREE;
+    }
+
+    group = get_mediaGroup_by_id(var, type, groupID);
+    if (!group) {
+        group = (M3uMediaGroup *)malloc(sizeof(M3uMediaGroup));
+        memset(group, 0, sizeof(M3uMediaGroup));
+        INIT_LIST_HEAD(&group->mediaGroup_item_head);
+        INIT_LIST_HEAD(&group->mediaGroup_parser_list);
+        group->type = type;
+        group->selectedIndex = -1;
+        memcpy(group->groupID, groupID, sizeof(group->groupID));
+        add_mediaGroup_to_head(var, group);
+    }
+    add_mediaItem_to_group_head(var, group, item);
+
+    return 0;
+
+FREE:
+    free(item);
+    return -1;
+}
+
+
+static int parseByteRange(const char* line, uint64_t curOffset, uint64_t *length, uint64_t *offset)
+{
+    const char *match = strstr(line, ":");
+
+    if (match == NULL) {
+        return -1;
+    }
+    ssize_t colonPos = match - line;
+
+    if (colonPos < 0) {
+        return -1;
+    }
+    match = strstr(line + colonPos + 1, "@");
+    ssize_t atPos = match - line;
+
+    char* lenStr = NULL;
+    if (atPos < 0) {
+        lenStr = strndup(line + colonPos + 1, strlen(line) - colonPos - 1);
+    } else {
+        lenStr = strndup(line + colonPos + 1, atPos - colonPos - 1);
+    }
+
+    trimInvalidSpace(lenStr);
+
+    const char *s = lenStr;
+    char *end;
+    *length = strtoull(s, &end, 10);
+
+    if (s == end || *end != '\0') {
+        return -1;
+    }
+
+    if (atPos >= 0) {
+        char* offStr = strndup(line + atPos + 1, strlen(line) - atPos - 1);
+        trimInvalidSpace(offStr);
+
+        const char *s = offStr;
+        *offset = strtoull(s, &end, 10);
+
+        if (s == end || *end != '\0') {
+            return -1;
+        }
+    } else {
+        *offset = curOffset;
+    }
+
+    return 0;
+}
+
+
+static void handle_key_args(M3uKeyInfo *info, const char *key,
+                            int key_len, char **dest, int *dest_len)
+{
+    if (!strncmp(key, "METHOD=", key_len)) {
+        *dest     =        info->method;
+        *dest_len = sizeof(info->method);
+    } else if (!strncmp(key, "URI=", key_len)) {
+        *dest     =        info->keyUrl;
+        *dest_len = sizeof(info->keyUrl);
+    } else if (!strncmp(key, "IV=", key_len)) {
+        *dest     =        info->iv;
+        *dest_len = sizeof(info->iv);
+    }
+}
+
 static int parseCipherInfo(const char* line, const char* baseUrl, M3uKeyInfo* info)
 {
     const char *match = strstr(line, ":");
@@ -705,6 +1089,7 @@ static int parseCipherInfo(const char* line, const char* baseUrl, M3uKeyInfo* in
 #define EXT_X_PROGRAM_DATE_TIME     "#EXT-X-PROGRAM-DATE-TIME"
 #define EXT_X_ALLOW_CACHE           "#EXT-X-ALLOW-CACHE"
 #define EXT_X_ENDLIST               "#EXT-X-ENDLIST"
+#define EXT_X_MEDIA                 "#EXT-X-MEDIA"
 #define EXT_X_STREAM_INF            "#EXT-X-STREAM-INF"
 #define EXT_X_DISCONTINUITY         "#EXT-X-DISCONTINUITY"
 #define EXT_X_VERSION               "#EXT-X-VERSION"
@@ -829,14 +1214,16 @@ static int fast_parse(M3UParser* var, const void *_data, int size)
                 }
                 tmpNode.flags |= DISCONTINUE_FLAG;
 
+            } else if (startsWith(line, EXT_X_MEDIA)) {
+                ret = parseMedia(var, line);
+                if (ret) {
+                    LOGE("Failed to parse media, ret : %d", ret);
+                    var->is_initcheck = -1;
+                    break;
+                }
             } else if (startsWith(line, EXT_X_STREAM_INF)) {
-                int bandwidth = 0;
-                int prog_id = 0;
-                ret = parseStreamInf(line, &bandwidth, &prog_id);
-                tmpNode.bandwidth = bandwidth;
-                tmpNode.program_id = prog_id;
+                ret = parseStreamInf(var, line, &tmpNode);
                 isVariantPlaylist = 1;
-
             } else if (startsWith(line, EXT_X_ALLOW_CACHE)) {
                 ptr = line + strlen(EXT_X_ALLOW_CACHE) + 1;
                 if (!strncasecmp(ptr, "YES", strlen("YES"))) {
@@ -936,6 +1323,7 @@ int m3u_parse(const char *baseUrl, const void *data, size_t size, void** hParse)
     p->baseUrl = strndup(baseUrl, MAX_URL_SIZE);
 
     p->base_node_num = 0;
+    p->media_group_num = 0;
     p->durationUs = 0;
     p->is_complete = 0;
     p->is_extm3u = 0;
@@ -950,7 +1338,7 @@ int m3u_parse(const char *baseUrl, const void *data, size_t size, void** hParse)
         p->log_level = db;
     }
     INIT_LIST_HEAD(&p->head);
-    pthread_mutex_init(&p->parser_lock, NULL);
+    INIT_LIST_HEAD(&p->mediaGroup_head);
     int ret = fast_parse(p, data, size);
     if (ret != 0) {
         LOGE("Failed to parse m3u\n");
@@ -1065,9 +1453,7 @@ int64_t m3u_get_node_span_size(void* hParse, int start_index, int end_index)
     M3uBaseNode* tmp = NULL;
     int64_t spanfilesize = 0;
 
-    pthread_mutex_lock(&var->parser_lock);
     if (start_index > var->base_node_num - 1 || end_index > var->base_node_num - 1) {
-        pthread_mutex_unlock(&var->parser_lock);
         return -1;
     }
     list_for_each_entry_safe_reverse(pos, tmp, &var->head, list) {
@@ -1076,7 +1462,6 @@ int64_t m3u_get_node_span_size(void* hParse, int start_index, int end_index)
             spanfilesize += pos->range_length;
         }
     }
-    pthread_mutex_unlock(&var->parser_lock);
 
     return spanfilesize;
 }
@@ -1090,6 +1475,149 @@ int m3u_get_target_duration(void* hParse)
     return p->target_duration;
 
 }
+
+//////////////////////////////////////////////////////////////
+int m3u_get_mediaGroup_num(void * hParse) {
+    if (NULL == hParse) {
+        return -1;
+    }
+    M3UParser * p = (M3UParser *)hParse;
+    return p->media_group_num;
+}
+
+M3uMediaItem * m3u_get_media_by_groupID(void * hParse, MediaType type, const char * groupID) {
+    if (NULL == hParse) {
+        return NULL;
+    }
+    M3UParser * p = (M3UParser *)hParse;
+    M3uMediaGroup * group = get_mediaGroup_by_id(p, type, groupID);
+    if (!group) {
+        return NULL;
+    }
+    M3uMediaItem * item = get_mediaItem_in_group(group, -1);
+    return item;
+}
+
+MediaType m3u_get_media_type_by_codec(const char * codec) {
+    return get_media_type_by_codec(codec);
+}
+
+MediaType m3u_get_media_type_by_index(void * hParse, int index) {
+    if (NULL == hParse) {
+        return TYPE_NONE;
+    }
+    M3UParser * p = (M3UParser *)hParse;
+    M3uMediaGroup * pos = NULL;
+    M3uMediaGroup * tmp = NULL;
+    list_for_each_entry_safe(pos, tmp, &p->mediaGroup_head, mediaGroup_parser_list) {
+        int count = pos->mediaItem_num;
+        if (index < count) {
+            return pos->type;
+        }
+        index -= count;
+    }
+    return TYPE_NONE;
+}
+
+int m3u_get_track_count(void * hParse) {
+    if (NULL == hParse) {
+        return -1;
+    }
+    M3UParser * p = (M3UParser *)hParse;
+    int trackCount = 0;
+    M3uMediaGroup * pos = NULL;
+    M3uMediaGroup * tmp = NULL;
+    list_for_each_entry_safe(pos, tmp, &p->mediaGroup_head, mediaGroup_parser_list) {
+        trackCount += pos->mediaItem_num;
+    }
+    return trackCount;
+}
+
+M3uTrackInfo * m3u_get_track_info(void * hParse, int index) {
+    if (NULL == hParse) {
+        return NULL;
+    }
+    M3UParser * p = (M3UParser *)hParse;
+    M3uMediaGroup * pos = NULL;
+    M3uMediaGroup * tmp = NULL;
+    M3uTrackInfo * trackInfo = NULL;
+    list_for_each_entry_safe(pos, tmp, &p->mediaGroup_head, mediaGroup_parser_list) {
+        int count = pos->mediaItem_num;
+        if (index < count) {
+            trackInfo = get_trackInfo_in_group(pos, index);
+            break;
+        }
+        index -= count;
+    }
+    return trackInfo;
+}
+
+int m3u_select_track(void * hParse, int index, int select) {
+    if (NULL == hParse) {
+        return -1;
+    }
+    M3UParser * p = (M3UParser *)hParse;
+    M3uMediaGroup * pos = NULL;
+    M3uMediaGroup * tmp = NULL;
+    list_for_each_entry_safe(pos, tmp, &p->mediaGroup_head, mediaGroup_parser_list) {
+        int count = pos->mediaItem_num;
+        if (index < count) {
+            if (select) {
+                if (pos->selectedIndex == index) {
+                    LOGE("track %d already selected", index);
+                    return -1;
+                }
+                LOGV("selected track %d", index);
+                pos->selectedIndex = index;
+            } else {
+                if (pos->selectedIndex != index) {
+                    LOGE("track %d is not selected", index);
+                    return -1;
+                }
+                LOGV("unselected track %d", index);
+                pos->selectedIndex = -1;
+            }
+            return 0;
+        }
+        index -= count;
+    }
+    return -1;
+}
+
+int m3u_get_selected_track(void * hParse, MediaTrackType type) {
+    if (NULL == hParse) {
+        return -1;
+    }
+    M3UParser * p = (M3UParser *)hParse;
+    MediaType m_type;
+    switch (type) {
+        case M3U_MEDIA_TRACK_TYPE_AUDIO:
+            m_type = TYPE_AUDIO;
+            break;
+        case M3U_MEDIA_TRACK_TYPE_VIDEO:
+            m_type = TYPE_VIDEO;
+            break;
+        case M3U_MEDIA_TRACK_TYPE_SUBTITLE:
+            m_type = TYPE_SUBS;
+            break;
+        default:
+            return -1;
+    }
+    int selectedIndex = 0;
+    M3uMediaGroup * pos = NULL;
+    M3uMediaGroup * tmp = NULL;
+    list_for_each_entry_safe(pos, tmp, &p->mediaGroup_head, mediaGroup_parser_list) {
+        int count = pos->mediaItem_num;
+        if (pos->type != m_type) {
+            selectedIndex += count;
+        } else if (pos->selectedIndex >= 0) {
+            return selectedIndex + pos->selectedIndex;
+        }
+    }
+    return -1;
+}
+//////////////////////////////////////////////////////////////
+
 int m3u_release(void* hParse)
 {
     if (NULL == hParse) {
@@ -1101,7 +1629,7 @@ int m3u_release(void* hParse)
         free(p->baseUrl);
     }
     clean_all_nodes(p);
-    pthread_mutex_destroy(&p->parser_lock);
+    clean_all_mediaGroup(p);
     free(p);
     return 0;
 }

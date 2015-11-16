@@ -167,7 +167,7 @@ static size_t curl_dl_chunkdata_callback(void *ptr, size_t size, size_t nmemb, v
         struct timespec timeout;
         gettimeofday(&now, NULL);
         timeout.tv_sec = now.tv_sec + (100 * 1000 + now.tv_usec) / 1000000;
-        timeout.tv_nsec = now.tv_usec * 1000;
+        timeout.tv_nsec = (100 * 1000 + now.tv_usec) * 1000;
         pthread_cond_timedwait(&mem->handle->pthread_cond, &mem->handle->fifo_mutex, &timeout); // 100ms
         left = curl_fifo_space(mem->handle->cfifo);
     }

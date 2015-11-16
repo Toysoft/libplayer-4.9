@@ -316,7 +316,7 @@ static int curl_fetch_waitthreadquit(CFContext * h, int microseconds)
     int retcode = 0;
     gettimeofday(&now, NULL);
     timeout.tv_sec = now.tv_sec + (microseconds + now.tv_usec) / 1000000;
-    timeout.tv_nsec = now.tv_usec * 1000;
+    timeout.tv_nsec = (microseconds % 1000000) * 1000 + now.tv_usec * 1000;
     pthread_mutex_lock(&h->quit_mutex);
     while (!h->thread_quited && retcode != ETIMEDOUT) {
         retcode = pthread_cond_timedwait(&h->quit_cond, &h->quit_mutex, &timeout);

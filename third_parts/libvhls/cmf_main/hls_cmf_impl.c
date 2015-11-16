@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "hls_m3uparser.h"
 #include "hls_m3ulivesession.h"
 #ifdef HAVE_ANDROID_OS
 #include "hls_common.h"

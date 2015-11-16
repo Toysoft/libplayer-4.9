@@ -91,6 +91,13 @@ int player_set_sub_filename(int pid, const char* filename);
 int player_get_current_time(int pid, unsigned int* curr_timeMs);
 int player_get_curr_sub_id(int pid, int *curr_sub_id);
 
+// streaming protocol api, hls/dash etc.
+int player_get_source_type(int pid);
+int player_get_streaming_track_count(int pid, int * trackNum);
+int player_get_streaming_track_info(int pid, int * info_num, AVStreamInfo *** info_t);
+int player_select_streaming_track(int pid, int index, int select);
+int player_get_streaming_selected_track(int pid, int type, int * selected_track);
+
 #ifdef  __cplusplus
 }
 #endif

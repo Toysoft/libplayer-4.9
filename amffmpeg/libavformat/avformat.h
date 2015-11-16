@@ -233,6 +233,29 @@ typedef struct AVProbeData {
     unsigned long pads[8];
 } AVProbeData;
 
+/**
+ * This structure contains the info of streaming protocol.
+ */
+typedef struct _AVStreamInfo {
+    int stream_type;
+    char * stream_lang;
+    char * stream_mime;
+    int stream_auto;
+    int stream_default;
+    int stream_forced;
+} AVStreamInfo;
+
+/**
+ * This structure contains the data of subtitle(webvtt).
+ */
+typedef struct _AVSubtitleData {
+    int64_t sub_timeUs;
+    int64_t sub_durationUs;
+    int sub_trackIndex;
+    int sub_size;
+    uint8_t * sub_buffer;
+} AVSubtitleData;
+
 #define AVPROBE_SCORE_MAX 100               ///< maximum score, half of that is used for file-extension-based detection
 #define AVPROBE_PADDING_SIZE 32             ///< extra allocated bytes at the end of the probe buffer
 
@@ -441,6 +464,30 @@ typedef struct AVInputFormat {
 #endif
 
     const AVClass *priv_class; ///< AVClass for the private context
+
+    /**
+     * set some parameters to format, like codec buffer info.
+     * hls demuxer
+     */
+    int (*set_parameter)(struct AVFormatContext *, int para, int type, int value);
+
+    /**
+     * get some parameters like stream info, selected track index.
+     * hls demuxer
+     */
+    int (*get_parameter)(struct AVFormatContext *, int para, int data1, void * info1, void *** info2);
+
+    /**
+     * switch audio/sub stream.
+     * hls demuxer
+     */
+    int (*select_stream)(struct AVFormatContext *, int index, int select);
+
+    /**
+     * get subtitle(webvtt) data.
+     * hls demuxer
+     */
+    void* (*read_subtitle)(struct AVFormatContext *);
 
     /* private fields */
     struct AVInputFormat *next;
@@ -952,6 +999,9 @@ typedef struct AVFormatContext {
 
     // dash parse.
     int is_dash_demuxer;
+
+    // hls demuxer.
+    int is_hls_demuxer;
 } AVFormatContext;
 
 typedef struct AVPacketList {
@@ -1385,6 +1435,11 @@ int av_read_play(AVFormatContext *s);
  * Use av_read_play() to resume it.
  */
 int av_read_pause(AVFormatContext *s);
+
+/**
+ * Set some parameters to format (hls demuxer).
+ */
+int av_set_private_parameter(AVFormatContext * s, int para, int type, int value);
 
 /**
  * Free a AVFormatContext allocated by av_open_input_stream.

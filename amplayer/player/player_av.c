@@ -87,6 +87,7 @@ static const media_type media_array[] = {
     {"amr", AMR_FILE, STREAM_AUDIO},
     {"rtp", STREAM_FILE, STREAM_ES},
     {"dash", MP4_FILE, STREAM_ES},
+    {"mhls", MP4_FILE, STREAM_ES},
     {"ogg", OGM_FILE, STREAM_ES},
 };
 
@@ -1754,7 +1755,10 @@ int time_search(play_para_t *am_p, int flags)
             timestamp = (int64_t)(time_point * AV_TIME_BASE);
 
             /* add the stream start time */
-            if (s->start_time != (int64_t)AV_NOPTS_VALUE && am_p->file_type != AVI_FILE && am_p->file_type != MKV_FILE) {
+            if (s->start_time != (int64_t)AV_NOPTS_VALUE
+                && am_p->file_type != AVI_FILE
+                && am_p->file_type != MKV_FILE
+                && !(s->iformat && !strcmp(s->iformat->name, "mhls"))) {
                 timestamp += s->start_time;
             }
 

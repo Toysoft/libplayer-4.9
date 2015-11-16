@@ -93,7 +93,7 @@ void av_register_all(void)
     REGISTER_DEMUXER  (ANM, anm);
     REGISTER_DEMUXER  (APC, apc);
     REGISTER_DEMUXER  (APE, ape);
-    REGISTER_DEMUXER  (APPLEHTTP, applehttp);
+    //REGISTER_DEMUXER  (APPLEHTTP, applehttp);
     REGISTER_MUXDEMUX (ASF, asf);
     REGISTER_MUXDEMUX (ASS, ass);
     REGISTER_MUXER    (ASF_STREAM, asf_stream);
@@ -301,8 +301,8 @@ extern int register_list_demux_all(void);
 
 
 
-extern AVInputFormat ff_hls_demuxer;
-	av_register_input_format(&ff_hls_demuxer);
+//extern AVInputFormat ff_hls_demuxer;
+//	av_register_input_format(&ff_hls_demuxer);
 extern URLProtocol ff_hls_protocol ;
 	ffurl_register_protocol(&ff_hls_protocol,sizeof(ff_hls_protocol));
 
