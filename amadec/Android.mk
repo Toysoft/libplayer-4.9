@@ -205,7 +205,7 @@ LOCAL_MODULE := libamadec_wfd_out
 LOCAL_MODULE_TAGS := optional
 LOCAL_ARM_MODE := arm
 
-LOCAL_SHARED_LIBRARIES += libutils libtinyalsa  liblog libmedia
+LOCAL_SHARED_LIBRARIES += libutils libtinyalsa  liblog libmedia libcutils libc
                           
 LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE_TAGS := optional
