@@ -363,8 +363,8 @@ static void get_av_codec_type(play_para_t *p_para)
         if (p_para->astream_info.has_audio == 1 &&
             p_para->vstream_info.has_video == 0 &&
             (p_para->astream_info.audio_format == AFORMAT_COOK ||
-             p_para->astream_info.audio_format == AFORMAT_SIPR)
-           ) {
+             p_para->astream_info.audio_format == AFORMAT_SIPR ||
+             p_para->astream_info.audio_format == AFORMAT_WMALOSSLESS)) {
             log_print("[%s %d]RM Pure Audio Stream,COVERT p_para->stream_type to STREAM_ES\n", __FUNCTION__, __LINE__);
             p_para->stream_type = STREAM_ES;
             p_para->playctrl_info.raw_mode = 0;

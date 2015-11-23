@@ -1207,8 +1207,9 @@ void *player_thread(play_para_t *player)
     ffmpeg_seturl_buffered_level(player, 0);
     if (player->astream_info.has_audio == 1 &&
         player->vstream_info.has_video == 0 &&
-        (player->astream_info.audio_format == AFORMAT_COOK || player->astream_info.audio_format == AFORMAT_SIPR)
-       ) {
+        (player->astream_info.audio_format == AFORMAT_COOK ||
+         player->astream_info.audio_format == AFORMAT_SIPR ||
+         player->astream_info.audio_format == AFORMAT_WMALOSSLESS)) {
         AFORMAT_SW_Flag = 1;
     }
     if (player->vstream_info.video_format == VFORMAT_SW || AFORMAT_SW_Flag == 1) {
@@ -1383,7 +1384,17 @@ write_packet:
                 audio_out_buf = malloc(audio_out_size);
                 if (audio_out_buf != NULL && pkt->avpkt_isvalid && pkt->avpkt->size > 0 && get_player_state(player) == PLAYER_RUNNING) {
                     memset(audio_out_buf, 0, audio_out_size);
-                    bytes_used = ic->codec->decode(ic, audio_out_buf, &audio_out_size, pkt->avpkt);
+                    AVPacket *p;
+                    p = malloc(sizeof(AVPacket));
+                    p->data = pkt->avpkt->data;
+                    p->size = pkt->avpkt->size;
+                    do {
+                       bytes_used = ic->codec->decode(ic, audio_out_buf, &audio_out_size, p);
+                       p->data += bytes_used;
+                       p->size -= bytes_used;
+                    } while(p->size > 0);
+
+                    free(p);
                     if (audio_out_size > 0) {
                         av_free_packet(pkt->avpkt);
                         pkt->data = audio_out_buf; //it will be free in write_av_packet()
@@ -1587,6 +1598,8 @@ write_packet:
             }
 
             if (player->playctrl_info.search_flag) {
+                if (player->astream_info.audio_format == AFORMAT_WMALOSSLESS)
+                    ic->codec->flush(ic);
                 set_player_state(player, PLAYER_SEARCHOK);
                 update_playing_info(player);
                 update_player_states(player, 1);

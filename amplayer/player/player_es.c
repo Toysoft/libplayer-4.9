@@ -104,7 +104,9 @@ static void acodec_info_init(play_para_t *p_para, codec_para_t *a_codec)
     a_codec->has_video = p_para->vstream_info.has_video;
     if (p_para->astream_info.has_audio == 1 &&
         p_para->vstream_info.has_video == 0 &&
-        (a_codec->audio_type == AFORMAT_COOK || a_codec->audio_type == AFORMAT_SIPR)) {
+        (a_codec->audio_type == AFORMAT_COOK ||
+        a_codec->audio_type == AFORMAT_SIPR ||
+        a_codec->audio_type == AFORMAT_WMALOSSLESS)) {
         log_print("[%s %d]Pure RA audio Stream/%d, Covert audio_type to AFORMAT_PCM_S16LE\n", __FUNCTION__, __LINE__, a_codec->audio_type);
         a_codec->audio_type = AFORMAT_PCM_S16LE;
     }

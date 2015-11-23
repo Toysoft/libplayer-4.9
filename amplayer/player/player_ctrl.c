@@ -1817,10 +1817,16 @@ static char* player_aformat2str(aformat_t value)
 
     case AFORMAT_EAC3:
         return "AFORMAT_EAC3";
+
     case AFORMAT_TRUEHD:
         return "AFORMAT_TRUEHD";
+
     case AFORMAT_WMAVOI:
         return "AFORMAT_WMAVOI";
+
+    case AFORMAT_WMALOSSLESS:
+            return "AFORMAT_WMALOSSLESS";
+
     default:
         return "NOT_SUPPORT AFORMAT";
     }
