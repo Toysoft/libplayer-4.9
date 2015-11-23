@@ -9,6 +9,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <android/log.h>
+#include <cutils/properties.h>
 //get android  media stream volume
 #define CODE_CALC_VOLUME
 #ifdef CODE_CALC_VOLUME
@@ -38,10 +39,24 @@ static struct pcm *wfd_pcm;
 static char cache_buffer_bytes[64];
 static int  cached_len=0;
 static const char *const SOUND_CARDS_PATH = "/proc/asound/cards";
-
+static int tv_mode = 0;
+static int getprop_bool(const char * path)
+{
+    char buf[PROPERTY_VALUE_MAX];
+    int ret = -1;
+    ret = property_get(path, buf, NULL);
+    if (ret > 0) {
+        if (strcasecmp(buf,"true") == 0 || strcmp(buf,"1") == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
 static int get_hdmi_switch_state()
 {
-	int state = 0;
+    return 0;
+#if 0
+    int state = 0;
     int fd = -1;
     char  bcmd[16] = {0};
     fd = open(HDMI_SWITCH_STATE_PATH, O_RDONLY);
@@ -53,6 +68,7 @@ static int get_hdmi_switch_state()
         adec_print("unable to open file %s,err: %s", HDMI_SWITCH_STATE_PATH, strerror(errno));
     }
 	return state;
+#endif
 }
 #ifdef CODE_CALC_VOLUME
 // save the last volume  in case get vol failure, which cause the volume value large gap
@@ -134,7 +150,9 @@ OUT:
 	close(fd);
 	return card;
 }
-static int get_spdif_port(){
+static int get_spdif_port() {
+	return 0;
+#if 0
 	int port = -1, err = 0;
 	int fd = -1;
 	unsigned fileSize = 512;
@@ -173,6 +191,7 @@ OUT:
 	free(read_buf);
 	close(fd);
 	return port;
+#endif
 }
 
 EXTERN_TAG int  pcm_output_init(int sr,int ch)
@@ -180,6 +199,7 @@ EXTERN_TAG int  pcm_output_init(int sr,int ch)
     int card = 0;
     int device = 2;
     cached_len = 0;
+    tv_mode = getprop_bool("ro.platform.has.tvuimode");
     wfd_config_out.channels = 2;
     wfd_config_out.rate = 48000;
     wfd_config_out.period_size = WFD_PERIOD_SIZE;
@@ -211,6 +231,13 @@ EXTERN_TAG int  pcm_output_init(int sr,int ch)
     }
     wfd_config_out.rate = sr;
     wfd_config_out.channels = ch;
+    if (tv_mode) {
+          wfd_config_out.channels = 8;
+          wfd_config_out.format = PCM_FORMAT_S32_LE;
+          wfd_config_out.period_size = WFD_PERIOD_SIZE;
+          wfd_config_out.period_count = WFD_PERIOD_NUM;
+          wfd_config_out.start_threshold = WFD_PERIOD_SIZE;
+    }
     wfd_pcm = pcm_open(card, device, PCM_OUT /*| PCM_MMAP | PCM_NOIRQ*/, &wfd_config_out);
     if (!pcm_is_ready(wfd_pcm)) {
         adec_print("wfd cannot open pcm_out driver: %s", pcm_get_error(wfd_pcm));		
@@ -264,10 +291,37 @@ EXTERN_TAG int  pcm_output_write(char *buf,unsigned size)
 	/*save data to cached_buffer*/
 	if(cached_len){
 		memcpy((void *)data_src, (void *)data, cached_len);
-	}	
-	ret = pcm_write(wfd_pcm,outbuf,ouput_len);
+	}
+	char *write_buf = outbuf;
+	int *tmp_buffer = NULL;
+	if (tv_mode) {
+		tmp_buffer = (int*)malloc(ouput_len*8);
+		if (tmp_buffer == NULL) {
+			ALOGE("malloc tmp_buffer failed\n");
+			return -1;
+		}
+		int i;
+		int out_frames = ouput_len/4;
+		short  *in_buffer = (short*)outbuf;
+		for (i = 0; i < out_frames; i ++) {
+			tmp_buffer[8*i] = ((int)(in_buffer[2*i])) << 16;
+			tmp_buffer[8*i + 1] = ((int)(in_buffer[2*i + 1])) << 16;
+			tmp_buffer[8*i + 2] = ((int)(in_buffer[2*i])) << 16;
+			tmp_buffer[8*i + 3] = ((int)(in_buffer[2*i + 1])) << 16;
+			tmp_buffer[8*i + 4] = 0;
+			tmp_buffer[8*i + 5] = 0;
+			tmp_buffer[8*i + 6] = 0;
+			tmp_buffer[8*i + 7] = 0;
+		}
+		write_buf = (char*)tmp_buffer;
+		ouput_len = ouput_len*8;
+	}
+	ret = pcm_write(wfd_pcm,write_buf,ouput_len);
 	if(ret < 0 ){
 		adec_print("pcm_output_write failed ? \n");
+	}
+	if (tmp_buffer) {
+		free(tmp_buffer);
 	}
 	//adec_print("write size %d ,ret %d \n",size,ret);
 	return ret;
