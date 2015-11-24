@@ -212,6 +212,9 @@ aformat_t audio_type_convert(enum CodecID id, pfile_type File_type)
     case CODEC_ID_WMAVOICE:
         format = AFORMAT_WMAVOI;
         break;
+    case CODEC_ID_WMALOSSLESS:
+        format = AFORMAT_WMALOSSLESS;
+        break;
 
     default:
         format = AFORMAT_UNSUPPORT;
@@ -1788,7 +1791,6 @@ int time_search(play_para_t *am_p, int flags)
                 }
 
                 ret = (int64_t)av_seek_frame(s, stream_index, timestamp, seek_flags);
-
                 if (ret < 0) {
                     if (!(seek_flags & AVSEEK_FLAG_BACKWARD)) {
                         ret = (int64_t)av_seek_frame(s, stream_index, timestamp, seek_flags | AVSEEK_FLAG_BACKWARD);
@@ -1954,7 +1956,8 @@ int time_search(play_para_t *am_p, int flags)
                     offset = rm_offset_search(am_p, am_p->data_offset + offset, time_point);
 
                     if (am_p->astream_info.has_audio == 1 && am_p->vstream_info.has_video == 0 &&
-                        (am_p->astream_info.audio_format == AFORMAT_COOK || am_p->astream_info.audio_format == AFORMAT_SIPR || am_p->astream_info.audio_format == AFORMAT_AC3)) {
+                        (am_p->astream_info.audio_format == AFORMAT_COOK ||am_p->astream_info.audio_format == AFORMAT_SIPR ||
+                        am_p->astream_info.audio_format == AFORMAT_AC3 || am_p->astream_info.audio_format == AFORMAT_WMALOSSLESS)) {
                         s->iformat->read_seek(s, 0, 0, 0);
                     }
                 } else {

@@ -378,6 +378,12 @@ int ffmpeg_parse_file_type(play_para_t *am_p, player_file_type_t *type)
                 type->fmt_string = format_string;
                 matroska_flag = 0;
             }
+            if ((strstr(type->fmt_string, "asf") != NULL) && (sttmp->codec->codec_id == CODEC_ID_WMALOSSLESS)) {
+                memset(format_string, 0, sizeof(format_string));
+                sprintf(format_string, "%s", "wmalossless");
+                log_print("NOTE: change type->fmt_string=%s to wmalossless\n", type->fmt_string);
+                type->fmt_string = format_string;
+            }
         }
         //-----------------------------------------------------
         // special process for webm/vpx, flv/vp6, hevc/h.265
