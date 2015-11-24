@@ -56,11 +56,6 @@ static int get_digitalraw_mode(void)
 #define DTSHD_IEC958_PKTTYPE_CORE      0 //common feature for DTSETC_DECODE_VERSION 350/380,so set it to 0 by default 
 #define DTSHD_IEC958_PKTTYPE_SINGLEI2S 1
 #define DTSHD_IEC958_PKTTYPE_FOURI2S   2
-//TODO:the following to copy defined according to
-//         </system/core/include/system/audio.h>
-//should add to  </system/core/include/system/audio.h> some day
-#define AUDIO_FORMAT_DTS_HD      0x0D000000
-#define AUDIO_FORMAT_DTS_MASTER  0x0E000000
 
 void restore_system_samplerate(struct aml_audio_dec* audec)
 {
