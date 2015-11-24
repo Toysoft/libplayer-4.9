@@ -50,7 +50,18 @@ static short pass1_interpolation_output[0x4000];
 #pragma align_to(64,pass1_interpolation_output)
 static short interpolation_output[0x8000];
 #pragma align_to(64,interpolation_output)
-
+static int tv_mode = 0;
+static int getprop_bool(const char * path)
+{
+    char buf[PROPERTY_VALUE_MAX];
+    int ret = -1;
+    ret = property_get(path, buf, NULL);
+    if (ret > 0) {
+        if (strcasecmp(buf,"true") == 0 || strcmp(buf,"1") == 0)
+            return 1;
+    }
+    return 0;
+}
 static inline short CLIPTOSHORT(int x)
 {
     short res;
@@ -147,14 +158,20 @@ static int set_params(alsa_param_t *alsa_params)
         adec_print("Access type not available");
         return err;
     }
-
-    err = snd_pcm_hw_params_set_format(alsa_params->handle, hwparams, alsa_params->format);
+    if (tv_mode) {
+        alsa_params->format = SND_PCM_FORMAT_S32_LE;
+    }
+    err = snd_pcm_hw_params_set_format(alsa_params->handle,hwparams,alsa_params->format);
     if (err < 0) {
         adec_print("Sample format non available");
         return err;
     }
-
+    alsa_params->format = SND_PCM_FORMAT_S16_LE;
+    if (tv_mode) {
+        alsa_params->channelcount = 8;
+    }
     err = snd_pcm_hw_params_set_channels(alsa_params->handle, hwparams, alsa_params->channelcount);
+    alsa_params->channelcount = 2;
     if (err < 0) {
         adec_print("Channels count non available");
         return err;
@@ -184,7 +201,10 @@ static int set_params(alsa_param_t *alsa_params)
     alsa_params->bits_per_sample = snd_pcm_format_physical_width(alsa_params->format);
     //bits_per_frame = bits_per_sample * hwparams.realchanl;
     alsa_params->bits_per_frame = alsa_params->bits_per_sample * alsa_params->channelcount;
+    adec_print("bits_per_sample %d,bits_per_frame %d\n",alsa_params->bits_per_sample,alsa_params->bits_per_frame);
     bufsize =   PERIOD_NUM * PERIOD_SIZE;
+    if (tv_mode)
+        bufsize = bufsize*8;
     err = snd_pcm_hw_params_set_buffer_size_near(alsa_params->handle, hwparams, &bufsize);
     if (err < 0) {
         adec_print("Unable to set	buffer	size \n");
@@ -263,6 +283,8 @@ static int set_params(alsa_param_t *alsa_params)
 
 static int alsa_get_hdmi_state()
 {
+    return 0;
+#if 0
     int fd = -1, err = 0, state = 0;
     unsigned fileSize = 32;
     char *read_buf = NULL;
@@ -295,6 +317,7 @@ OUT:
     free(read_buf);
     close(fd);
     return state;
+#endif
 }
 
 static int alsa_get_aml_card()
@@ -408,6 +431,30 @@ static size_t pcm_write(alsa_param_t * alsa_param, u_char * data, size_t count)
             adec_print("could not open file:audio_out.pcm");
         }
 #endif
+    int *tmp_buffer = NULL;
+    int bits_per_frame = alsa_param->bits_per_frame;
+    if (tv_mode) {
+        tmp_buffer = (int*)malloc(count*8*4);
+        if (tmp_buffer == NULL) {
+            adec_print("malloc tmp_buffer failed\n");
+            return -1;
+        }
+        int i;
+        int out_frames = count;
+        short  *in_buffer = (short*)data;
+        for (i = 0; i < out_frames; i ++) {
+            tmp_buffer[8*i] = ((int)(in_buffer[2*i])) << 16;
+            tmp_buffer[8*i + 1] = ((int)(in_buffer[2*i + 1])) << 16;
+            tmp_buffer[8*i + 2] = ((int)(in_buffer[2*i])) << 16;
+            tmp_buffer[8*i + 3] = ((int)(in_buffer[2*i + 1])) << 16;
+            tmp_buffer[8*i + 4] = 0;
+            tmp_buffer[8*i + 5] = 0;
+            tmp_buffer[8*i + 6] = 0;
+            tmp_buffer[8*i + 7] = 0;
+        }
+        data = (char*)tmp_buffer;
+        bits_per_frame = bits_per_frame*8;//8ch,32bit
+    }
     while (count > 0) {
         r = writei_func(alsa_param->handle, data, count);
 
@@ -423,15 +470,20 @@ static size_t pcm_write(alsa_param_t * alsa_param, u_char * data, size_t count)
         if (r < 0) {
             printf("xun in\n");
             if ((r = snd_pcm_prepare(alsa_param->handle)) < 0) {
-                return 0;
+                result = 0;
+                goto  done;
             }
         }
 
         if (r > 0) {
             result += r;
             count -= r;
-            data += r * alsa_param->bits_per_frame / 8;
+            data += r * bits_per_frame / 8;
         }
+    }
+done:
+    if (tmp_buffer) {
+        free(tmp_buffer);
     }
     return result;
 }
@@ -645,7 +697,8 @@ static void *alsa_playback_loop(void *args)
     adec_print("alsa playback loop start to run !\n");
 
     while (!alsa_params->stop_flag) {
-        if (hdmi_out == 0) {
+#if 0
+    if (hdmi_out == 0) {
             adec_print("===dynmiac get hdmi plugin state===\n");
             if (alsa_get_hdmi_state() == 1) {
                 if (alsa_swtich_port(alsa_params, alsa_get_aml_card(), alsa_get_spdif_port()) == -1) {
@@ -665,7 +718,8 @@ static void *alsa_playback_loop(void *args)
             hdmi_out = 0;
             adec_print("[%s,%d]get default device, use default device \n", __FUNCTION__, __LINE__);
         }
-        while ((len < (128 * 2)) && (!alsa_params->stop_flag)) {
+#endif
+    while ((len < (128 * 2)) && (!alsa_params->stop_flag)) {
             if (offset > 0) {
                 memcpy(buffer, buffer + offset, len);
             }
@@ -712,7 +766,7 @@ int alsa_init(struct aml_audio_dec* audec)
     pthread_t tid;
     alsa_param_t *alsa_param;
     audio_out_operations_t *out_ops = &audec->aout_ops;
-
+    tv_mode = getprop_bool("ro.platform.has.tvuimode");
     alsa_param = (alsa_param_t *)malloc(sizeof(alsa_param_t));
     if (!alsa_param) {
         adec_print("alloc alsa_param failed, not enough memory!");
@@ -798,7 +852,7 @@ int alsa_init(struct aml_audio_dec* audec)
         sound_card_id = 0;
         adec_print("get aml card fail, use default \n");
     }
-
+#if 0
     if (alsa_get_hdmi_state() == 1) {
         sound_dev_id = alsa_get_spdif_port();
         if (sound_dev_id < 0) {
@@ -809,16 +863,13 @@ int alsa_init(struct aml_audio_dec* audec)
         }
         adec_print("get hdmi device, use hdmi device \n");
     }
-
+#endif
     sprintf(sound_card_dev, "hw:%d,%d", sound_card_id, sound_dev_id);
-
     err = snd_pcm_open(&alsa_param->handle, sound_card_dev, SND_PCM_STREAM_PLAYBACK, 0);
     if (err < 0) {
         adec_print("audio open error: %s", snd_strerror(err));
         return -1;
     }
-
-
     readi_func = snd_pcm_readi;
     writei_func = snd_pcm_writei;
     readn_func = snd_pcm_readn;
@@ -956,13 +1007,12 @@ static int alsa_get_space(alsa_param_t * alsa_param)
 {
     snd_pcm_status_t *status;
     int ret;
-
+    int bits_per_sample = alsa_param->bits_per_sample;
     snd_pcm_status_alloca(&status);
     if ((ret = snd_pcm_status(alsa_param->handle, status)) < 0) {
         adec_print("Cannot get pcm status \n");
         return 0;
     }
-
     ret = snd_pcm_status_get_avail(status) * alsa_param->bits_per_sample / 8;
     if (ret > alsa_param->buffer_size) {
         ret = alsa_param->buffer_size;
@@ -980,8 +1030,12 @@ unsigned long alsa_latency(struct aml_audio_dec* audec)
     int buffered_data;
     int sample_num;
     alsa_param_t *alsa_param = (alsa_param_t *)audec->aout_ops.private_data;
+    int bits_per_sample = alsa_param->bits_per_sample;
+    if (tv_mode) {
+        bits_per_sample = bits_per_sample*4;
+    }
     buffered_data = alsa_param->buffer_size - alsa_get_space(alsa_param);
-    sample_num = buffered_data / (alsa_param->channelcount * (alsa_param->bits_per_sample / 8)); /*16/2*/
+    sample_num = buffered_data / (alsa_param->channelcount * (bits_per_sample / 8)); /*16/2*/
     return ((sample_num * 1000) / alsa_param->rate);
 }
 
