@@ -332,6 +332,7 @@ int main(int argc, char *argv[])
     free(pCtrl);
     ALOGD("...........player exit,~,byeybe...........\n");
     amsysfs_set_sysfs_str(di_bypass_all_path, "0");
+    amsysfs_set_sysfs_str("/sys/class/video/screen_mode", "0");
     return 0;
 }
 
