@@ -681,10 +681,6 @@ retry:
         // try to reset.
         if (ret == AVERROR(ETIMEDOUT) && rt->lower_transport == RTSP_LOWER_TRANSPORT_TCP) {
             RTSPMessageHeader reply1, *reply = &reply1;
-            if (rtsp_read_pause(s) != 0) {
-                av_log(NULL, AV_LOG_ERROR, "[%s:%d] read pause fail !", __FUNCTION__, __LINE__);
-                return -1;
-            }
             ff_rtsp_send_cmd(s, "TEARDOWN", rt->control_uri, NULL, reply, NULL);
             rt->session_id[0] = '\0';
             if (resetup_tcp(s) == 0) {
