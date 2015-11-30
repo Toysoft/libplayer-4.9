@@ -1108,7 +1108,7 @@ void *player_thread(play_para_t *player)
             }
         } while (1);
     }
-
+    player->flag_initacodec = 0;
     set_player_state(player, PLAYER_INITOK);
     update_playing_info(player);
     update_player_states(player, 1);

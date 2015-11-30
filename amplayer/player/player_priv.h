@@ -151,6 +151,7 @@ typedef struct play_para {
     int    discontinue_point;
     unsigned int    discontinue_time;
     unsigned int    discontinue_flag;
+    int             flag_initacodec;
     check_end_info_t check_end;
 
     read_write_size read_size;

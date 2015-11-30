@@ -2036,6 +2036,7 @@ int player_decoder_init(play_para_t *p_para)
 {
     int ret;
     const stream_decoder_t *decoder = NULL;
+    p_para->flag_initacodec = 1;
 
     /*
            Web live playback need small threshold for discontinuity judgement. Web live threshold:1

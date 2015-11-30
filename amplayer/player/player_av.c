@@ -3418,7 +3418,7 @@ int player_pre_switch_audio(play_para_t *para, int aid)
     int i;
     int audio_index = -1;
 
-    if (!pFCtx) {
+    if (!pFCtx || para->flag_initacodec) {
         return -1;
     }
 
