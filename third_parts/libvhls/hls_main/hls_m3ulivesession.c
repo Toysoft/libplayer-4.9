@@ -1786,7 +1786,11 @@ static void _thread_wait_timeUs(M3ULiveSession* s, SessionMediaItem * item, int 
     struct timespec outtime;
 
     if (microseconds > 0) {
+#ifndef __aarch64__
         int64_t t = get_clock_monotonic_us() + microseconds;
+#else
+        int64_t t = in_gettimeUs() + microseconds;
+#endif
         int ret = -1;
         if (item) {
             ret = pthread_mutex_trylock(&item->media_lock);
@@ -1800,11 +1804,19 @@ static void _thread_wait_timeUs(M3ULiveSession* s, SessionMediaItem * item, int 
         }
         outtime.tv_sec = t / 1000000;
         outtime.tv_nsec = (t % 1000000) * 1000;
+#ifndef __aarch64__
         if (item) {
             ret = pthread_cond_timedwait_monotonic_np(&item->media_cond, &item->media_lock, &outtime);
         } else {
             ret = pthread_cond_timedwait_monotonic_np(&s->session_cond, &s->session_lock, &outtime);
         }
+#else
+        if (item) {
+            ret = pthread_cond_timedwait(&item->media_cond, &item->media_lock, &outtime);
+        } else {
+            ret = pthread_cond_timedwait(&s->session_cond, &s->session_lock, &outtime);
+        }
+#endif
         if (ret != ETIMEDOUT) {
             LOGV("timed-waiting on condition");
         }
