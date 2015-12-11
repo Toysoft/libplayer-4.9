@@ -1139,6 +1139,8 @@ void *player_thread(play_para_t *player)
         break;
     }
 #endif
+
+    player->flag_initacodec = 1;
     if (player->start_param->need_start) {
         int flag = 0;
         do {
