@@ -373,7 +373,7 @@ int amthreadpool_pthread_create_name(pthread_t * newthread,
             pthread_setname_np(pid, name);
         }
         pthread_mutex_lock(&t->pthread_mutex);
-        if (t->thread_inited == 0)
+        while (t->thread_inited == 0)
             pthread_cond_wait(&t->pthread_cond, &t->pthread_mutex);
         pthread_mutex_unlock(&t->pthread_mutex);
     }
