@@ -132,8 +132,26 @@ int check_audiodsp_fatal_err()
 
 int get_audio_digital_output_mode()
 {
-    return !!amsysfs_get_sysfs_int("/sys/class/audiodsp/digital_raw");
+    int audio_digital_output_mode = 0;
+    int fd = -1;
+    int val = 0;
+    char  bcmd[16];
+    fd = open("/sys/class/audiodsp/digital_raw", O_RDONLY);
+    if (fd >= 0) {
+        read(fd, bcmd, sizeof(bcmd));
+        val = strtol(bcmd, NULL, 16);
+        close(fd);
+        audio_digital_output_mode = val & 0xf;
+        if ((audio_digital_output_mode != 0) && (audio_digital_output_mode != 1) && (audio_digital_output_mode != 2)) {
+            log_print("[%s]--[audio_digital_output_mode:%d]\n", __FUNCTION__, audio_digital_output_mode);
+        }
+    } else {
+        log_print("unable to open file check_audiodsp_fatal_err,err: %s", strerror(errno));
+    }
+
+    return audio_digital_output_mode;
 }
+
 int check_audio_output()
 {
     return get_sysfs_int("/sys/class/amaudio/output_enable") & 3;
