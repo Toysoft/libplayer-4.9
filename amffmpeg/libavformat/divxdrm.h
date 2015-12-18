@@ -329,7 +329,7 @@ typedef enum drmErrorCodes
 } drmErrorCodes_t;
 
 void drm_set_info(drm_t*);
-static drm_t*  drm_get_info(){return NULL;};
+//static drm_t*  drm_get_info(){return NULL;};
 
 #endif
 

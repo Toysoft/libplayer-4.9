@@ -57,6 +57,13 @@ static const char *my_dhm_G = "4";
 #define MD5_DIGEST_LENGTH 16
 #include <nettle/base64.h>
 #include <nettle/md5.h>
+#elif defined(USE_BORINGSSL)
+#include <openssl/ssl.h>
+#include <openssl/rc4.h>
+#include <openssl/md5.h>
+#include <openssl/bio.h>
+#include <openssl/buffer.h>
+#include <openssl/evp.h>
 #else   /* USE_OPENSSL */
 #include <openssl/ssl.h>
 #include <openssl/rc4.h>
@@ -2527,6 +2534,17 @@ b64enc(const unsigned char *input, int length, char *output, int maxsize)
         RTMP_Log(RTMP_LOGDEBUG, "%s, error", __FUNCTION__);
         return 0;
     }
+#elif defined(USE_BORINGSSL)  /* USE_OPENSSL */
+    EVP_ENCODE_CTX ectx;
+    int outlen = 0;
+    int tlen = 0;
+    printf("input len = %d\n", length);
+    EVP_EncodeInit(&ectx);
+    EVP_EncodeUpdate(&ectx, output, &outlen, (const unsigned char*)input, length);
+    tlen += outlen;
+    EVP_EncodeFinal(&ectx, output+tlen, &outlen);
+    tlen += outlen;
+    RTMP_Log(RTMP_LOGDEBUG, "%s, output len:%d", __FUNCTION__, tlen);
 #else   /* USE_OPENSSL */
     BIO *bmem, *b64;
     BUF_MEM *bptr;

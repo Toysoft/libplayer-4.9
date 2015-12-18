@@ -601,7 +601,7 @@ static int set_audio_decoder(aml_audio_dec_t *audec)
 #ifdef DOLBY_USE_ARMDEC
             adec_print("DOLBY_USE_ARMDEC=%d", DOLBY_USE_ARMDEC);
 #ifndef USE_ARM_AUDIO_DEC
-            if (access("/system/etc/firmware/audiodsp_codec_ddp_dcv.bin",F_OK)) {
+            if (access("/system/etc/firmware/audiodsp_codec_ddp_dcv.bin",0 /*F_OK*/)) {
 #endif
                 audio_decoder = AUDIO_ARM_DECODER;
 #ifndef USE_ARM_AUDIO_DEC
@@ -616,7 +616,7 @@ static int set_audio_decoder(aml_audio_dec_t *audec)
         }
 #ifndef USE_ARM_AUDIO_DEC
         else if (match_types(t->type, "dts")) {
-            if (access("/system/etc/firmware/audiodsp_codec_dtshd.bin", F_OK)) {
+            if (access("/system/etc/firmware/audiodsp_codec_dtshd.bin", 0/*F_OK*/)) {
                 adec_print("using no license dts component");
                 audio_decoder = AUDIO_ARM_DECODER;
             } else {

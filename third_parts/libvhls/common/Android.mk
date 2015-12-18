@@ -14,8 +14,16 @@ LOCAL_SRC_FILES := \
 
 LOCAL_C_INCLUDES := \
     $(LOCAL_PATH)/../../../amavutils/include \
-    $(TOP)/external/openssl/include \
     $(LOCAL_PATH)/
+
+
+ifneq (0, $(shell expr $(PLATFORM_SDK_VERSION) \>= 23))
+    LOCAL_C_INCLUDES += $(TOP)/external/boringssl/src/include
+else
+    LOCAL_C_INCLUDES += $(TOP)/external/openssl/include
+endif
+
+
 
 ifeq ($(TARGET_ARCH),arm)
     LOCAL_CFLAGS += -Wno-psabi

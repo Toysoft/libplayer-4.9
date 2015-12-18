@@ -777,10 +777,10 @@ int64_t avio_seek_time(AVIOContext *h, int stream_index,
 
 static inline int url_support_time_seek(AVIOContext *s)
 {
-	URLContext *h;	
 	if (!s)
 		return 0;
 #if 0
+  URLContext *h;
 	if(!s->support_time_seek && s->opaque){
 		h = (URLContext *)s->opaque;
 		if(h && h->support_time_seek){

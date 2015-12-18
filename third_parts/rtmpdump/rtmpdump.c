@@ -20,8 +20,9 @@
  *
  */
 
+/* TODO for M
 #define _FILE_OFFSET_BITS   64
-
+*/
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>

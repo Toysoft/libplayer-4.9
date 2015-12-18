@@ -38,7 +38,7 @@
 
 #if defined (ANDROID)
 #include <fcntl.h>
-#define lseek(f,p,w) lseek64((f), (p), (w))
+//#define lseek(f,p,w) lseek64((f), (p), (w))
 #endif /* defined (ANDROID) */
 
 static inline int is_dos_path(const char *path)
