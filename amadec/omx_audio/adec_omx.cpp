@@ -364,6 +364,8 @@ int arm_omx_codec_get_declen(aml_audio_dec_t *audec)
     
 }
 
+#define DTSETC_DECODE_VERSION_CORE  350
+#define DTSETC_DECODE_VERSION_M6_M8 380
 int arm_omx_codec_get_FS(aml_audio_dec_t *audec)
 {  
     android::AmlOMXCodec *arm_omx_codec=(android::AmlOMXCodec *)(audec->arm_omx_codec);
@@ -373,7 +375,7 @@ int arm_omx_codec_get_FS(aml_audio_dec_t *audec)
           int sampleRate=0;
           android::sp<android::MetaData> output_format=arm_omx_codec->m_codec->getFormat();
           output_format->findInt32(android::kKeySampleRate, &sampleRate);
-          if(audec->VersionNum==-1)
+          if (audec->VersionNum == -1 || (audec->VersionNum == DTSETC_DECODE_VERSION_M6_M8 && audec->DTSHDIEC958_FS == 0) )
           {
               output_format->findInt32(android::kKeyDtsDecoderVer,&audec->VersionNum);
               output_format->findInt32(android::kKeyDts958Fs,&audec->DTSHDIEC958_FS);

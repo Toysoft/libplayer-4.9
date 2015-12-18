@@ -977,8 +977,14 @@ extern "C" int android_init(struct aml_audio_dec* audec)
 #if defined(_VERSION_JB)
     char tmp[128]={0};
     int FS_88_96_enable=0;
-    if(property_get("media.libplayer.88_96K", tmp, "0") > 0 && !strcmp(tmp, "1"))
+    if (property_get("media.libplayer.88_96K", tmp, "0") > 0 && !strcmp(tmp, "1")) {
         FS_88_96_enable=1;
+        if (audec->format == ACODEC_FMT_DTS && audec->samplerate>48000 && !user_raw_enable)
+        {
+            adec_print("set digital_codec to AUDIO_FORMAT_DTS_PCM_88K_96K");
+            amsysfs_set_sysfs_int("/sys/class/audiodsp/digital_codec",9);
+        }
+    }
     if( audec->channels == 8 ||
         (audec->format ==ACODEC_FMT_DTS && audec->samplerate>48000 && user_raw_enable==0 && FS_88_96_enable==1 )
       )
