@@ -14,12 +14,18 @@ LOCAL_SRC_FILES :=  hls_m3uparser.c \
 	hls_simple_cache.c
 
 LOCAL_C_INCLUDES := \
-    $(TOP)/external/openssl/include \
     $(LOCAL_PATH)/../common \
     $(LOCAL_PATH)/../include \
     $(LOCAL_PATH)/../downloader \
     $(LOCAL_PATH)/../../../amffmpeg \
     $(LOCAL_PATH)/../../../amavutils/include
+
+ifneq (0, $(shell expr $(PLATFORM_SDK_VERSION) \>= 23))
+    LOCAL_C_INCLUDES += $(TOP)/external/boringssl/src/include
+else
+    LOCAL_C_INCLUDES += $(TOP)/external/openssl/include
+endif
+
 
 ifeq ($(BUILD_WITH_VIEWRIGHT_WEB), true)
  LOCAL_CFLAGS += -DENABLE_VIEWRIGHT_WEB

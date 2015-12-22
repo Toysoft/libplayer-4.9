@@ -267,8 +267,11 @@ DHInit(int nKeyBits)
     }
 
     MP_set_w(dh->g, 2);   /* base 2 */
-
+#ifdef USE_BORINGSSL
+    dh->priv_length = nKeyBits;
+#else
     dh->length = nKeyBits;
+#endif
     return dh;
 
 failed:

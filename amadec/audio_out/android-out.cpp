@@ -36,6 +36,9 @@ namespace android
 //android 5.0 level= 20
 #define AUDIO_FORMAT_EAC3 AUDIO_FORMAT_E_AC3
 #endif
+#if ANDROID_PLATFORM_SDK_VERSION >= 23
+#define AUDIO_FORMAT_DTS_MASTER  0x0E000000UL
+#endif
 #define DOLBY_SYSTEM_CHANNEL "ds1.audio.multichannel.support"
 static Mutex mLock;
 static Mutex mLock_raw;
