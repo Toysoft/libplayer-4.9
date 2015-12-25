@@ -2297,6 +2297,10 @@ int write_av_packet(play_para_t *para)
                 if (-errno != AVERROR(EAGAIN)) {
                     para->playctrl_info.check_lowlevel_eagain_time = player_get_systemtime_ms();
                     log_print("write codec data failed! ret=%d,errno=%d\n", write_bytes, errno);
+                    log_print("pkt->codec-h=%d\n", pkt->codec->handle);
+                    log_print("pkt->codec-has_audio=%d\n", pkt->codec->has_audio);
+                    log_print("pkt->codec-has_video=%d\n", pkt->codec->has_video);
+                    log_print("pkt->codec-type=%d\n", pkt->type);
                     return PLAYER_WR_FAILED;
                 } else {
                     /* EAGAIN to see if buffer full or write time out too much */
@@ -2459,6 +2463,11 @@ int write_av_packet(play_para_t *para)
                 if (-errno != AVERROR(EAGAIN)) {
                     para->playctrl_info.check_lowlevel_eagain_time = 0;
                     log_print("write codec data failed! ret=%d,errno=%d\n", write_bytes, errno);
+                    log_print("pkt->codec-h=%d\n", pkt->codec->handle);
+                    log_print("pkt->codec-has_audio=%d\n", pkt->codec->has_audio);
+                    log_print("pkt->codec-has_video=%d\n", pkt->codec->has_video);
+                    log_print("pkt->codec-type=%d\n", pkt->type);
+                    log_print("pkt->buf,size %x,%d\n", buf,size);
                     return PLAYER_WR_FAILED;
                 } else {
                     /* EAGAIN to see if buffer full or write time out too much */
@@ -3666,6 +3675,20 @@ audio_init:
         log_print("[%s:%d]vidx=%d sidx=%d\n", __FUNCTION__, __LINE__, para->vstream_info.video_index, para->sstream_info.sub_index);
         para->playctrl_info.audio_switch_vmatch = 0;
         para->playctrl_info.audio_switch_smatch = 0;
+        if (para->p_pkt->avpkt_isvalid) {
+            if (avPkt->stream_index == para->vstream_info.video_index) {
+                int max_write = 10;
+                do {/*if  have vide data,finished write it.*/
+                    write_av_packet(para);
+                } while(max_write-- >= 0 && para->p_pkt->avpkt_isvalid);
+            }
+            if (para->p_pkt->avpkt_isvalid) {
+                av_free_packet(para->p_pkt->avpkt);
+            }
+            para->p_pkt->avpkt_isvalid = 0;
+            para->p_pkt->avpkt_newflag = 0;
+            para->p_pkt->data_size = 0;
+        }
 
         /* find the next video packet and save it */
         while (!para->playctrl_info.read_end_flag) {
