@@ -1392,7 +1392,7 @@ HX_RESULT ra_depacki_deinterleave_send(ra_depack_internal* pInt, UINT32 ulSubStr
             /* Get the substream header */
             ra_substream_hdr* pHdr = &pInt->pSubStreamHdr[ulSubStream];
             /* Send the blocks from the deinterleave buffer */
-            for (i = 0; i < pHdr->ulBlockCount && HX_SUCCEEDED(retVal); i++) {
+            for (i = 0; i < pHdr->ulBlockCount&& i < pHdr->ulInterleaveFactor && HX_SUCCEEDED(retVal); i++) {
                 /* Set the return value */
                 retVal = HXR_OUTOFMEMORY;
                 /* Compute the time offset for this block */
