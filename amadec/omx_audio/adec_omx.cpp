@@ -13,12 +13,12 @@ interface to call OMX codec
 #include "DTSHD_mediasource.h"
 #include "Vorbis_mediasource.h"
 #include "THD_mediasource.h"
-
 #include <android/log.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 #include <cutils/properties.h>
+#include <Amsysfsutils.h>
 #define LOG_TAG "Adec_OMX"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
@@ -274,7 +274,7 @@ void arm_omx_codec_init(aml_audio_dec_t *audec,int codec_type,void *readbuffer,i
     char value[128]={0};
     int ret=0;
     android::AmlOMXCodec *arm_omx_codec=NULL;
-    ret=property_set("media.libplayer.dtsopt0", "1");
+    amsysfs_write_prop("media.libplayer.dtsopt0", "1");
     LOGI("property_set<media.libplayer.dtsopt0> ret/%d\n",ret);
     arm_omx_codec=new android::AmlOMXCodec(codec_type,readbuffer,exit,audec);
     if(arm_omx_codec==NULL){
@@ -329,7 +329,7 @@ void arm_omx_codec_close(aml_audio_dec_t *audec)
      int ret=0;
      char value[128]={0};
      android::AmlOMXCodec *arm_omx_codec=(android::AmlOMXCodec *)(audec->arm_omx_codec);
-     ret= property_set("media.libplayer.dtsopt0", "0");
+     amsysfs_write_prop("media.libplayer.dtsopt0", "0");
      LOGI("property_set<media.libplayer.dtsopt0> ret/%d\n",ret);
      if(arm_omx_codec!=NULL){
          arm_omx_codec->locked();

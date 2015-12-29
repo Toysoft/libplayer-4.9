@@ -27,7 +27,9 @@ else
 endif
  
 LOCAL_CFLAGS += -DALSA_OUT
- 
+#ifdef DOLBY_UDC
+LOCAL_CFLAGS+=-DDOLBY_USE_ARMDEC
+#endif
 LOCAL_SHARED_LIBRARIES += libasound
  
 LOCAL_SRC_FILES := \
@@ -150,6 +152,7 @@ LOCAL_C_INCLUDES:= \
     $(LOCAL_PATH)/omx_audio/include \
     $(LOCAL_PATH)/omx_audio/../     \
     $(LOCAL_PATH)/omx_audio/../include \
+    $(LOCAL_PATH)/../amavutils/include \
     frameworks/native/include/media/openmax \
     frameworks/av/include/media/stagefright \
     frameworks/native/include/utils
@@ -170,7 +173,7 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_ARM_MODE := arm
 
 LOCAL_SHARED_LIBRARIES += libutils libmedia libz libbinder libdl libcutils libc libstagefright \
-                          libstagefright_omx  libstagefright_yuv liblog 
+                          libstagefright_omx  libstagefright_yuv liblog libamavutils
 LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE_TAGS := optional
 

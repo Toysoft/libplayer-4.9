@@ -12,7 +12,7 @@ extern "C" {
     int amsysfs_set_sysfs_int16(const char *path, int val);
     int amsysfs_get_sysfs_int16(const char *path);
     unsigned long amsysfs_get_sysfs_ulong(const char *path);
-
+    void amsysfs_write_prop(const char* key, const char* value);
 #ifdef  __cplusplus
 }
 #endif

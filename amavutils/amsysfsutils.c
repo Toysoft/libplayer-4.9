@@ -9,7 +9,7 @@
 #include <sys/ioctl.h>
 #include "include/Amsysfsutils.h"
 #include <Amsyswrite.h>
-
+#include <cutils/properties.h>
 
 
 #ifndef LOGD
@@ -139,6 +139,11 @@ unsigned long amsysfs_get_sysfs_ulong(const char *path)
     }
     return num;
 }
+void amsysfs_write_prop(const char* key, const char* value)
+{
+    int ret = 0;
+    ret = property_set(key,value);
+}
 #else
 int amsysfs_set_sysfs_str(const char *path, const char *val)
 {
@@ -196,6 +201,9 @@ unsigned long amsysfs_get_sysfs_ulong(const char *path)
     }
     return val;
 }
-
+void amsysfs_write_prop(const char* key, const char* value)
+{
+    amSystemWriteSetProperty(key,value);
+}
 #endif
 
