@@ -604,7 +604,7 @@ static int LOASParse(uint8_t *p_buffer, int i_buffer, decoder_sys_t *p_sys)
 
     /* FIXME do we need to split the subframe into independent packet ? */
     if (p_sys->latm.i_sub_frames > 1) {
-        //     printf("latm sub frames not yet supported, please send a sample");
+        printf("latm sub frames not yet supported, please send a sample");
     }
     int i_sub;
     for (i_sub = 0; i_sub < p_sys->latm.i_sub_frames; i_sub++) {
@@ -1405,6 +1405,11 @@ void NEAACDECAPI NeAACDecClose(NeAACDecHandle hpDecoder)
         faad_free(hDecoder->sample_buffer);
     }
 
+
+    if (hDecoder->sample_buffer_all) {
+        faad_free(hDecoder->sample_buffer_all);
+    }
+
 #ifdef SBR_DEC
     for (i = 0; i < MAX_SYNTAX_ELEMENTS; i++) {
         if (hDecoder->sbr[i]) {
@@ -1662,6 +1667,19 @@ static void conceal_output(NeAACDecStruct *hDecoder, uint16_t frame_len,
 }
 #endif
 
+static int multi_sub_frame(NeAACDecStruct *hDecoder)
+{
+#ifdef NEW_CODE_CHECK_LATM
+    int i_frame_size;
+    decoder_sys_t *p_sys =  &hDecoder->dec_sys;
+
+    if (hDecoder->latm_header_present && p_sys->latm.i_sub_frames > 1)
+        return 1;
+#endif
+
+    return 0;
+}
+
 static void* aac_frame_decode(NeAACDecStruct *hDecoder,
                               NeAACDecFrameInfo *hInfo,
                               unsigned char *buffer,
@@ -1677,6 +1695,7 @@ static void* aac_frame_decode(NeAACDecStruct *hDecoder,
     uint16_t frame_len;
     void *sample_buffer;
     uint32_t startbit = 0, endbit = 0, payload_bits = 0;
+    int b_multi_sub_frame;
     int mux_length = 0;
 #ifdef NEW_CODE_CHECK_LATM
     int i_frame_size;
@@ -1773,7 +1792,19 @@ NEXT_CHECK:
         }
 
     }
+
+    b_multi_sub_frame = multi_sub_frame(hDecoder);
+
+    /* check if we want to use internal sample_buffer */
+    if (sample_buffer_size == 0 && b_multi_sub_frame) {
+        if (hDecoder->sample_buffer_all) {
+            faad_free(hDecoder->sample_buffer_all);
+        }
+        hDecoder->sample_buffer_all = NULL;
+    }
 #endif
+
+start_decode:
 
     /* initialize the bitstream */
     faad_initbits(&ld, buffer, buffer_size);
@@ -1880,7 +1911,8 @@ NEXT_CHECK:
     bitsconsumed = faad_get_processed_bits(&ld);
     hInfo->bytesconsumed = bit2byte(bitsconsumed);
     if (mux_length && hDecoder->latm_header_present && !ld.error) {
-        hInfo->bytesconsumed = mux_length;
+        if (p_sys->latm.i_sub_frames <= 1)
+            hInfo->bytesconsumed = mux_length;
     }
     if (ld.error) {
         hInfo->error = 14;
@@ -2032,9 +2064,33 @@ NEXT_CHECK:
     }
 #endif
 
+    if (b_multi_sub_frame && sample_buffer_size == 0 &&
+        hDecoder->sample_buffer_all == NULL) {
+
+        hDecoder->sample_buffer_all = faad_malloc(p_sys->latm.i_sub_frames * hInfo->samples * 2);
+    }
 
     sample_buffer = output_to_PCM(hDecoder, hDecoder->time_out, sample_buffer,
                                   output_channels, frame_len, hDecoder->config.outputFormat);
+
+    if (b_multi_sub_frame && i_frame_size > 0 && sample_buffer_size == 0) {
+
+        memcpy(hDecoder->sample_buffer_all,sample_buffer,hInfo->samples * 2);
+        hDecoder->sample_buffer_all += hInfo->samples * 2;
+        i_frame_size -= hInfo->bytesconsumed;
+        buffer += hInfo->bytesconsumed;
+        buffer_size -= hInfo->bytesconsumed;
+        if (i_frame_size > 0)
+            goto start_decode;
+    }
+
+    if (b_multi_sub_frame && sample_buffer_size == 0) {
+        // calculate all sub_frames as one samples
+        hInfo->samples = hInfo->samples * p_sys->latm.i_sub_frames;
+        hDecoder->sample_buffer_all -= hInfo->samples * 2;
+        hInfo->bytesconsumed = mux_length;
+        return hDecoder->sample_buffer_all;
+    }
 
 
 #ifdef DRM

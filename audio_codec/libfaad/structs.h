@@ -432,6 +432,9 @@ extern "C" {
         /* output data buffer */
         void *sample_buffer;
 
+        /*add for loas sub frame large than one*/
+        void *sample_buffer_all;
+
         uint8_t window_shape_prev[MAX_CHANNELS];
 #ifdef LTP_DEC
         uint16_t ltp_lag[MAX_CHANNELS];
