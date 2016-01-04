@@ -25,7 +25,8 @@ static void response_process(char * line, Curl_Data * buf)
         buf->handle->http_code = strtol(ptr, NULL, 10);
         return;
     }
-    if (200 == buf->handle->http_code) {
+    if (200 == buf->handle->http_code
+        || 206 == buf->handle->http_code) {
         if (!buf->ctx->connected) {
             buf->ctx->connected = 1;
         }
@@ -51,19 +52,6 @@ static void response_process(char * line, Curl_Data * buf)
         if (!strncasecmp(line, "\n", 1)
             || !strncasecmp(line, "\r", 1)) {
             buf->handle->open_quited = 1;
-        }
-        return;
-    }
-    if (206 == buf->handle->http_code) {
-        if (!buf->ctx->connected) {
-            buf->ctx->connected = 1;
-        }
-        if (!strncasecmp(line, "Content-Range", 13)) {
-            const char * slash = NULL;
-            if ((slash = strchr(ptr, '/')) && strlen(slash) > 0) {
-                buf->handle->chunk_size = atoll(slash + 1);
-                buf->handle->open_quited = 1;
-            }
         }
         return;
     }

@@ -51,6 +51,12 @@
 #define POS_SEEK_THRESHOLD 5000000 //5s
 #define MEDIA_CACHED_BUFFER_THREASHOLD 10 // 10s
 
+typedef struct _AESKeyForUrl {
+    char keyUrl[MAX_URL_SIZE];/* url key path */
+    uint8_t keyData[AES_BLOCK_SIZE]; /* AES-128 */
+    struct list_head key_head;
+} AESKeyForUrl_t;
+
 typedef struct _SessionMediaItem {
     int64_t media_monitor_timer;
     int64_t media_last_fetch_timeUs;
@@ -80,7 +86,10 @@ typedef struct _SessionMediaItem {
     int media_no_new_file;
     int media_codec_buffer_time_s; // just an approximate value.
     int media_sub_ready;
+    int media_encrypted;
+    int media_aes_keyurl_list_num;
     FILE * media_dump_handle;
+    struct list_head media_aes_key_list;
     pthread_t media_tid;
     pthread_mutex_t media_lock;
     pthread_cond_t media_cond;
@@ -96,11 +105,6 @@ typedef struct _BandwidthItem {
     M3uBaseNode * node;
     M3uKeyInfo * baseScriptkeyinfo;
 } BandwidthItem_t;
-
-typedef struct _AESKeyForUrl {
-    char keyUrl[MAX_URL_SIZE];/* url key path */
-    uint8_t keyData[AES_BLOCK_SIZE]; /* AES-128 */
-} AESKeyForUrl_t;
 
 typedef struct _M3ULiveSession {
     char* baseUrl;

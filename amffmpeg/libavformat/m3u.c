@@ -638,7 +638,7 @@ static int m3u_probe(ByteIOContext *s,const char *file)
     {
         int probe_loop = 10;
         char line[1024];
-        while (probe_loop-- > 0 && m3u_format_get_line(s, line, 1024) > 0) {
+        while (probe_loop-- > 0 && m3u_format_get_line(s, line, 1024) >= 0) {
             if (!memcmp(line, EXTM3U, strlen(EXTM3U))) {
                 RLOG("probe m3u8 success !");
                 score = 100;

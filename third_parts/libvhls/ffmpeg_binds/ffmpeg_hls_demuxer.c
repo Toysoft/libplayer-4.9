@@ -26,6 +26,8 @@ static int hls_interrupt_call_cb(void) {
 
 typedef struct _HLS_STREAM_CONTEXT {
     int                stream_id;
+    MediaType          type;
+    int                need_drop;
     int64_t            next_pts;
     int64_t            inner_segment_start_pts;
     int64_t            segment_start_pts;
@@ -37,10 +39,12 @@ typedef struct _FFMPEG_HLS_STREAM_CONTEXT {
     AVIOContext * pb;
     HLS_STREAM_CONTEXT ** stream_info_array;
     MediaType stream_type;
-    int stream_no;
+    int stream_nb;
     unsigned char * buffer;
     int buffer_size;
     int eof;
+    int forbid;
+    int parsed;
 } FFMPEG_HLS_STREAM_CONTEXT;
 
 typedef struct _FFMPEG_HLS_SESSION_CONTEXT {
@@ -57,6 +61,10 @@ typedef struct _FFMPEG_HLS_SESSION_CONTEXT {
     int codec_abuf_size;
     int sub_index;
     int sub_read_flag;
+    int audio_stream_index;
+    int video_stream_index;
+    FILE * vhandle;
+    FILE * ahandle;
     pthread_mutex_t sub_lock; // lock between read and switch.
 } FFMPEG_HLS_SESSION_CONTEXT;
 
@@ -81,11 +89,12 @@ static int _hls_iocontext_read(void * opaque, uint8_t * buf, int buf_size) {
 static void _release_hls_stream_context(AVFormatContext * s) {
     FFMPEG_HLS_SESSION_CONTEXT * hls_session_ctx = (FFMPEG_HLS_SESSION_CONTEXT *)(s->priv_data);
 
-    int i = 0, j = 0;
+    int i = 0;
     if (hls_session_ctx->nb_session > 0) {
         for (; i < hls_session_ctx->nb_session; i++) {
-            if (hls_session_ctx->stream_array[i]->stream_no > 0) {
-                for (; j < hls_session_ctx->stream_array[i]->stream_no; j++) {
+            if (hls_session_ctx->stream_array[i]->stream_nb > 0) {
+                int j = 0;
+                for (; j < hls_session_ctx->stream_array[i]->stream_nb; j++) {
                     if (hls_session_ctx->stream_array[i]->stream_info_array[j]) {
                         free(hls_session_ctx->stream_array[i]->stream_info_array[j]);
                     }
@@ -142,7 +151,8 @@ static int _select_hls_session(AVFormatContext * s) {
     int64_t pts0 = -1, min_pts = -1;
     for (; i < hls_session_ctx->nb_session; i++) {
         if (hls_session_ctx->stream_array[i]->stream_type > TYPE_VIDEO
-            || hls_session_ctx->stream_array[i]->eof == 1) {
+            || hls_session_ctx->stream_array[i]->eof == 1
+            || hls_session_ctx->stream_array[i]->forbid) {
             continue;
         }
         pts0 = hls_session_ctx->stream_array[i]->stream_info_array[0]->next_pts; // assume it solo stream, maybe need to modify.
@@ -240,17 +250,19 @@ static int _hls_parse_next_segment(AVFormatContext * s, int session_index, int f
             }
             return ret;
         }
+#if 0
         if (memcmp(format->iformat->name, "mpegts", 6) == 0) {
             int64_t ret64 = avio_seek(format->pb, 0, SEEK_SET);
             if (ret64 < 0) {
                 HLOG("[%s:%d] index : %d, reset mpegts's pb to beginning, ret(%lld) !", __FUNCTION__, __LINE__, session_index, ret64);
             }
         }
+#endif
     }
 
     if (first > 0) {
         for (nb = 0; nb < format->nb_streams; nb++) {
-            AVStream * st = av_new_stream(s, hls_stream_ctx->stream_no);
+            AVStream * st = av_new_stream(s, hls_stream_ctx->stream_nb);
             if (!st) {
                 HLOG("[%s:%d] av_new_stream failed !", __FUNCTION__, __LINE__);
                 if (format) {
@@ -264,25 +276,49 @@ static int _hls_parse_next_segment(AVFormatContext * s, int session_index, int f
             st->r_frame_rate.den = format->streams[nb]->r_frame_rate.den;
             avcodec_copy_context(st->codec, format->streams[nb]->codec);
             HLS_STREAM_CONTEXT * stream_ctx = (HLS_STREAM_CONTEXT *)av_mallocz(sizeof(HLS_STREAM_CONTEXT));
+            if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+                stream_ctx->type = TYPE_VIDEO;
+            } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+                stream_ctx->type = TYPE_AUDIO;
+            } else {
+                stream_ctx->type = TYPE_NONE;
+            }
+            stream_ctx->need_drop = 0;
             stream_ctx->stream_id = st->index;
             stream_ctx->inner_segment_start_pts = -1;
             stream_ctx->segment_start_pts = 0;
             stream_ctx->next_pts = 0;
             stream_ctx->duration = 0;
-            in_dynarray_add(&hls_stream_ctx->stream_info_array, &hls_stream_ctx->stream_no, stream_ctx);
+            in_dynarray_add(&hls_stream_ctx->stream_info_array, &hls_stream_ctx->stream_nb, stream_ctx);
+        }
+        if (hls_stream_ctx->stream_nb > 1) {
+            int i = 0;
+            for (; i < hls_stream_ctx->stream_nb; i++) {
+                if (hls_stream_ctx->stream_info_array[i]->type != hls_stream_ctx->stream_type) {
+                    int j = 0;
+                    for (; j < hls_session_ctx->nb_session; j++) {
+                        if (hls_stream_ctx->stream_info_array[i]->type == hls_session_ctx->stream_array[j]->stream_type
+                            && !hls_session_ctx->stream_array[j]->forbid) {
+                            hls_stream_ctx->stream_info_array[i]->need_drop = 1;
+                            HLOG("[%s:%d] stream(%d) need to drop !", __FUNCTION__, __LINE__, hls_stream_ctx->stream_info_array[i]->type);
+                        }
+                    }
+                }
+            }
         }
         if (s->duration <= 0) {
             s->duration = hls_session_ctx->session_ctx->durationUs;
         }
     } else {
-        for (nb = 0; nb < hls_stream_ctx->stream_no; nb++) {
+        for (nb = 0; nb < hls_stream_ctx->stream_nb; nb++) {
             hls_stream_ctx->stream_info_array[nb]->inner_segment_start_pts = -1;
             hls_stream_ctx->stream_info_array[nb]->segment_start_pts = hls_stream_ctx->stream_info_array[nb]->next_pts;
         }
     }
     HLOG("[%s:%d] parse new segment, session index : %d, nb_streams : %d",
-        __FUNCTION__, __LINE__, session_index, hls_stream_ctx->stream_no);
+        __FUNCTION__, __LINE__, session_index, hls_stream_ctx->stream_nb);
     hls_stream_ctx->ctx = format;
+    hls_stream_ctx->parsed = 1;
     return 0;
 }
 
@@ -305,8 +341,8 @@ static int hls_read_header(AVFormatContext * s, AVFormatParameters * ap) {
         || av_strstart(inner_url, "vhls:", NULL) != 0) {
         inner_url = s->filename + 5;
     }
-    // TODO: add headers in AVFormatContext
-    ret = m3u_session_open(inner_url, NULL, &session, NULL);
+
+    ret = m3u_session_open(inner_url, s->headers, &session, NULL);
     if (ret < 0) {
         HLOG("[%s:%d] Failed to open session !", __FUNCTION__, __LINE__);
         return ret;
@@ -322,15 +358,33 @@ static int hls_read_header(AVFormatContext * s, AVFormatParameters * ap) {
     hls_session_ctx->sub_read_reference_timeUs = -1;
     hls_session_ctx->sub_index = -1;
     hls_session_ctx->sub_read_flag = 0;
+    hls_session_ctx->audio_stream_index = -1;
+    hls_session_ctx->video_stream_index = -1;
+    hls_session_ctx->vhandle = NULL;
+    hls_session_ctx->ahandle = NULL;
     pthread_mutex_init(&hls_session_ctx->sub_lock, NULL);
+
+    int dumpmode = in_get_sys_prop_float("libplayer.hls.demuxer_dump"); // 1:audio, 2:video 3:both
+    char dump_path[MAX_URL_SIZE] = {0};
+    if (dumpmode == 1 || dumpmode == 3) {
+        snprintf(dump_path, MAX_URL_SIZE, "/data/tmp/audio_demuxer_dump.dat");
+        hls_session_ctx->ahandle = fopen(dump_path, "ab+");
+    }
+    if (dumpmode == 2 || dumpmode == 3) {
+        snprintf(dump_path, MAX_URL_SIZE, "/data/tmp/video_demuxer_dump.dat");
+        hls_session_ctx->vhandle = fopen(dump_path, "ab+");
+    }
 
     int session_index = 0;
     for (session_index = 0; session_index < hls_session->media_item_num; session_index++) {
         FFMPEG_HLS_STREAM_CONTEXT * stream_ctx = (FFMPEG_HLS_STREAM_CONTEXT *)av_mallocz(sizeof(FFMPEG_HLS_STREAM_CONTEXT));
         stream_ctx->ctx = NULL;
         stream_ctx->pb = NULL;
-        stream_ctx->stream_no = 0;
+        stream_ctx->stream_nb = 0;
+        stream_ctx->eof = 0;
+        stream_ctx->parsed = 0;
         stream_ctx->stream_type = hls_session->media_item_array[session_index]->media_type;
+        stream_ctx->forbid = (hls_session->media_item_array[session_index]->media_url[0] == '\0');
         stream_ctx->stream_info_array = NULL;
         if (stream_ctx->stream_type == TYPE_SUBS) {
             hls_session_ctx->sub_index = session_index;
@@ -340,7 +394,8 @@ static int hls_read_header(AVFormatContext * s, AVFormatParameters * ap) {
             __FUNCTION__, __LINE__, session_index, hls_session->media_item_array[session_index]->media_type);
     }
     for (session_index = 0; session_index < hls_session_ctx->nb_session; session_index++) {
-        if (hls_session_ctx->stream_array[session_index]->stream_type > TYPE_VIDEO) { // skip
+        if (hls_session_ctx->stream_array[session_index]->stream_type > TYPE_VIDEO
+            || hls_session_ctx->stream_array[session_index]->forbid) { // skip
             continue;
         }
 
@@ -427,8 +482,24 @@ RETRY_READ:
     if (pkt->dts != AV_NOPTS_VALUE) {
         pkt->dts = av_rescale_q(pkt->dts, format->streams[prev_stream_index]->time_base, HLS_Rational);
     }
+
     HLS_STREAM_CONTEXT * stream_ctx = hls_session_ctx->stream_array[cur_index]->stream_info_array[prev_stream_index];
-    pkt->stream_index = stream_ctx->stream_id;
+    if ((stream_ctx->type != TYPE_AUDIO && stream_ctx->type != TYPE_VIDEO)
+        || stream_ctx->need_drop) {
+        av_free_packet(pkt);
+        goto RETRY_READ;
+    }
+    if (hls_session_ctx->audio_stream_index < 0 && stream_ctx->type == TYPE_AUDIO) {
+        hls_session_ctx->audio_stream_index = stream_ctx->stream_id;
+    } else if (hls_session_ctx->video_stream_index < 0 && stream_ctx->type == TYPE_VIDEO) {
+        hls_session_ctx->video_stream_index = stream_ctx->stream_id;
+    }
+    if (stream_ctx->type == TYPE_AUDIO) {
+        pkt->stream_index = hls_session_ctx->audio_stream_index;
+    } else if (stream_ctx->type == TYPE_VIDEO) {
+        pkt->stream_index = hls_session_ctx->video_stream_index;
+    }
+
     if (pkt->duration > 0 && !stream_ctx->duration) {
         stream_ctx->duration = pkt->duration;
     }
@@ -472,6 +543,15 @@ RETRY_READ:
 
     hls_session_ctx->sub_read_reference_timeUs = _get_clock_monotonic_us() - pkt->pts;
 
+    if (hls_session_ctx->vhandle && stream_ctx->type == TYPE_VIDEO) {
+        fwrite(pkt->data, 1, pkt->size, hls_session_ctx->vhandle);
+        fflush(hls_session_ctx->vhandle);
+    }
+    if (hls_session_ctx->ahandle && stream_ctx->type == TYPE_AUDIO) {
+        fwrite(pkt->data, 1, pkt->size, hls_session_ctx->ahandle);
+        fflush(hls_session_ctx->ahandle);
+    }
+
     return 0;
 }
 
@@ -500,7 +580,8 @@ static int hls_read_seek(AVFormatContext * s, int stream_index, int64_t timestam
         }
     }
     for (index = 0; index < hls_session_ctx->nb_session; index++) {
-        if (hls_session_ctx->stream_array[index]->stream_type > TYPE_VIDEO) { // skip
+        if (hls_session_ctx->stream_array[index]->stream_type > TYPE_VIDEO
+            || hls_session_ctx->stream_array[index]->forbid) { // skip
             if (hls_session_ctx->stream_array[index]->stream_type == TYPE_SUBS) {
                 hls_session_ctx->sub_read_reference_timeUs = _get_clock_monotonic_us() - real_pos;
             }
@@ -510,7 +591,7 @@ static int hls_read_seek(AVFormatContext * s, int stream_index, int64_t timestam
             HLOG("[%s:%d] parse next segment failed, index : %d", __FUNCTION__, __LINE__, index);
             return -1;
         }
-        for (nb = 0; nb < hls_session_ctx->stream_array[index]->stream_no; nb++) {
+        for (nb = 0; nb < hls_session_ctx->stream_array[index]->stream_nb; nb++) {
             // TODO: to fix this seek pts
             hls_session_ctx->stream_array[index]->stream_info_array[nb]->segment_start_pts = real_pos;
             hls_session_ctx->stream_array[index]->stream_info_array[nb]->next_pts = 0;
@@ -557,6 +638,12 @@ static int hls_read_close(AVFormatContext * s) {
     }
     m3u_session_close((void *)(hls_session_ctx->session_ctx));
     _release_hls_stream_context(s);
+    if (hls_session_ctx->vhandle) {
+        fclose(hls_session_ctx->vhandle);
+    }
+    if (hls_session_ctx->ahandle) {
+        fclose(hls_session_ctx->ahandle);
+    }
     HLOG("[%s:%d] read close successfully !", __FUNCTION__, __LINE__);
     return 0;
 }
@@ -693,6 +780,35 @@ static int hls_select_stream(AVFormatContext * s, int index, int select) {
         if (hls_session_ctx->stream_array[stream_index]->pb) {
             avio_reset(hls_session_ctx->stream_array[stream_index]->pb, AVIO_FLAG_READ);
             hls_session_ctx->stream_array[stream_index]->eof = 0;
+        }
+        if (type <= TYPE_VIDEO && !hls_session_ctx->stream_array[stream_index]->parsed) {
+            ret = _hls_parse_next_segment(s, stream_index, 1);
+            if (ret) {
+                HLOG("[%s:%d] type(%d) parse failed !", __FUNCTION__, __LINE__, type);
+                return ret;
+            }
+        }
+        hls_session_ctx->stream_array[stream_index]->forbid = (hls_session_ctx->session_ctx->media_item_array[stream_index]->media_url[0] == '\0');
+        FFMPEG_HLS_STREAM_CONTEXT * hls_stream_ctx = NULL;
+        int k = 0;
+        for (; k < hls_session_ctx->nb_session; k++) {
+            hls_stream_ctx = hls_session_ctx->stream_array[k];
+            if (hls_stream_ctx->stream_nb > 1) {
+                int i = 0;
+                for (; i < hls_stream_ctx->stream_nb; i++) {
+                    hls_stream_ctx->stream_info_array[i]->need_drop = 0;
+                    if (hls_stream_ctx->stream_info_array[i]->type != hls_stream_ctx->stream_type) {
+                        int j = 0;
+                        for (; j < hls_session_ctx->nb_session; j++) {
+                            if (hls_stream_ctx->stream_info_array[i]->type == hls_session_ctx->stream_array[j]->stream_type
+                                && !hls_session_ctx->stream_array[j]->forbid) {
+                                hls_stream_ctx->stream_info_array[i]->need_drop = 1;
+                                HLOG("[%s:%d] stream(%d) need to drop !", __FUNCTION__, __LINE__, hls_stream_ctx->stream_info_array[i]->type);
+                            }
+                        }
+                    }
+                }
+            }
         }
         HLOG("[%s:%d] switch stream success !", __FUNCTION__, __LINE__);
     }
