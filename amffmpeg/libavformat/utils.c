@@ -1082,6 +1082,9 @@ retry_open:
     }
     s->duration = s->start_time = AV_NOPTS_VALUE;
     av_strlcpy(s->filename, filename, sizeof(s->filename));
+    if (headers) {
+        s->headers = strdup(headers);
+    }
     /* allocate private data */
     if (s->iformat->priv_data_size > 0)
     {
@@ -1761,7 +1764,7 @@ got_packet:
                     st->cur_pkt.dts != AV_NOPTS_VALUE &&
                     st->cur_pkt.pts < st->cur_pkt.dts)
             {
-                av_log(s, AV_LOG_WARNING, "Invalid timestamps stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d\n",
+                av_log(s, AV_LOG_DEBUG, "Invalid timestamps stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d\n",
                        st->cur_pkt.stream_index,
                        st->cur_pkt.pts,
                        st->cur_pkt.dts,
@@ -3783,7 +3786,11 @@ int av_find_stream_info(AVFormatContext *ic)
         {
             fast_switch = FLV_PARSE_MODE;
         }
-        else if (strcmp(ic->iformat->name, "mpegts") && strcmp(ic->iformat->name, "rtsp") && !ic->is_dash_demuxer && strcmp(ic->iformat->name, "dash"))
+        else if (strcmp(ic->iformat->name, "mpegts")
+                && strcmp(ic->iformat->name, "rtsp")
+                && !ic->is_dash_demuxer
+                && strcmp(ic->iformat->name, "dash")
+                && strcmp(ic->iformat->name, "mhls"))
         {
             /*not ts. always do full parser.*/
             fast_switch = 0;
@@ -4459,6 +4466,7 @@ void avformat_free_context(AVFormatContext *s)
     av_freep(&s->chapters);
     av_dict_free(&s->metadata);
     av_freep(&s->streams);
+    av_free(s->headers);
     av_free(s);
 }
 

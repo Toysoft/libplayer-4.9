@@ -1002,6 +1002,7 @@ typedef struct AVFormatContext {
 
     // hls demuxer.
     int is_hls_demuxer;
+    const char * headers;
 } AVFormatContext;
 
 typedef struct AVPacketList {

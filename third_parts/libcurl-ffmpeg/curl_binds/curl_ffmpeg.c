@@ -32,6 +32,7 @@ typedef struct _CURLFFContext {
     const AVClass *class;
     char uri[MAX_CURL_URI_SIZE];
     int read_retry;
+    int force_interrupt;
     int64_t read_waittime_s;
     CFContext * cfc_h;
 } CURLFFContext;
@@ -44,10 +45,10 @@ static const AVClass curlffmpeg_class = {
     .version            = LIBAVUTIL_VERSION_INT,
 };
 
-static int force_interrupt = 0;
-static int curl_interrupt_call_cb(void)
+static int curl_interrupt_call_cb(void * handle)
 {
-    if (url_interrupt_cb() || force_interrupt == 1) {
+    CURLFFContext * curl_handle = (CURLFFContext *)handle;
+    if (url_interrupt_cb() || curl_handle->force_interrupt == 1) {
         return 1;
     }
     return 0;
@@ -74,12 +75,13 @@ static int curl_ffmpeg_need_retry(int arg)
     return ret;
 }
 
-static void curl_ffmpeg_register_interrupt(CURLFFContext *h, interruptcallback pfunc)
+static void curl_ffmpeg_register_interrupt(CURLFFContext *h, interruptcallbackwithpid pfunc)
 {
     if (!h || !h->cfc_h) {
         return;
     }
-    curl_fetch_register_interrupt(h->cfc_h, pfunc);
+    curl_fetch_register_interrupt_pid(h->cfc_h, pfunc);
+    curl_fetch_set_parent_pid(h->cfc_h, h);
     return;
 }
 
@@ -112,7 +114,7 @@ RETRY:
     }
 
     curl_ffmpeg_register_interrupt(handle, curl_interrupt_call_cb);
-    force_interrupt = 0;
+    handle->force_interrupt = 0;
     ret = curl_fetch_open(handle->cfc_h);
     if (ret) {
         curl_fetch_close(handle->cfc_h);
@@ -219,9 +221,9 @@ static int64_t curl_ffmpeg_seek(URLContext *h, int64_t off, int whence)
     }
     if ((whence == SEEK_CUR && !off) ||
         (whence == SEEK_END && off < 0)) {
-        force_interrupt = 0;
+        s->force_interrupt = 0;
     } else {
-        force_interrupt = 1;
+        s->force_interrupt = 1;
     }
     if (whence == AVSEEK_CURL_HTTP_KEEPALIVE) {
         ret = curl_fetch_http_keepalive_open(s->cfc_h, NULL);
@@ -230,7 +232,7 @@ static int64_t curl_ffmpeg_seek(URLContext *h, int64_t off, int whence)
     } else {
         ret = curl_fetch_seek(s->cfc_h, off, whence);
     }
-    force_interrupt = 0;
+    s->force_interrupt = 0;
     return ret;
 }
 
@@ -241,7 +243,7 @@ static int curl_ffmpeg_close(URLContext *h)
     if (!s) {
         return -1;
     }
-    force_interrupt = 1;
+    s->force_interrupt = 1;
     curl_fetch_close(s->cfc_h);
     av_free(s);
     s = NULL;
@@ -257,10 +259,10 @@ static int curl_ffmpeg_get_info(URLContext *h, uint32_t  cmd, uint32_t flag, int
     int ret = 0;
     if (cmd == AVCMD_GET_NETSTREAMINFO) {
         if (flag == 1) {
-            int64_t tmp_info = 0;
+            double tmp_info = 0.0;
             ret = curl_fetch_get_info(s->cfc_h, C_INFO_SPEED_DOWNLOAD, flag, (void *)&tmp_info);
             if (!ret) {
-                *info = tmp_info;
+                *info = (int64_t)(tmp_info * 8);
             } else {
                 *info = 0;
             }

@@ -583,9 +583,9 @@ static int  _get_best_bandwidth_index(M3ULiveSession* s, SessionMediaItem * medi
             est_bps = s->estimate_bandwidth_bps;
         }
         if (mediaItem) {
-            LOGV("[Type : %d] bandwidth estimated at %.2f kbps", mediaItem->media_type, est_bps / 1024.0f);
+            LOGI("[Type : %d] bandwidth estimated at %.2f kbps", mediaItem->media_type, est_bps / 1024.0f);
         } else {
-            LOGV("bandwidth estimated at %.2f kbps", est_bps / 1024.0f);
+            LOGI("bandwidth estimated at %.2f kbps", est_bps / 1024.0f);
         }
         if (est_bps == 0) {
             if (mediaItem) {
@@ -623,17 +623,32 @@ static int  _get_best_bandwidth_index(M3ULiveSession* s, SessionMediaItem * medi
 #define AES_BLOCK_SIZE 16
 #endif
 
-static int _get_decrypt_key(M3ULiveSession* s, int playlistIndex, AESKeyInfo_t* key)
+static int _get_decrypt_key(M3ULiveSession* s, SessionMediaItem * mediaItem, int playlistIndex, AESKeyInfo_t* key)
 {
     int found = 0;
     char* method;
     M3uBaseNode* node = NULL;
     ssize_t i ;
-    if (s->is_encrypt_media == 0) {
+    int is_encrypt_media = -1, aes_keyurl_list_num = 0;
+    void * playlist = NULL;
+    char * cookies = NULL;
+    AESKeyForUrl_t * aes_keyurl_list = NULL;
+    if (mediaItem) {
+        is_encrypt_media = mediaItem->media_encrypted;
+        aes_keyurl_list_num = mediaItem->media_aes_keyurl_list_num;
+        playlist = mediaItem->media_playlist;
+        cookies = mediaItem->media_cookies;
+    } else {
+        is_encrypt_media = s->is_encrypt_media;
+        aes_keyurl_list_num = s->aes_keyurl_list_num;
+        playlist = s->playlist;
+        cookies = s->cookies;
+    }
+    if (is_encrypt_media == 0) {
         return -1;
     }
     for (i = playlistIndex; i >= 0; --i) {
-        node = m3u_get_node_by_index(s->playlist, i);
+        node = m3u_get_node_by_index(playlist, i);
         if (node != NULL && node->flags & CIPHER_INFO_FLAG) {
             method = node->key->method;
             found = 1;
@@ -656,30 +671,51 @@ static int _get_decrypt_key(M3ULiveSession* s, int playlistIndex, AESKeyInfo_t* 
     }
     const char* keyUrl = node->key->keyUrl;
     int index = -1;
-    if (s->aes_keyurl_list_num > 0) {
-        for (i = 0; i < s->aes_keyurl_list_num; i++) {
-            if (!strncmp(keyUrl, s->aes_keyurl_list[i]->keyUrl, MAX_URL_SIZE)) {
-
-                index = i;
-                if (s->log_level >= HLS_SHOW_URL) {
-                    LOGI("Found aes key,url:%s,index:%d\n", keyUrl, index);
-                } else {
-                    LOGI("Found aes key,index:%d\n", index);
+    if (aes_keyurl_list_num > 0) {
+        if (mediaItem) {
+            AESKeyForUrl_t * pos = NULL;
+            AESKeyForUrl_t * tmp = NULL;
+            int count = 0;
+            list_for_each_entry_safe(pos, tmp, &mediaItem->media_aes_key_list, key_head) {
+                if (!strncmp(keyUrl, pos->keyUrl, MAX_URL_SIZE)) {
+                    index = count;
+                    aes_keyurl_list = pos;
+                    if (s->log_level >= HLS_SHOW_URL) {
+                        LOGI("[Type : %d] Found aes key,url:%s,index:%d\n", mediaItem->media_type, keyUrl, index);
+                    } else {
+                        LOGI("Found aes key,index:%d\n", index);
+                    }
+                    break;
                 }
-                break;
+                if (s->is_closed) {
+                    LOGV("Got close flag\n");
+                    return -1;
+                }
+                count++;
             }
-            if (s->is_closed) {
-                LOGV("Got close flag\n");
-                return -1;
+        } else {
+            for (i = 0; i < aes_keyurl_list_num; i++) {
+                if (!strncmp(keyUrl, s->aes_keyurl_list[i]->keyUrl, MAX_URL_SIZE)) {
+                    index = i;
+                    aes_keyurl_list = s->aes_keyurl_list[i];
+                    if (s->log_level >= HLS_SHOW_URL) {
+                        LOGI("Found aes key,url:%s,index:%d\n", keyUrl, index);
+                    } else {
+                        LOGI("Found aes key,index:%d\n", index);
+                    }
+                    break;
+                }
+                if (s->is_closed) {
+                    LOGV("Got close flag\n");
+                    return -1;
+                }
             }
-
         }
-
     }
 
     uint8_t* keydat = NULL;
     if (index >= 0) {
-        keydat = s->aes_keyurl_list[index]->keyData;
+        keydat = aes_keyurl_list->keyData;
         LOGV("Got cached key.");
     } else { //
         if (s->urlcontext && ((URLContext *)(s->urlcontext))->prot && !strcasecmp(((URLContext *)(s->urlcontext))->prot->name, "vrwc")) {
@@ -717,19 +753,24 @@ static int _get_decrypt_key(M3ULiveSession* s, int playlistIndex, AESKeyInfo_t* 
             if (s->headers != NULL) {
                 strncpy(headers, s->headers, MAX_URL_SIZE);
             }
-            if (s->cookies && strlen(s->cookies) > 0) {
+            if (cookies && strlen(cookies) > 0) {
                 if (s->headers != NULL && strlen(s->headers) > 0 && s->headers[strlen(s->headers) - 1] != '\n') {
-                    snprintf(headers + strlen(headers), MAX_URL_SIZE - strlen(headers), "\r\nCookie: %s\r\n", s->cookies);
+                    snprintf(headers + strlen(headers), MAX_URL_SIZE - strlen(headers), "\r\nCookie: %s\r\n", cookies);
                 } else {
-                    snprintf(headers + strlen(headers), MAX_URL_SIZE - strlen(headers), "Cookie: %s\r\n", s->cookies);
+                    snprintf(headers + strlen(headers), MAX_URL_SIZE - strlen(headers), "Cookie: %s\r\n", cookies);
                 }
             }
-            ret = fetchHttpSmallFile(keyUrl, headers, (void**)&keydat, &isize, &redirectUrl, &s->cookies);
+            if (mediaItem) {
+                ret = fetchHttpSmallFile(keyUrl, headers, (void**)&keydat, &isize, &redirectUrl, &mediaItem->media_cookies);
+            } else {
+                ret = fetchHttpSmallFile(keyUrl, headers, (void**)&keydat, &isize, &redirectUrl, &s->cookies);
+            }
             if (ret != 0) {
-                if ((ret == HLSERROR(EINTR) || ret == HLSERROR(EIO)) && s->seekflag > 0) {
-                    s->seekflag = 0;
+                if (mediaItem) {
+                    LOGV("[Type : %d] Failed to get aes key!", mediaItem->media_type);
+                } else {
+                    LOGV("Failed to get aes key!");
                 }
-                LOGV("Failed to get aes key\n");
                 return -1;
             }
             if (redirectUrl) {
@@ -749,7 +790,13 @@ static int _get_decrypt_key(M3ULiveSession* s, int playlistIndex, AESKeyInfo_t* 
 
         free(keydat);
         keydat = anode->keyData;
-        in_dynarray_add(&s->aes_keyurl_list, &s->aes_keyurl_list_num, anode);
+        if (mediaItem) {
+            INIT_LIST_HEAD(&anode->key_head);
+            list_add(&anode->key_head, &mediaItem->media_aes_key_list);
+            mediaItem->media_aes_keyurl_list_num++;
+        } else {
+            in_dynarray_add(&s->aes_keyurl_list, &s->aes_keyurl_list_num, anode);
+        }
     }
 
 
@@ -1017,11 +1064,14 @@ static int _get_valid_bandwidth_list(M3ULiveSession* s, int fail_index)
 static void _set_session_para(M3ULiveSession * s, SessionMediaItem * item) {
     void * playlist = NULL;
     int32_t firstSeqNumberInPlaylist = 0, cur_seq_num_tmp = 0;
+    int is_encrypt_media = -1;
 
     if (s->is_mediagroup <= 0) {
         playlist = s->playlist;
+        is_encrypt_media = s->is_encrypt_media;
     } else {
         playlist = item->media_playlist;
+        is_encrypt_media = item->media_encrypted;
     }
 
     M3uBaseNode* node = m3u_get_node_by_index(playlist, 0);
@@ -1029,7 +1079,7 @@ static void _set_session_para(M3ULiveSession * s, SessionMediaItem * item) {
     if (firstSeqNumberInPlaylist == -1) {
         firstSeqNumberInPlaylist = 0;
     }
-    if (s->is_encrypt_media == -1) { //simply detect encrypted stream
+    if (is_encrypt_media == -1) { //simply detect encrypted stream
         //add codes for stream that the field "METHOD" of EXT-X-KEY is "NONE".
         char* method = NULL;
         if (node->key != NULL && node->key->method != NULL) {
@@ -1038,9 +1088,17 @@ static void _set_session_para(M3ULiveSession * s, SessionMediaItem * item) {
             method = "NONE";
         }
         if (node->flags & CIPHER_INFO_FLAG && strcmp(method, "NONE")) {
-            s->is_encrypt_media = 1;
+            if (s->is_mediagroup <= 0) {
+                s->is_encrypt_media = 1;
+            } else {
+                item->media_encrypted = 1;
+            }
         } else {
-            s->is_encrypt_media = 0;
+            if (s->is_mediagroup <= 0) {
+                s->is_encrypt_media = 0;
+            } else {
+                item->media_encrypted = 0;
+            }
         }
     }
     int rv = -1;
@@ -1202,15 +1260,18 @@ static int _choose_bandwidth_and_init_playlist(M3ULiveSession* s)
                     return -1;
                 }
 #endif
-                void * playlist = _fetch_play_list(s->media_item_array[i]->media_url, s, s->media_item_array[i], &unchanged, bandwidthIndex);
-                if (playlist == NULL || !m3u_get_node_num(playlist)) {
-                    LOGE("[%s:%d] failed to load playlist at url '%s'", __FUNCTION__, __LINE__, s->media_item_array[i]->media_url);
-                    return -1;
+                // if no URI in mediaItem, TYPE_AUDIO in general, it mix with video in EXT-X-STREAM-INF.
+                if (s->media_item_array[i]->media_url[0] != '\0') {
+                    void * playlist = _fetch_play_list(s->media_item_array[i]->media_url, s, s->media_item_array[i], &unchanged, bandwidthIndex);
+                    if (playlist == NULL || !m3u_get_node_num(playlist)) {
+                        LOGE("[%s:%d] failed to load playlist at url '%s'", __FUNCTION__, __LINE__, s->media_item_array[i]->media_url);
+                        return -1;
+                    }
+                    s->prev_bandwidth_index = bandwidthIndex;
+                    s->media_item_array[i]->media_cur_bandwidth_index = bandwidthIndex;
+                    s->media_item_array[i]->media_playlist = playlist;
+                    _set_session_para(s, s->media_item_array[i]);
                 }
-                s->prev_bandwidth_index = bandwidthIndex;
-                s->media_item_array[i]->media_cur_bandwidth_index = bandwidthIndex;
-                s->media_item_array[i]->media_playlist = playlist;
-                _set_session_para(s, s->media_item_array[i]);
             }
             return 0;
         }
@@ -1672,7 +1733,12 @@ rinse_repeat: {
                     pthread_mutex_unlock(&mediaItem->media_lock);
                     return ret;
                 }
-                url = mediaItem->media_url;
+                if (mediaItem->media_url[0] != '\0') {
+                    url = mediaItem->media_url;
+                } else {
+                    pthread_mutex_unlock(&mediaItem->media_lock);
+                    return 0;
+                }
             }
             int unchanged;
             new_playlist = _fetch_play_list(url, s, mediaItem, &unchanged, bandwidthIndex);
@@ -1895,6 +1961,12 @@ static int _fetch_segment_file(M3ULiveSession* s, SessionMediaItem * mediaItem, 
     int need_notify = 0;
     char * cookies = NULL;
     void * cache = NULL;
+    int is_encrypt_media = 0;
+    if (mediaItem) {
+        is_encrypt_media = mediaItem->media_encrypted;
+    } else {
+        is_encrypt_media = s->is_encrypt_media;
+    }
     if (!mediaItem) {
         if (((URLContext *)(s->urlcontext))->notify_id != -1 && strstr(s->baseUrl, "diagnose=deep")) {
             need_notify = 1;
@@ -1974,10 +2046,10 @@ open_retry: {
             }
         }
 
-        if (s->is_encrypt_media > 0) {
+        if (is_encrypt_media > 0) {
             // TODO: add media group decrypt logic here.
             AESKeyInfo_t keyinfo;
-            ret = _get_decrypt_key(s, indexInPlaylist, &keyinfo);
+            ret = _get_decrypt_key(s, mediaItem, indexInPlaylist, &keyinfo);
             if (ret != 0) {
                 _thread_wait_timeUs(s, mediaItem, 100 * 1000);
                 handle = NULL;
@@ -2753,6 +2825,11 @@ static void * _media_download_worker(void * ctx) {
     int failover_time = in_get_sys_prop_float("libplayer.hls.failover_time");
     failover_time = HLSMAX(failover_time, FAILOVER_TIME_MAX);
     do {
+        if (mediaItem->media_url[0] == '\0') {
+            LOGI("[Type : %d] this media mix with other type, sleep...", mediaItem->media_type);
+            _thread_wait_timeUs(session, mediaItem, -1);
+            mediaItem->media_monitor_timer = get_clock_monotonic_us();
+        }
         if (pass == 1) {
             goto REFRESH;
         }
@@ -2804,7 +2881,7 @@ static void * _media_download_worker(void * ctx) {
 
 REFRESH:
         pass = 0;
-        ret =  _refresh_media_playlist(session, mediaItem);
+        ret = _refresh_media_playlist(session, mediaItem);
         if (_finish_download_last(session, mediaItem) > 0) {
             if (mediaItem->media_err_code < 0) {
                 break;
@@ -2905,7 +2982,7 @@ static void _pre_estimate_bandwidth(M3ULiveSession* s)
             if (s->is_encrypt_media > 0) {
                 AESKeyInfo_t keyinfo;
                 int indexInPlaylist = node->index;
-                ret = _get_decrypt_key(s, indexInPlaylist, &keyinfo);
+                ret = _get_decrypt_key(s, NULL, indexInPlaylist, &keyinfo);
                 if (ret != 0) {
                     return;
                 }
@@ -3003,6 +3080,9 @@ static SessionMediaItem * _init_session_mediaItem(M3ULiveSession * ss, MediaType
     mediaItem->media_no_new_file = 0;
     mediaItem->media_codec_buffer_time_s = 0;
     mediaItem->media_sub_ready = 0;
+    mediaItem->media_encrypted = -1;
+    mediaItem->media_aes_keyurl_list_num = 0;
+    INIT_LIST_HEAD(&mediaItem->media_aes_key_list);
     pthread_mutex_init(&mediaItem->media_lock, NULL);
     pthread_cond_init(&mediaItem->media_cond, NULL);
     mediaItem->media_dump_handle = NULL;
@@ -3106,6 +3186,16 @@ static void _release_bandwidth_and_media_item(M3ULiveSession * session) {
         }
         if (mediaItem->media_cache) {
             hls_simple_cache_free(mediaItem->media_cache);
+        }
+        if (mediaItem->media_aes_keyurl_list_num > 0) {
+            AESKeyForUrl_t * pos = NULL;
+            AESKeyForUrl_t * tmp = NULL;
+            list_for_each_entry_safe(pos, tmp, &mediaItem->media_aes_key_list, key_head) {
+                list_del(&pos->key_head);
+                free(pos);
+                pos = NULL;
+                mediaItem->media_aes_keyurl_list_num--;
+            }
         }
         if (mediaItem->media_dump_handle) {
             fclose(mediaItem->media_dump_handle);

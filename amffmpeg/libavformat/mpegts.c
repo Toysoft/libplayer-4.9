@@ -733,7 +733,8 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
             }
         } 
         else {
-            if (st->codec->codec_id != CODEC_ID_NONE) {
+            if (st->codec->codec_id != CODEC_ID_NONE
+                || pes->stream_type == 0x15) {
                 /* wrong case, don't have to probe */
                 st->codec->codec_type = AVMEDIA_TYPE_DATA;
                 st->codec->codec_id   = CODEC_ID_NONE;

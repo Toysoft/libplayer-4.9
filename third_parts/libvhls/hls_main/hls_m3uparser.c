@@ -86,6 +86,8 @@ static void codecIsType(const char * codec, MediaType * type) {
 
         case 'avc1':
         case 'avc2':
+        case 'hvc1':
+        case 'hev1':
         case 'avcp':
         case 'drac':
         case 'encv':
@@ -233,8 +235,12 @@ static MediaType get_media_type_by_codec(const char * codec) {
     }
     char * ptr = codec;
     MediaType type = TYPE_NONE;
+    int len = strlen(codec);
     do {
         if (*ptr == ',') {
+            ptr++;
+        }
+        while (isspace(*ptr) && (ptr - codec) < len) {
             ptr++;
         }
         codecIsType(ptr, &type);
