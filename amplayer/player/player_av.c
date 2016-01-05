@@ -1682,7 +1682,8 @@ int time_search(play_para_t *am_p, int flags)
     if (am_p->pFormatCtx && am_p->pFormatCtx->iformat && am_p->pFormatCtx->iformat->name &&
         (((am_p->pFormatCtx->flags & AVFMT_FLAG_DRMLEVEL1) && (memcmp(am_p->pFormatCtx->iformat->name, "DRMdemux", 8) == 0)) ||
          (am_p->pFormatCtx->flags & AVFMT_FLAG_PR_TVP) ||
-         (am_p->pFormatCtx->pb && am_p->pFormatCtx->pb->isprtvp))) {
+             (am_p->pFormatCtx->pb && (am_p->pFormatCtx->pb->isprtvp & AVFMT_FLAG_PR_TVP))))
+    {
         if (am_p->vcodec) {
             codec_set_drmmode(am_p->vcodec, 1);
         }

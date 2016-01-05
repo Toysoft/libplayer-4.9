@@ -1802,11 +1802,7 @@ int player_dec_init(play_para_t *p_para)
         }
     }
     ret = set_file_type(p_para->pFormatCtx->iformat->name, &file_type, &stream_type);
-    if ((p_para->pFormatCtx && p_para->pFormatCtx->pb && p_para->pFormatCtx->pb->isprtvp)) {
-        p_para->pFormatCtx->flags |= AVFMT_FLAG_PR_TVP;
-        log_print("PlayReady ts  TVP, need use hardware demux\n");
-    }
-    if ((memcmp(p_para->pFormatCtx->iformat->name, "mpegts", 6) == 0) && ((p_para->pFormatCtx->flags & AVFMT_FLAG_PR_TVP) == 0)) {
+    if (memcmp(p_para->pFormatCtx->iformat->name, "mpegts", 6) == 0) {
         if (p_para->start_param->is_ts_soft_demux || is_hevc == 1 || is_truehd == 1) {
             log_print("Player config used soft demux,used soft demux now.\n");
             file_type = STREAM_FILE;
@@ -1929,7 +1925,6 @@ int player_dec_init(play_para_t *p_para)
             }
         }
     }
-
     if (p_para->state.full_time <= 0) {
         if (p_para->stream_type == STREAM_PS || p_para->stream_type == STREAM_TS) {
             check_ctx_bitrate(p_para);
@@ -1980,10 +1975,6 @@ int player_dec_init(play_para_t *p_para)
             }
         } else {
             p_para->max_raw_size = MAX_BURST_WRITE;
-        }
-        if (p_para->pFormatCtx && p_para->pFormatCtx->pb &&
-            p_para->pFormatCtx->pb->isprtvp) {
-            p_para->max_raw_size = PR_BURST_READ_SIZE;
         }
         log_print("====bitrate=%d max_raw_size=%d\n", p_para->pFormatCtx->bit_rate, p_para->max_raw_size);
     }
@@ -2144,7 +2135,7 @@ int player_decoder_init(play_para_t *p_para)
     if (p_para->pFormatCtx && p_para->pFormatCtx->iformat && p_para->pFormatCtx->iformat->name &&
         (((p_para->pFormatCtx->flags & AVFMT_FLAG_DRMLEVEL1) && (memcmp(p_para->pFormatCtx->iformat->name, "DRMdemux", 8) == 0)) ||
          (p_para->pFormatCtx->flags & AVFMT_FLAG_PR_TVP) ||
-         (p_para->pFormatCtx->pb && p_para->pFormatCtx->pb->isprtvp))) {
+            (p_para->pFormatCtx->pb && (p_para->pFormatCtx->pb->isprtvp & AVFMT_FLAG_PR_TVP)))) {
         log_print("DRMdemux :: LOCAL_OEMCRYPTO_LEVEL -> L1 or PlayReady TVP\n");
         if (p_para->vcodec) {
             log_print("DRMdemux setdrmmodev vcodec\n");

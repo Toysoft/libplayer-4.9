@@ -798,26 +798,39 @@ int ffmpeg_notify(URLContext *h, int msg, unsigned long ext1, unsigned long ext2
 }
 
 #endif
+#include <dlfcn.h>
+
+typedef int PRcheckFunc(char* url);
+static PRcheckFunc* PRcheck = NULL;
+#define PR_HLS_PATH  "/system/lib/amplayer/libprhls_mod.so"
+
+static PRcheckFunc* pr_check()
+{
+    void * mLibHandle = dlopen(PR_HLS_PATH, RTLD_NOW);
+
+    if (mLibHandle == NULL) {
+        av_log(NULL, AV_LOG_ERROR, "Unable to locate "PR_HLS_PATH"\n");
+        return NULL;
+    }
+    av_log(NULL, AV_LOG_ERROR, "pr_check\n");
+
+    return (PRcheckFunc*)dlsym(mLibHandle, "prcrypto_setkey");
+}
 
 #define EXT_X_PLAYREADYHEADER       "#EXT-X-PLAYREADYHEADER"  //PlayReady DRM  tag
+
 static int cryptopr_probe(ByteIOContext *s, const char *file)
 {
-    char line[1024 + 1];
-    int ret;
-    int linecnt = 0;
-    if (!s)
-        return 0;
-    do
-    {
-        ret = ff_get_assic_line(s, line, 1024);
-        if (!strncmp(line, EXT_X_PLAYREADYHEADER, strlen(EXT_X_PLAYREADYHEADER)))
-        {
-            av_log(NULL, AV_LOG_INFO, "[cryptopr_probe] HLS PlayReady Tag Found.\n");
-            return 100;
-        }
+    int ret=-1;
+    PRcheck = pr_check();
+    if (PRcheck) {
+        ret = PRcheck(file);
     }
-    while (ret > 0 && linecnt++ < 50);
-    return 0;
+    if (ret >= 0) {
+        av_log(NULL, AV_LOG_INFO, "[cryptopr_probe] HLS PlayReady Tag Found.\n");
+        return 100;
+    }else
+        return 0;
 }
 
 typedef struct auto_switch_protol
@@ -3836,6 +3849,15 @@ int av_find_stream_info(AVFormatContext *ic)
         if (bit_rate > 0)
             ic->bit_rate = bit_rate;
         av_log(NULL, AV_LOG_INFO, "[av_find_stream_info]DRMdemux&Demux_no_prot, do not check stream info ,return directly\n");
+        return 0;
+    }
+    if (ic->pb->isprtvp == AVFMT_FLAG_PR_TVP) {
+        av_log(NULL, AV_LOG_ERROR, "PR HLS  TVP av_find_stream_info return\n");
+        for (i = 0; i < ic->nb_streams; i++)
+        {
+            st = ic->streams[i];
+            st->need_parsing = 0;
+        }
         return 0;
     }
     av_log(NULL, AV_LOG_INFO, "[%s:%d]fast_switch=%d, seekkeyframe=%x,\n", __FUNCTION__, __LINE__, fast_switch, (am_getconfig_bool("media.amplayer.seekkeyframe")));

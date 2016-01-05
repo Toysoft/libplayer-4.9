@@ -1160,10 +1160,12 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
 	|| (h->priv_flags&FLAGS_ISCMF))) {
 		(*s)->iscmf=1;
 	}	
-	if (h->prot && h->prot->name &&(!strcmp(h->prot->name, "cryptopr")) &&
-		!h->is_slowmedia){
-		(*s)->isprtvp = 1;
-		av_log(NULL, AV_LOG_INFO, "prsec\n");
+	if ( h->prot && h->prot->name &&(!strcmp(h->prot->name, "cryptopr")) ) {
+	    if ( h->priv_flags == AVFMT_FLAG_PR_TVP ) {
+	        (*s)->isprtvp = AVFMT_FLAG_PR_TVP;
+	    } else
+	        (*s)->isprtvp = AVFMT_FLAG_PR_HLS;
+	  av_log(NULL, AV_LOG_INFO, "pr isprtvp 0x%x h->priv_flags0x%x\n",(*s)->isprtvp,h->priv_flags);
 	}
     if(h&&(h->priv_flags&FLAGS_LOCALMEDIA)){
           (*s)->local_playback=1;
@@ -1176,6 +1178,7 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
         (*s)->read_seek  = (int64_t (*)(void *, int, int64_t, int))h->prot->url_read_seek;
 	  if(NULL==(*s)->exseek ){	
 	 	(*s)->exseek  = (int64_t (*)(void *, int, int64_t, int))h->prot->url_exseek;
+
 	  }
     }
     return 0;

@@ -843,6 +843,7 @@ typedef struct AVFormatContext {
 #define AVFMT_FLAG_SS_NOPR  0x800000 ///< Smoothstreaming only ;
 #define AVFMT_FLAG_SS_PR    0x1000000 ///< Smoothstreaing + Playready;
 #define AVFMT_FLAG_PR_WMV   0x2000000 ///< PlayReady WMV;
+#define AVFMT_FLAG_PR_HLS   0x4000000 ///< PlayReady HLS;
 #define AVFMT_FLAG_RTSP_PROTOCOL 0x800000 ///< only use for rtsp protocol
 #define AVFMT_FLAG_NETWORK_VOD 0x400000 ///< network vod stream
 
