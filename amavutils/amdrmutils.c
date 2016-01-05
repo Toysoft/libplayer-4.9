@@ -80,11 +80,16 @@ int set_vfmmap_ppmgr_di(int enable)
 
 int tvp_mm_enable(int flags)
 {
+    //flags: bit 1---4k ;
+    int is_4k= flags &TVP_MM_ENABLE_FLAGS_FOR_4K;
     free_keep_buffer();
     //set_vfmmap_ppmgr_di(0);
-    set_tvp_enable(flags);
-    /*unused flags*/
+    if (is_4k)
+        set_tvp_enable(2);
+    else
+        set_tvp_enable(1);
     return 0;
+
 }
 
 int tvp_mm_disable(int flags)
