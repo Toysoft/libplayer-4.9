@@ -61,6 +61,7 @@
 
 //#define TS_DEBUG
 //#define PES_DUMP
+#define HDCP_LOCAL_PLAY_DEBUG
 #ifdef TS_DEBUG
 #define ts_print(level,fmt...) av_log(NULL,level,##fmt)
 #else
@@ -178,6 +179,17 @@ struct MpegTSContext {
 };
 
 typedef int HDCPDecryptFunc(const void *inData, size_t size, uint32_t streamCTR, uint64_t inputCTR, void *outData);
+
+#ifdef HDCP_LOCAL_PLAY_DEBUG
+typedef void* HDCPCreateModuleFunc(void *, void*);
+typedef int HDCPModuleUseKeyFunc(void *module, uint8_t* key, uint32_t keylen);
+typedef int HDCPDestroyModuleFunc(void*);
+static HDCPCreateModuleFunc* HDCP_create_module = NULL;
+static HDCPModuleUseKeyFunc* HDCP_module_useKey = NULL;
+static HDCPDestroyModuleFunc* HDCP_destroy_module = NULL;
+static void* HDCP_module = NULL;
+static int hdcp_local_play = 0;
+#endif
 
 static const AVOption options[] = {
     {"compute_pcr", "Compute exact PCR for each transport stream packet.", offsetof(MpegTSContext, mpeg2ts_compute_pcr), FF_OPT_TYPE_INT,
@@ -656,7 +668,41 @@ static HDCPDecryptFunc* get_HDCP_decrypt()
         return NULL;
     }
     av_log(NULL, AV_LOG_ERROR, "get_HDCP_decrypt\n");
-
+#ifdef HDCP_LOCAL_PLAY_DEBUG
+    if (hdcp_local_play) {
+        HDCP_create_module = (HDCPDecryptFunc*)dlsym(mLibHandle, "createHDCPModule");
+        if (HDCP_create_module == NULL) {
+            av_log(NULL, AV_LOG_ERROR, "Unable to locate createHDCPModule\n");
+            return NULL;
+        }
+        HDCP_module_useKey = (HDCPDecryptFunc*)dlsym(mLibHandle, "HDCPModuleUseKey");
+        if (HDCP_module_useKey == NULL) {
+            av_log(NULL, AV_LOG_ERROR, "Unable to locate HDCPModuleUseKey\n");
+            return NULL;
+        }
+        HDCP_destroy_module = (HDCPDecryptFunc*)dlsym(mLibHandle, "destroyHDCPModule");
+        if (HDCP_destroy_module != NULL) {
+            uint8_t key[32];
+            int key_size = 0;
+            FILE* key_fd = fopen("/data/hdcp/hdcpkey", "r+");
+            if (key_fd == NULL) {
+                av_log(NULL, AV_LOG_ERROR, "get HDCP_decrypt failed.");
+            }
+            if (key_fd != NULL) {
+                key_size = fread(key, 1, 32, key_fd);
+                av_log(NULL, AV_LOG_ERROR, "read key size size:%d", key_size);
+                fclose(key_fd);
+            }
+            HDCP_module = HDCP_create_module(NULL, NULL);
+            if (HDCP_module == NULL)
+                av_log(NULL, AV_LOG_ERROR, "HDCP_create_module failed");
+            HDCP_module_useKey(HDCP_module, key, key_size);
+        } else {
+            av_log(NULL, AV_LOG_ERROR, "Unable to locate destroyHDCPModule\n");
+            return NULL;
+        }
+    }
+#endif
     return (HDCPDecryptFunc*)dlsym(mLibHandle, "_ZN7android17HDCPModuleAmlogic7decryptEPKvjjyPv");
 }
 
@@ -674,7 +720,6 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
     av_log(pes->stream, AV_LOG_INFO,
            "stream=%d stream_type=%x pid=%x prog_reg_desc=%.4s\n",
            st->index, pes->stream_type, pes->pid, (char*)&prog_reg_desc);
-
     st->codec->codec_tag = pes->stream_type;
 
     mpegts_find_stream_type(st, pes->stream_type, ISO_types);
@@ -745,15 +790,7 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
     }
     if (st->codec->codec_id == CODEC_ID_NONE)
         mpegts_find_stream_type(st, pes->stream_type, MISC_types);
-    if(prog_reg_desc == AV_RL32("HDCP")) {
-        if(HDCP_decrypt == NULL) {
-            HDCP_decrypt = get_HDCP_decrypt();
-            if(HDCP_decrypt == NULL) {
-                av_log(NULL, AV_LOG_ERROR, "get HDCP_decrypt failed.");
-            }
-        }
-        pes->has_hdcp_desc = 1;
-    }
+
     return 0;
 }
 
@@ -778,7 +815,7 @@ static void new_pes_packet(PESContext *pes, AVPacket *pkt)
         static FILE* fd1 = NULL;
         
         if(fd1 == NULL) {
-            fd1 = fopen("/temp/data1.dat", "w+");
+            fd1 = fopen("/data/tmp/data1.dat", "w+");
         }
         if(fd1 == NULL) {
             av_log(NULL, AV_LOG_ERROR, "open file1 failed.");
@@ -789,7 +826,6 @@ static void new_pes_packet(PESContext *pes, AVPacket *pkt)
     }
 #endif
     if(pes->has_hdcp_desc == 1 &&  pes->has_private_data == 1) {
-
         int skip = 0;
         if (pes->buffer[0] == 0x00 && pes->buffer[1] == 0x00 &&
                     pes->buffer[2] == 0x00 && pes->buffer[3] == 0x01) {
@@ -806,24 +842,26 @@ static void new_pes_packet(PESContext *pes, AVPacket *pkt)
                     }
                  }
             }
+
         }
 
-		if(HDCP_decrypt != NULL) {
-			int err = HDCP_decrypt(
-					pes->buffer + skip, pes->data_index - skip,
-					pes->track_index ,
-					pes->input_CTR,
-					pes->buffer + skip);
-			if (err) {
-				av_log(NULL, AV_LOG_ERROR, "HDCP_decrypt:%d, pes->track_index:%d,pes->input_CTR:%llx:skip:%d\n", pes->data_index, pes->track_index, pes->input_CTR, skip);
-				av_log(NULL, AV_LOG_ERROR, "HDCP_decrypt,ret:%d\n", err);
-			}
-		}
+	if (HDCP_decrypt != NULL) {
+            int err = HDCP_decrypt(
+                           pes->buffer + skip, pes->data_index - skip,
+                           pes->track_index ,
+                           pes->input_CTR,
+                           pes->buffer + skip);
+            if (err) {
+                av_log(NULL, AV_LOG_ERROR, "HDCP_decrypt:%d, pes->track_index:%d,pes->input_CTR:%llx:skip:%d\n", pes->data_index, pes->track_index, pes->input_CTR, skip);
+                av_log(NULL, AV_LOG_ERROR, "HDCP_decrypt,ret:%d\n", err);
+            }
+        }
+
 #ifdef PES_DUMP
         {
             static FILE* fd2 = NULL;
             if(fd2 == NULL) {
-                fd2  = fopen("/temp/data2.dat", "w+");
+                fd2  = fopen("/data/tmp/data2.dat", "w+");
             }
             if(fd2 == NULL) {
                 av_log(NULL, AV_LOG_ERROR, "open file2 failed.");
@@ -998,7 +1036,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
                 pes->extended_stream_id = -1;
                 if (flags & 0x01) { /* PES extension */
                     pes_ext = *r++;
-                    if(pes_ext & 0x8) {
+                    if (pes_ext & 0x80) {
                         //uint8_t private_data[16];
                         //memcpy(private_data, r, 16);
                      
@@ -1363,6 +1401,24 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 
         if (!pes->stream_type)
             mpegts_set_stream_info(st, pes, stream_type, prog_reg_desc);
+
+        if (prog_reg_desc == AV_RL32("HDCP")) {
+            av_log(NULL, AV_LOG_ERROR, "prog_reg_desc HDCP,HDCP_decrypt:%p", HDCP_decrypt);
+
+            if (HDCP_decrypt == NULL) {
+#ifdef HDCP_LOCAL_PLAY_DEBUG
+                if (pes->stream->pb->local_playback == 1)
+                    hdcp_local_play = 1;
+#endif
+                HDCP_decrypt = get_HDCP_decrypt();
+                if (HDCP_decrypt == NULL) {
+                    av_log(NULL, AV_LOG_ERROR, "get HDCP_decrypt failed.");
+                }
+            }
+            pes->has_hdcp_desc = 1;
+        } else {
+            pes->has_hdcp_desc = 0;
+        }
 
         add_pid_to_pmt(ts, h->id, pid);
 
@@ -2569,6 +2625,12 @@ static int mpegts_read_close(AVFormatContext *s)
     for(i=0;i<NB_PID_MAX;i++)
         if (ts->pids[i]) mpegts_close_filter(ts, ts->pids[i]);
     HDCP_decrypt = NULL;
+#ifdef HDCP_LOCAL_PLAY_DEBUG
+    if (hdcp_local_play) {
+        HDCP_destroy_module(HDCP_module);
+        hdcp_local_play = 0;
+    }
+#endif
     return 0;
 }
 
