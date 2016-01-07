@@ -1476,6 +1476,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if (codec_id_cond && pc && pc->pict_type == AV_PICTURE_TYPE_B)
         //FIXME Set low_delay = 0 when has_b_frames = 1
         st->codec->has_b_frames = 1;
+    if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO && st->codec->has_b_frames && pkt->pts == AV_NOPTS_VALUE && pkt->dts == AV_NOPTS_VALUE)
+        codec_id_cond = 0;
     /* do we have a video B-frame ? */
     delay = st->codec->has_b_frames;
     presentation_delayed = 0;

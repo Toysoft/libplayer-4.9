@@ -1845,8 +1845,14 @@ int player_dec_init(play_para_t *p_para)
             }
         }
     }
-
-
+    else if ((memcmp(p_para->pFormatCtx->iformat->name, "mpeg", 4) == 0) && ((p_para->pFormatCtx->flags & AVFMT_FLAG_PR_TVP) == 0)) {
+        if (am_getconfig_bool("libplayer.ps.softdemux")) {
+            log_print("configned all ps streaming used soft demux,used soft demux now.\n");
+            file_type = STREAM_FILE;
+            stream_type = STREAM_ES;
+            ret = PLAYER_SUCCESS;
+        }
+    }
     if (ret != PLAYER_SUCCESS) {
         set_player_state(p_para, PLAYER_ERROR);
         p_para->state.status = PLAYER_ERROR;
