@@ -2121,15 +2121,15 @@ RETRY:
             || (len == HLS_STREAM_EOF)
             || (retry_count >= RETRY_MAX))) {
             if (len != AVERROR(EAGAIN)) {
-                av_log(s, AV_LOG_ERROR, "avio read error, retry_cout = %d!, len = %x\n", retry_count, len);
+                av_log(s, AV_LOG_ERROR, "avio read error, retry_cout = %d!, len = %d", retry_count, len);
             }
             return len < 0 ? len : AVERROR_EOF;
         } else if (len == AVERROR(ENOSR)) {
-            av_log(s, AV_LOG_ERROR, "avio read %d, return ENOSR\n", len);
+            av_log(s, AV_LOG_ERROR, "avio read %d, return ENOSR", len);
             return AVERROR(ENOSR);
         }
         else if (len < 0){
-            av_log(s, AV_LOG_ERROR, "avio read error, len = %x, retry_cout = %d \n", len, retry_count);
+            av_log(s, AV_LOG_ERROR, "avio read error, len = %d, retry_cout = %d", len, retry_count);
             len = 0;
         }
         total += len;
@@ -2139,7 +2139,7 @@ RETRY:
             pkt_size = TS_PACKET_SIZE - total;
             buf_read += len;
             if (retry_count % 100 == 1) {
-                av_log(s, AV_LOG_ERROR, "avio reading , retry_cout = %d, read total size = %d, pkt_size = %d, len = %x !\n", retry_count, total, pkt_size, len);
+                av_log(s, AV_LOG_ERROR, "avio reading , retry_cout = %d, read total size = %d, pkt_size = %d, len = %d !", retry_count, total, pkt_size, len);
             }
             goto RETRY;
         }

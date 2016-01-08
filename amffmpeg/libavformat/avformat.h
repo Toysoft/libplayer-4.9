@@ -469,7 +469,7 @@ typedef struct AVInputFormat {
      * set some parameters to format, like codec buffer info.
      * hls demuxer
      */
-    int (*set_parameter)(struct AVFormatContext *, int para, int type, int value);
+    int (*set_parameter)(struct AVFormatContext *, int para, int type, int64_t value);
 
     /**
      * get some parameters like stream info, selected track index.
@@ -1440,7 +1440,7 @@ int av_read_pause(AVFormatContext *s);
 /**
  * Set some parameters to format (hls demuxer).
  */
-int av_set_private_parameter(AVFormatContext * s, int para, int type, int value);
+int av_set_private_parameter(AVFormatContext * s, int para, int type, int64_t value);
 
 /**
  * Free a AVFormatContext allocated by av_open_input_stream.
