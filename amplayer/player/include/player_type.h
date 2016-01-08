@@ -80,8 +80,8 @@ typedef struct drm_info {
     uint32_t drm_priv;
     uint32_t drm_pktsize;
     uint32_t drm_pktpts;
-    uint64_t drm_phy;
-    uint64_t drm_vir;
+    uint32_t drm_phy;
+    uint32_t drm_vir;
     uint32_t drm_remap;
     uint32_t data_offset;
     uint32_t extpad[8];
