@@ -162,8 +162,6 @@ exit_decode_loop:
             }
         } else if ((audec->StageFrightCodecEnableType == OMX_ENABLE_CODEC_AC3)   ||
                    (audec->StageFrightCodecEnableType == OMX_ENABLE_CODEC_EAC3)) {
-#ifndef DOLBY_DS1_UDC
-#ifdef USE_ARM_AUDIO_DEC
             if (outlen > 8) {
                 memcpy(&outlen, outbuf, 4);
                 outbuf += 4;
@@ -173,8 +171,6 @@ exit_decode_loop:
             } else {
                 outlen = 0;
             }
-#endif
-#endif
         }
         if (outlen > 0) {
             memset(&g_AudioInfo, 0, sizeof(AudioInfo));
