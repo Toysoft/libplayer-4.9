@@ -1291,8 +1291,8 @@ static int  update_buffering_states(play_para_t *p_para,
         alevel = (float)abuf->data_len / abuf->size;
         ffmepg_seturl_codec_buf_info(p_para, 2, abuf->size);
         ffmepg_seturl_codec_buf_info(p_para, 4, abuf->data_len);
-        ffmpeg_set_format_codec_buffer_info(p_para, 2, abuf->size);
-        ffmpeg_set_format_codec_buffer_info(p_para, 4, abuf->data_len);
+        ffmpeg_set_format_codec_buffer_info(p_para, 2, (int64_t)(abuf->size));
+        ffmpeg_set_format_codec_buffer_info(p_para, 4, (int64_t)(abuf->data_len));
         alevel = alevel > 1 ? 1 : alevel; //maybe big than 1,when the limit buf < bufsize.
     } else {
         alevel = 0;
@@ -1302,8 +1302,8 @@ static int  update_buffering_states(play_para_t *p_para,
         vlevel = vlevel > 1 ? 1 : vlevel;
         ffmepg_seturl_codec_buf_info(p_para, 1, vbuf->size);
         ffmepg_seturl_codec_buf_info(p_para, 3, vbuf->data_len);
-        ffmpeg_set_format_codec_buffer_info(p_para, 1, vbuf->size);
-        ffmpeg_set_format_codec_buffer_info(p_para, 3, vbuf->data_len);
+        ffmpeg_set_format_codec_buffer_info(p_para, 1, (int64_t)(vbuf->size));
+        ffmpeg_set_format_codec_buffer_info(p_para, 3, (int64_t)(vbuf->data_len));
     } else {
         vlevel = 0;
     }

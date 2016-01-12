@@ -2226,7 +2226,68 @@ int player_select_streaming_track(int pid, int index, int select)
         return -1;    /*this data is 0 for default!*/
     }
     if (player_para->pFormatCtx && player_para->pFormatCtx->iformat && player_para->pFormatCtx->iformat->select_stream) {
+        int type = 0;
+        if (player_para->pFormatCtx->iformat->get_parameter) {
+            player_para->pFormatCtx->iformat->get_parameter(player_para->pFormatCtx, 4, index, (void *)&type, NULL);
+        }
+        codec_para_t * audio_codec;
+        if (type == 1) { // reset audio
+            log_print("[%s:%d] start reset audio!", __FUNCTION__, __LINE__);
+            unsigned int pts_audio = get_pts_audio(player_para);
+            ffmpeg_set_format_codec_buffer_info(player_para, 5, (int64_t)(((float)(pts_audio) / PTS_FREQ) * 1000)); //ms
+            audio_codec = get_audio_codec(player_para);
+            audio_codec->automute_flag = 1;
+            codec_audio_automute(audio_codec->adec_priv, 1);
+            codec_close_audio(audio_codec);
+            // assume audio track encoded same,
+            // do not change audio parameters here,
+            // maybe need to modify.
+            if (!player_para->playctrl_info.raw_mode
+                && player_para->astream_info.audio_format == AFORMAT_AAC) {
+                ret = extract_adts_header_info(player_para);
+                if (ret != PLAYER_SUCCESS) {
+                    log_print("[%s:%d] extract adts header failed! ret=0x%x", __FUNCTION__, __LINE__, -ret);
+                    player_close_pid_data(pid);
+                    return -1;
+                }
+            }
+            if (player_para->playctrl_info.read_end_flag) {
+                player_para->playctrl_info.end_flag = 1;
+                player_para->playctrl_info.streaming_track_switch_flag = 1;
+            }
+            audio_codec->audio_pid = 0xffff;
+            if (codec_set_audio_pid(audio_codec)) {
+                log_print("[%s:%d] set invalid audio pid failed!", __FUNCTION__, __LINE__);
+                player_close_pid_data(pid);
+                return -1;
+            }
+            audio_codec->has_audio = 1;
+            audio_codec->audio_type = player_para->astream_info.audio_format;
+            if (audio_codec->audio_type == AFORMAT_MPEG1 || audio_codec->audio_type == AFORMAT_MPEG2) {
+                audio_codec->audio_type = AFORMAT_MPEG;
+            }
+            audio_codec->audio_pid = player_para->astream_info.audio_pid;
+            audio_codec->audio_channels = player_para->astream_info.audio_channel;
+            audio_codec->audio_samplerate = player_para->astream_info.audio_samplerate;
+            audio_codec->switch_audio_flag = 1;
+            audio_codec->audio_info.valid = 0;
+            if (codec_audio_reinit(audio_codec)) {
+                log_print("[%s:%d] audio reinit failed!", __FUNCTION__, __LINE__);
+                player_close_pid_data(pid);
+                return -1;
+            }
+            if (codec_reset_audio(audio_codec)) {
+                log_print("[%s:%d] reset audio failed!", __FUNCTION__, __LINE__);
+                player_close_pid_data(pid);
+                return -1;
+            }
+        }
         ret = player_para->pFormatCtx->iformat->select_stream(player_para->pFormatCtx, index, select);
+        if (type == 1) { // resume audio
+            codec_resume_audio(audio_codec, player_para->astream_info.resume_audio);
+            audio_codec->automute_flag = 0;
+            log_print("[%s:%d] audio reset end!", __FUNCTION__, __LINE__);
+        }
     }
     player_close_pid_data(pid);
     return ret;

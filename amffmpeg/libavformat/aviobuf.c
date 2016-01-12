@@ -858,7 +858,7 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
                     fill_buffer(s);
                     len = s->buf_end - s->buf_ptr;
                 } while ((len == 0) &&
-                        (retry_num-- > 0 || (s->mhls_inner_format > 0 && (av_gettime() - read_startUs) / 1000000 < s->mhls_read_retry_s)) &&
+                        (retry_num-- > 0 || (s->mhls_inner_format > 0 && s->error != HLS_STREAM_EOF && (av_gettime() - read_startUs) / 1000000 < s->mhls_read_retry_s)) &&
                         !url_interrupt_cb());
 
                 if (len == 0) {

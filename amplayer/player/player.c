@@ -1576,23 +1576,34 @@ write_packet:
                     (!player->playctrl_info.fast_forward) &&
                     (!player->playctrl_info.fast_backward) &&
                     (!player->playctrl_info.reset_flag) &&
-                    (!player->playctrl_info.switch_ts_program_flag);
+                    (!player->playctrl_info.switch_ts_program_flag) &&
+                    (!player->playctrl_info.streaming_track_switch_flag);
 
         if (exit_flag) {
             break;
         } else {
-            if (get_player_state(player) != PLAYER_SEARCHING && player->playctrl_info.switch_ts_program_flag == 0) {
+            if (get_player_state(player) != PLAYER_SEARCHING
+                && player->playctrl_info.switch_ts_program_flag == 0
+                && player->playctrl_info.streaming_track_switch_flag == 0) {
                 set_auto_refresh_rate(0);
                 set_player_state(player, PLAYER_SEARCHING);
                 update_playing_info(player);
                 update_player_states(player, 1);
             }
 
-            ret = player_reset(player);
-            if (ret != PLAYER_SUCCESS) {
-                log_error("pid[%d]::player reset failed(-0x%x)!", player->player_id, -ret);
-                set_player_state(player, PLAYER_ERROR);
-                break;
+            if (player->playctrl_info.streaming_track_switch_flag == 1) {
+                am_packet_t * player_pkt = player->p_pkt;
+                player_para_reset(player);
+                player_pkt->avpkt_isvalid = 0;
+                player_pkt->avpkt_newflag = 0;
+                player_pkt->data_size  = 0;
+            } else {
+                ret = player_reset(player);
+                if (ret != PLAYER_SUCCESS) {
+                    log_error("pid[%d]::player reset failed(-0x%x)!", player->player_id, -ret);
+                    set_player_state(player, PLAYER_ERROR);
+                    break;
+                }
             }
             if (player->playctrl_info.end_flag) {
                 set_player_state(player, PLAYER_PLAYEND);
@@ -1628,6 +1639,7 @@ write_packet:
             player->playctrl_info.reset_flag = 0;
             player->playctrl_info.end_flag = 0;
             player->playctrl_info.switch_ts_program_flag = 0;
+            player->playctrl_info.streaming_track_switch_flag = 0;
             av_packet_release(pkt);
         }
     } while (1);

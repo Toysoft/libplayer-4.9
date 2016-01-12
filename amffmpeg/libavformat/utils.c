@@ -4383,7 +4383,7 @@ int av_read_pause(AVFormatContext *s)
     return AVERROR(ENOSYS);
 }
 
-int av_set_private_parameter(AVFormatContext * s, int para, int type, int value)
+int av_set_private_parameter(AVFormatContext * s, int para, int type, int64_t value)
 {
     if (s->iformat->set_parameter) {
         return s->iformat->set_parameter(s, para, type, value);

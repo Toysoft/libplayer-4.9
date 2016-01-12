@@ -25,13 +25,13 @@ static int hls_interrupt_call_cb(void) {
 }
 
 typedef struct _HLS_STREAM_CONTEXT {
-    int                stream_id;
-    MediaType          type;
-    int                need_drop;
     int64_t            next_pts;
     int64_t            inner_segment_start_pts;
     int64_t            segment_start_pts;
     int64_t            duration;
+    int                stream_id;
+    MediaType          type;
+    int                need_drop;
 } HLS_STREAM_CONTEXT;
 
 typedef struct _FFMPEG_HLS_STREAM_CONTEXT {
@@ -393,6 +393,7 @@ static int hls_read_header(AVFormatContext * s, AVFormatParameters * ap) {
         HLOG("[%s:%d] add stream item, index : %d, media type : %d",
             __FUNCTION__, __LINE__, session_index, hls_session->media_item_array[session_index]->media_type);
     }
+    int64_t min_start_time = -1;
     for (session_index = 0; session_index < hls_session_ctx->nb_session; session_index++) {
         if (hls_session_ctx->stream_array[session_index]->stream_type > TYPE_VIDEO
             || hls_session_ctx->stream_array[session_index]->forbid) { // skip
@@ -406,9 +407,15 @@ static int hls_read_header(AVFormatContext * s, AVFormatParameters * ap) {
             _release_hls_stream_context(s);
             return ret;
         }
+        if (hls_session_ctx->stream_array[session_index]->ctx->start_time > 0) {
+            if (min_start_time == -1 || hls_session_ctx->stream_array[session_index]->ctx->start_time < min_start_time) {
+                min_start_time = hls_session_ctx->stream_array[session_index]->ctx->start_time;
+            }
+        }
     }
-    HLOG("[%s:%d] read header success ! demuxer stream number is : %d, media item number is : %d",
-        __FUNCTION__, __LINE__, hls_session_ctx->nb_session, hls_session->media_item_num);
+    s->start_time = min_start_time;
+    HLOG("[%s:%d] read header success ! demuxer stream number is : %d, media item number is : %d, start time(%lld us)",
+        __FUNCTION__, __LINE__, hls_session_ctx->nb_session, hls_session->media_item_num, s->start_time);
     return 0;
 }
 
@@ -516,6 +523,10 @@ RETRY_READ:
         pkt->pts += stream_ctx->segment_start_pts;
         pkt->dts += stream_ctx->segment_start_pts;
 #endif
+        if (s->start_time > 0) {
+            pkt->pts -= s->start_time;
+            pkt->dts -= s->start_time;
+        }
         if (pkt->duration > 0) {
             stream_ctx->next_pts = pkt->pts + pkt->duration;
         } else {
@@ -535,13 +546,9 @@ RETRY_READ:
         }
     }
 
-    // remember this pts for switch track.
-    if (hls_session_ctx->stream_array[cur_index]->stream_type == TYPE_AUDIO) {
-        // TODO: this audio anchor time must be fixed, because pts maybe reset sometime.
-        hls_session_ctx->last_audio_read_timeUs = pkt->pts;
+    if (pkt->pts >= 0) {
+        hls_session_ctx->sub_read_reference_timeUs = _get_clock_monotonic_us() - pkt->pts;
     }
-
-    hls_session_ctx->sub_read_reference_timeUs = _get_clock_monotonic_us() - pkt->pts;
 
     if (hls_session_ctx->vhandle && stream_ctx->type == TYPE_VIDEO) {
         fwrite(pkt->data, 1, pkt->size, hls_session_ctx->vhandle);
@@ -648,7 +655,7 @@ static int hls_read_close(AVFormatContext * s) {
     return 0;
 }
 
-static int hls_set_parameter(AVFormatContext * s, int para, int type, int value) {
+static int hls_set_parameter(AVFormatContext * s, int para, int type, int64_t value) {
     FFMPEG_HLS_SESSION_CONTEXT * hls_session_ctx = (FFMPEG_HLS_SESSION_CONTEXT *)(s->priv_data);
 
     int codec_vbuf_data_len = 0;
@@ -656,48 +663,52 @@ static int hls_set_parameter(AVFormatContext * s, int para, int type, int value)
     int index = 0;
     MediaType type_to_set = TYPE_NONE;
     if (AVCMD_SET_CODEC_BUFFER_INFO == para) {
-        if (type == 1) { // video buffer size
-            hls_session_ctx->codec_vbuf_size = value;
-            return 0;
-        } else if (type == 2) { // audio buffer size
-            hls_session_ctx->codec_abuf_size = value;
-            return 0;
-        } else if (type == 3) { // video buffer data length
-            codec_vbuf_data_len = value;
-            type_to_set = TYPE_VIDEO;
-        } else if (type == 4) { // audio buffer data length
-            codec_abuf_data_len = value;
-            type_to_set = TYPE_AUDIO;
-        }
-        int bw = 0, buffer_time_s = 0;
-        for (; index < hls_session_ctx->nb_session; index++) {
-            if (hls_session_ctx->stream_array[index]->stream_type == type_to_set) {
-                break;
+        if (type == 5) { // audio pts, ms->us
+            hls_session_ctx->last_audio_read_timeUs = value * 1000;
+        } else {
+            if (type == 1) { // video buffer size
+                hls_session_ctx->codec_vbuf_size = (int)value;
+                return 0;
+            } else if (type == 2) { // audio buffer size
+                hls_session_ctx->codec_abuf_size = (int)value;
+                return 0;
+            } else if (type == 3) { // video buffer data length
+                codec_vbuf_data_len = (int)value;
+                type_to_set = TYPE_VIDEO;
+            } else if (type == 4) { // audio buffer data length
+                codec_abuf_data_len = (int)value;
+                type_to_set = TYPE_AUDIO;
             }
-        }
-        if (index == hls_session_ctx->nb_session) {
-            HLOG("[%s:%d] not found valid stream, type(%d) !", __FUNCTION__, __LINE__, type);
-            return -1;
-        }
-        m3u_session_media_get_current_bandwidth((void *)hls_session_ctx->session_ctx, index, &bw);
-        if (type == 4) {
-            if (((float)codec_abuf_data_len / hls_session_ctx->codec_abuf_size) > 0.9) { // high buffer level, assume it be full.
-                buffer_time_s = MEDIA_CACHED_BUFFER_THREASHOLD + 1; // hack
-            } else {
-                if (bw > 0) {
-                    buffer_time_s = codec_abuf_data_len * 8 / bw;
+            int bw = 0, buffer_time_s = 0;
+            for (; index < hls_session_ctx->nb_session; index++) {
+                if (hls_session_ctx->stream_array[index]->stream_type == type_to_set) {
+                    break;
                 }
             }
-        } else if (type == 3) {
-            if (((float)codec_vbuf_data_len / hls_session_ctx->codec_vbuf_size) > 0.9) { // high buffer level, assume it be full.
-                buffer_time_s = MEDIA_CACHED_BUFFER_THREASHOLD + 1; // hack
-            } else {
-                if (bw > 0) {
-                    buffer_time_s = codec_vbuf_data_len * 8 / bw;
+            if (index == hls_session_ctx->nb_session) {
+                HLOG("[%s:%d] not found valid stream, type(%d) !", __FUNCTION__, __LINE__, type);
+                return -1;
+            }
+            m3u_session_media_get_current_bandwidth((void *)hls_session_ctx->session_ctx, index, &bw);
+            if (type == 4) {
+                if (((float)codec_abuf_data_len / hls_session_ctx->codec_abuf_size) > 0.9) { // high buffer level, assume it be full.
+                    buffer_time_s = MEDIA_CACHED_BUFFER_THREASHOLD + 1; // hack
+                } else {
+                    if (bw > 0) {
+                        buffer_time_s = codec_abuf_data_len * 8 / bw;
+                    }
+                }
+            } else if (type == 3) {
+                if (((float)codec_vbuf_data_len / hls_session_ctx->codec_vbuf_size) > 0.9) { // high buffer level, assume it be full.
+                    buffer_time_s = MEDIA_CACHED_BUFFER_THREASHOLD + 1; // hack
+                } else {
+                    if (bw > 0) {
+                        buffer_time_s = codec_vbuf_data_len * 8 / bw;
+                    }
                 }
             }
+            m3u_session_media_set_codec_buffer_time((void *)hls_session_ctx->session_ctx, index, buffer_time_s);
         }
-		m3u_session_media_set_codec_buffer_time((void *)hls_session_ctx->session_ctx, index, buffer_time_s);
     } else {
         HLOG("[%s:%d] unsupported parameter(0x%x) !", __FUNCTION__, __LINE__, para);
         return -1;
@@ -741,6 +752,11 @@ static int hls_get_parameter(AVFormatContext * s, int para, int data1, void * in
             *((int *)info1) = trackCount;
             ret = 0;
             HLOG("[%s:%d] get track count success !", __FUNCTION__, __LINE__);
+        }
+    } else if (para == 4) { // get track type
+        *((int *)info1) = m3u_session_media_get_type_by_index((void *)(hls_session_ctx->session_ctx), data1);
+        if (*((int *)info1) > 0) {
+            ret = 0;
         }
     }
     return ret;

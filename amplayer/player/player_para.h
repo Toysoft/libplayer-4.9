@@ -89,6 +89,7 @@ typedef  struct {
     unsigned int sync_flag;
     unsigned int reset_flag;
     unsigned int switch_ts_program_flag;
+    unsigned int streaming_track_switch_flag; // hls, maybe more
     unsigned int no_audio_flag;
     unsigned int no_video_flag;
     unsigned int has_sub_flag;

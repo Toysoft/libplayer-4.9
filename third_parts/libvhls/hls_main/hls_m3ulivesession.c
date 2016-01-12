@@ -1776,6 +1776,10 @@ rinse_repeat: {
                 }
             }
             mediaItem->media_last_fetch_timeUs = get_clock_monotonic_us();
+            // skip sequence judgement when select/unselect.
+            if (mediaItem->media_switch_anchor_timeUs >= 0) {
+                goto SKIP;
+            }
         } else {
             pthread_mutex_unlock(&mediaItem->media_lock);
             if (mediaItem->media_no_new_file) { /*no new file,do wait.*/
@@ -1836,6 +1840,8 @@ rinse_repeat: {
                 }
             }
         }
+
+SKIP:
         mediaItem->media_retries_num = 0;
         mediaItem->media_cur_bandwidth_index = bandwidthIndex;
         if (mediaItem->media_playlist != NULL) {
@@ -2581,7 +2587,7 @@ static int _download_media_next_segment(M3ULiveSession * s, SessionMediaItem * m
     if (firstSeqNumberInPlaylist == -1) {
         firstSeqNumberInPlaylist = 0;
     }
-    if (mediaItem->media_seek_timeUs < 0 && (mediaItem->media_cur_seq_num - firstSeqNumberInPlaylist > m3u_get_node_num(mediaItem->media_playlist) - 1)) {
+    if (mediaItem->media_seek_timeUs < 0 && mediaItem->media_switch_anchor_timeUs < 0 && (mediaItem->media_cur_seq_num - firstSeqNumberInPlaylist > m3u_get_node_num(mediaItem->media_playlist) - 1)) {
         LOGE("[Type : %d] Can't find valid segment in playlist, seq : %d", mediaItem->media_type, mediaItem->media_cur_seq_num);
         mediaItem->media_no_new_file = 1;
         pthread_mutex_unlock(&mediaItem->media_lock);
@@ -2705,7 +2711,10 @@ static int _finish_download_last(M3ULiveSession* s, SessionMediaItem * mediaItem
         playlist = s->playlist;
         cur_seq_num_tmp = s->cur_seq_num;
     }
-    if (playlist == NULL || m3u_is_complete(playlist) < 1 || s->is_livemode == 1) {
+    if (playlist == NULL
+        || m3u_is_complete(playlist) < 1
+        || s->is_livemode == 1
+        || (mediaItem && mediaItem->media_switch_anchor_timeUs >= 0)) {
         return 0;
     }
     int firstSeqInPlaylist = m3u_get_node_by_index(playlist, 0)->media_sequence;
