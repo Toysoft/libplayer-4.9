@@ -15,6 +15,8 @@
 #define TVP_REGION_PATH     "/sys/class/codec_mm/tvp_region"
 #define FREE_KEEP_BUFFER_PATH   "/sys/class/video/free_keep_buffer"
 #define VFM_DEF_MAP_PATH    "/sys/class/vfm/map"
+#define DI_TVP_REGION_PATH  "/sys/class/deinterlace/di0/tvp_region"
+#define DISABLE_VIDEO_PATH  "/sys/class/video/disable_video"
 
 #ifndef LOGD
 #define LOGV ALOGV
@@ -78,6 +80,21 @@ int set_vfmmap_ppmgr_di(int enable)
     return -1;
 }
 
+int set_disable_video(int mode)
+{
+    int fd;
+    char  bcmd[16];
+    fd = open(DISABLE_VIDEO_PATH, O_CREAT | O_RDWR | O_TRUNC, 0644);
+    if (fd >= 0) {
+        sprintf(bcmd, "%d", mode);
+        write(fd, bcmd, strlen(bcmd));
+        close(fd);
+        return 0;
+    }
+
+    return -1;
+}
+
 int tvp_mm_enable(int flags)
 {
     //flags: bit 1---4k ;
@@ -94,6 +111,7 @@ int tvp_mm_enable(int flags)
 
 int tvp_mm_disable(int flags)
 {
+    set_disable_video(0);
     free_keep_buffer();
     //set_vfmmap_ppmgr_di(1);
     set_tvp_enable(0);
@@ -110,6 +128,20 @@ int tvp_mm_get_mem_region(struct tvp_region* region, int region_size)
 
     //rnum = min(region_size/sizeof(struct tvp_region), MAX_REGION);
     rnum = region_size/sizeof(struct tvp_region);
+
+    fd = open(DI_TVP_REGION_PATH, O_RDONLY, 0644);
+    if (fd >=0 && rnum >= 1) {
+        len = read(fd, buf, BUF_LEN);
+        close(fd);
+        if (3 == sscanf(buf, "segment DI:%llx - %llx (size:0x%x)",
+                &start, &end, &siz)) {
+            region->start = start;
+            region->end = end;
+            region->mem_flags = 0;
+            region++;
+            ALOGE("segment DI: [%llx-%llx]\n", i, start, end);
+        }
+    }
 
     fd = open(TVP_REGION_PATH, O_RDONLY, 0644);
     if (fd >= 0) {
