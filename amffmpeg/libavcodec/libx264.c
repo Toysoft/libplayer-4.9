@@ -40,6 +40,7 @@ typedef struct X264Context {
     char *profile;
     char *level;
     int fastfirstpass;
+    int bluray_compat;
     char *stats;
     char *weightp;
     char *x264opts;
@@ -427,6 +428,7 @@ static const AVOption options[] = {
     {"passlogfile", "Filename for 2 pass stats", OFFSET(stats), FF_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
     {"wpredp", "Weighted prediction for P-frames", OFFSET(weightp), FF_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
     {"x264opts", "x264 options", OFFSET(x264opts), FF_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
+    { "bluray-compat", "Bluray compatibility workarounds.", OFFSET(bluray_compat), FF_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VE},
     { NULL },
 };
 

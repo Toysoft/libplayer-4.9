@@ -718,6 +718,11 @@ static unsigned int is_chapter_discontinue(play_para_t *p_para)
     if (!strncmp(p_para->pFormatCtx->iformat->name, "cmf", 3)) {
         return 1;
     }
+
+    if (av_bluray_supported(p_para->pFormatCtx)) {
+        return 1;
+    }
+
 #if 0
     /*
     * Lujian.Hu 2013-01-04

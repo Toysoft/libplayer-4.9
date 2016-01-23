@@ -2114,32 +2114,34 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
     st = s->streams[stream_index];
     if (st->index_entries)
     {
-        AVIndexEntry *e;
-        index = av_index_search_timestamp(st, target_ts, flags | AVSEEK_FLAG_BACKWARD); //FIXME whole func must be checked for non-keyframe entries in index case, especially read_timestamp()
-        index = FFMAX(index, 0);
-        e = &st->index_entries[index];
-        if (e->timestamp <= target_ts || e->pos == e->min_distance)
-        {
-            pos_min = e->pos;
-            ts_min = e->timestamp;
-            av_dlog(s, "using cached pos_min=0x%"PRIx64" dts_min=%"PRId64"\n",
-                    pos_min, ts_min);
-        }
-        else
-        {
-            assert(index == 0);
-        }
-        index = av_index_search_timestamp(st, target_ts, flags & ~AVSEEK_FLAG_BACKWARD);
-        assert(index < st->nb_index_entries);
-        if (index >= 0)
-        {
+        if (!av_bluray_supported(s)) {
+            AVIndexEntry *e;
+            index = av_index_search_timestamp(st, target_ts, flags | AVSEEK_FLAG_BACKWARD); //FIXME whole func must be checked for non-keyframe entries in index case, especially read_timestamp()
+            index = FFMAX(index, 0);
             e = &st->index_entries[index];
-            assert(e->timestamp >= target_ts);
-            pos_max = e->pos;
-            ts_max = e->timestamp;
-            pos_limit = pos_max - e->min_distance;
-            av_dlog(s, "using cached pos_max=0x%"PRIx64" pos_limit=0x%"PRIx64" dts_max=%"PRId64"\n",
-                    pos_max, pos_limit, ts_max);
+            if (e->timestamp <= target_ts || e->pos == e->min_distance)
+            {
+                pos_min = e->pos;
+                ts_min = e->timestamp;
+                av_dlog(s, "using cached pos_min=0x%"PRIx64" dts_min=%"PRId64"\n",
+                        pos_min, ts_min);
+            }
+            else
+            {
+                assert(index == 0);
+            }
+            index = av_index_search_timestamp(st, target_ts, flags & ~AVSEEK_FLAG_BACKWARD);
+            assert(index < st->nb_index_entries);
+            if (index >= 0)
+            {
+                e = &st->index_entries[index];
+                assert(e->timestamp >= target_ts);
+                pos_max = e->pos;
+                ts_max = e->timestamp;
+                pos_limit = pos_max - e->min_distance;
+                av_dlog(s, "using cached pos_max=0x%"PRIx64" pos_limit=0x%"PRIx64" dts_max=%"PRId64"\n",
+                        pos_max, pos_limit, ts_max);
+            }
         }
     }
     pos = av_gen_search(s, stream_index, target_ts, pos_min, pos_max, pos_limit, ts_min, ts_max, flags, &ts, avif->read_timestamp);
@@ -3316,12 +3318,22 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset
     }
 }
 
+int av_bluray_supported(AVFormatContext *ic)
+{
+    URLContext *h = (URLContext *)ic->pb->opaque;
+    if (h != NULL && h->prot != NULL && (!strcmp(h->prot->name, "bluray")))
+        return 1;
+    else
+        return 0;
+}
+
 extern  int  adts_bitrate_parse(AVFormatContext *s, int *bitrate, int64_t old_offset);
 static int av_estimate_timings(AVFormatContext *ic, int64_t old_offset)
 {
     int64_t file_size;
     int64_t cur_offset, valid_offset;
     int64_t ret;
+    int64_t bluray_duration = 0;
     int bitrate = 0;
     int i = 0;
     AVStream *st = NULL;
@@ -3400,6 +3412,11 @@ static int av_estimate_timings(AVFormatContext *ic, int64_t old_offset)
         av_estimate_timings_from_bit_rate(ic);
     }
     av_update_stream_timings(ic);
+    if (av_bluray_supported(ic)) {
+        avio_getinfo(ic->pb, AVCMD_TOTAL_DURATION, 0, &bluray_duration);
+        ic->duration = (int64_t)(bluray_duration * AV_TIME_BASE / 90000);
+        av_log(NULL, AV_LOG_INFO, "av_estimate_timings: ic->duration = %d \n", ic->duration);
+    }
 #if 0
     {
         int i;
