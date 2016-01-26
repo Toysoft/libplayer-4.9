@@ -144,7 +144,7 @@ static int dsp_pcm_read(aml_audio_dec_t*audec, char *data_in, int len)
                 break;
             }
 #else
-            adec_print("can not read out PCM : %d\n", pcm_ret);
+            //adec_print("can not read out PCM : %d\n", pcm_ret);
             break;
 #endif
         }
@@ -170,7 +170,7 @@ static int pcrmaster_dsp_pcm_read(aml_audio_dec_t*audec, char *data_in, int len)
                 break;
             }
 #else
-            adec_print("can not read out PCM : %d\n", pcm_ret);
+            //adec_print("can not read out PCM : %d\n", pcm_ret);
             break;
 #endif
         }
