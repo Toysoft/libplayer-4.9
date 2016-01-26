@@ -30,7 +30,7 @@ static void response_process(char * line, Curl_Data * buf)
         if (!buf->ctx->connected) {
             buf->ctx->connected = 1;
         }
-        if (!strncasecmp(line, "Content-Length", 14)) {
+        if (!strncasecmp(line, "Content-Length", 14) && buf->handle->chunk_size == -1) {
             while (*ptr != '\0' && *ptr != ':') {
                 ptr++;
             }

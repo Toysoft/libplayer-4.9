@@ -115,12 +115,13 @@ static int _select_hls_session(AVFormatContext * s) {
         HLOG("[%s:%d] session invalid !", __FUNCTION__, __LINE__);
         return -1;
     }
-#if 0
+#if 1
     int i, non_eof = 0;
     // TODO: this logic maybe need to modify.
     if (hls_session_ctx->prev_read_session_index < 0) { // init
         for (i = 0; i < hls_session_ctx->nb_session; i++) {
-            if (hls_session_ctx->stream_array[i]->stream_type <= TYPE_VIDEO) {
+            if (hls_session_ctx->stream_array[i]->stream_type <= TYPE_VIDEO
+                && hls_session_ctx->stream_array[i]->forbid == 0) {
                 hls_session_ctx->prev_read_session_index = i;
                 return i;
             }
@@ -128,7 +129,8 @@ static int _select_hls_session(AVFormatContext * s) {
     } else {
         for (i = 0; i < hls_session_ctx->nb_session; i++) {
             if (hls_session_ctx->stream_array[i]->stream_type > TYPE_VIDEO
-                || hls_session_ctx->stream_array[i]->eof == 1) {
+                || hls_session_ctx->stream_array[i]->eof == 1
+                || hls_session_ctx->stream_array[i]->forbid) {
                 continue;
             }
             if (hls_session_ctx->stream_array[i]->eof < 1) {
@@ -145,7 +147,7 @@ static int _select_hls_session(AVFormatContext * s) {
     } else {
         return -1;
     }
-#endif
+#else
 
     int i = 0, index = -1;
     int64_t pts0 = -1, min_pts = -1;
@@ -162,6 +164,7 @@ static int _select_hls_session(AVFormatContext * s) {
         }
     }
     return index;
+#endif
 }
 
 static int _hls_parse_next_segment(AVFormatContext * s, int session_index, int first) {
@@ -428,7 +431,7 @@ static int hls_read_packet(AVFormatContext * s, AVPacket * pkt) {
     AVFormatContext * format = NULL;
 
 RETRY_SELECT:
-    // read alternately.
+    // read alternatively.
     cur_index = _select_hls_session(s);
     if (cur_index < 0) {
         HLOG("[%s:%d] no hls session to read !", __FUNCTION__, __LINE__);
