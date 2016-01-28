@@ -3851,7 +3851,7 @@ int av_find_stream_info(AVFormatContext *ic)
         av_log(NULL, AV_LOG_INFO, "[av_find_stream_info]DRMdemux&Demux_no_prot, do not check stream info ,return directly\n");
         return 0;
     }
-    if (ic->pb->isprtvp == AVFMT_FLAG_PR_TVP) {
+    if (ic->pb && ic->pb->isprtvp == AVFMT_FLAG_PR_TVP) {
         av_log(NULL, AV_LOG_ERROR, "PR HLS  TVP av_find_stream_info return\n");
         for (i = 0; i < ic->nb_streams; i++)
         {
