@@ -182,7 +182,7 @@ static int crypto_get_info(URLContext *h, uint32_t cmd, uint32_t flag, int64_t *
     }
 
     CryptoContext *c = h->priv_data;
-    if (c != NULL) {
+    if (c && c->hd && c->hd->prot && c->hd->prot->url_getinfo) {
         return c->hd->prot->url_getinfo(c->hd, cmd, flag, info);
     }
 
