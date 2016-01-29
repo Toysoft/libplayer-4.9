@@ -451,7 +451,7 @@ void audioCallback(int event, void* user, void *info)
  
             if (apts64 && pcrscr64 &&  (abs(apts64 - pcrscr64) <= 90000*60*10)) {
                 ioctl(audec->adsp_ops.amstream_fd, AMSTREAM_IOC_AB_STATUS, (unsigned long)&am_io);
-                adec_print("ab_level=%x, ab_rd_ptr=%x", am_io.status.data_len, am_io.status.read_pointer);
+                //adec_print("ab_level=%x, ab_rd_ptr=%x", am_io.status.data_len, am_io.status.read_pointer);
 
                 if (abs(apts64 - pcrscr64) >= 90000*30 && unnormal_discontinue < 400) {  // avoid replay apts would be pause
                     unnormal_discontinue++;
@@ -484,7 +484,7 @@ void audioCallback(int event, void* user, void *info)
                        unnormal_discontinue = 0;
                        unnormal_discontinue1 = 0;
                 }
-                if ((fill_audiotrack_zero > 0) && ((apts64 - pcrscr64) > (int64_t)(100*TIME_UNIT90K/1000))) {
+                if ((fill_audiotrack_zero > 0) && ((apts64 - pcrscr64) > (int64_t)(70*TIME_UNIT90K/1000))) {
                     fill_audiotrack_zero--;
           
                     if (!fill_audiotrack_zero) {
@@ -498,7 +498,7 @@ void audioCallback(int event, void* user, void *info)
                     adec_print("## %d, %d, apts bigger than pcr, 2222 apts64:%lld, pcrscr64:%lld, diff:%lld, \n", fill_audiotrack_zero, buffering_audio_data, apts64, pcrscr64, apts64-pcrscr64);
                     return;
                 } else {
-                    if (fill_audiotrack_zero > 0 && ((apts64 - pcrscr64) <= (int64_t)(100*TIME_UNIT90K/1000))
+                    if (fill_audiotrack_zero > 0 && ((apts64 - pcrscr64) <= (int64_t)(70*TIME_UNIT90K/1000))
                         && ((apts64 - pcrscr64) > 0)) {
                         fill_audiotrack_zero = 0;
                         adec_pts_resume();
