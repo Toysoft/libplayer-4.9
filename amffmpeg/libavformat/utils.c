@@ -1005,7 +1005,7 @@ static int init_input(AVFormatContext *s, const char *orig_filename, const char 
         }
         else
         {
-            if (s->pb->is_slowmedia && av_strstart(newp->prefix, "list:", &ptr) && (!strstr(filename, "AmlogicPlayerDataSouceProtocol")) && (is_use_external_module("vhls_mod") > 0))
+            if (av_strstart(newp->prefix, "list:", &ptr) && (is_use_external_module("vhls_mod") > 0)) // support local hls.
             {
                 if (s->pb->is_mhls == 1) {
                     strcpy(listfile, "mhls:");

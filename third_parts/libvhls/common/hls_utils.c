@@ -185,7 +185,7 @@ void in_hex_dump(const char* title, const unsigned char* s, size_t size)
     size_t offset = 0;
     size_t ipos = 0;
     if (title != NULL) {
-        LOGV("***********************************%s dump start***********************************\n", title);
+        LOGI("***********************************%s dump start***********************************\n", title);
     }
     while (offset < size) {
         char line[LINE_SIZE_MAX];
@@ -210,13 +210,13 @@ void in_hex_dump(const char* title, const unsigned char* s, size_t size)
         }
 
         line[ipos] = '\0';
-        LOGV("%s\n", line);
+        LOGI("%s\n", line);
         ipos = 0;
 
         offset += 16;
     }
     if (title != NULL) {
-        LOGV("***********************************%s dump end*************************************\n", title);
+        LOGI("***********************************%s dump end*************************************\n", title);
     }
 
 }

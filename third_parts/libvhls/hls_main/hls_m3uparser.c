@@ -749,7 +749,8 @@ static void makeUrl(char *buf, int size, const char *base, const char *rel)
     char* option_start;
 
     // ugly code. for some transformed url of local m3u8
-    if (!strncasecmp("android:AmlogicPlayer", base, 21)) {
+    if (!strncasecmp("android:AmlogicPlayer", base, 21)
+        || !strncasecmp("DataSouce:AmlogicPlayerDataSouceProtocol", base, 40)) {
         strncpy(buf, rel, size);
         return;
     }

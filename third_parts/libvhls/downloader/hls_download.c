@@ -418,7 +418,7 @@ int fetchHttpSmallFile(const char* url, const char* headers, void** buf, int* le
         //return -1;
         return ret;
     }
-    if (handle) {
+    if (handle && !av_strstart(url, "DataSouce:", NULL)) {
         HLSHttpContext *hlsctx = (HLSHttpContext *)handle;
         URLContext *h = (URLContext *)(hlsctx->h);
         av_opt_get(h->priv_data, "cookies", 0, (uint8_t **)cookies);
