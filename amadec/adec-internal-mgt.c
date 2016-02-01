@@ -66,6 +66,7 @@ audio_type_t audio_type[] = {
 
     {ACODEC_FMT_ADPCM, "adpcm"},
     {ACODEC_FMT_WMAVOI, "wmavoi"},
+    {ACODEC_FMT_DRA, "dra"},
     {ACODEC_FMT_NULL, "null"},
 
 };
@@ -585,7 +586,7 @@ static int set_audio_decoder(aml_audio_dec_t *audec)
         }
     }
 
-    if (match_types(t->type, "thd") || match_types(t->type, "wmavoi")) {
+    if (match_types(t->type, "thd") || match_types(t->type, "wmavoi") || match_types(t->type, "dra") ) {
         adec_print("audio format is %s, so chose AUDIO_ARM_DECODER", t->type);
         audio_decoder = AUDIO_ARM_DECODER;
         goto exit;

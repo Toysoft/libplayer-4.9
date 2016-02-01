@@ -40,6 +40,7 @@ typedef enum {
     PMP_FILE        = 22,
     OGM_FILE            = 23,
     HEVC_FILE       = 24,
+    DRA_FILE        = 25,
     FILE_MAX,
 } pfile_type;
 

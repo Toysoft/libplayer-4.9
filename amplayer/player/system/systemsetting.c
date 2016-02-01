@@ -155,6 +155,8 @@ int PlayerGetVFilterFormat(play_para_t*am_p)
 #define FILTER_AFMT_AAC_LATM		(1 << 19)
 #define FILTER_AFMT_APE		       (1 << 20)
 #define FILTER_AFMT_EAC3		       (1 << 21)
+#define FILTER_AFMT_DRA         (1 << 23)
+
 int PlayerGetAFilterFormat(const char *prop)
 {
 	char value[1024];
@@ -178,77 +180,83 @@ int PlayerGetAFilterFormat(const char *prop)
 #endif
     }
     if(access("/system/lib/libstagefright_soft_dtshd.so",F_OK) ){
-		filter_fmt  |= FILTER_AFMT_DTS;
+        filter_fmt  |= FILTER_AFMT_DTS;
+    }
+    if (access("/system/lib/libdra.so",F_OK) ) {
+       filter_fmt  |= FILTER_AFMT_DRA;
     }
 #endif	
     if (GetSystemSettingString(prop, value, NULL) > 0) {
-		log_print("[%s:%d]disable_adec=%s\n", __FUNCTION__, __LINE__, value);
-		if (match_types(value,"mpeg") != NULL || match_types(value,"MPEG") != NULL) {
-			filter_fmt |= FILTER_AFMT_MPEG;
-		} 
-		if (match_types(value,"pcms16l") != NULL || match_types(value,"PCMS16L") != NULL) {
-			filter_fmt |= FILTER_AFMT_PCMS16L;
-		} 
-		if (match_types(value,"aac") != NULL || match_types(value,"AAC") != NULL) {
-			filter_fmt |= FILTER_AFMT_AAC;
-		} 
-		if (match_types(value,"ac3") != NULL || match_types(value,"AC3") != NULL) {
-			filter_fmt |= FILTER_AFMT_AC3;
-		}		
-		if (match_types(value,"alaw") != NULL || match_types(value,"ALAW") != NULL) {
-			filter_fmt |= FILTER_AFMT_ALAW;
-		} 
-		if (match_types(value,"mulaw") != NULL || match_types(value,"MULAW") != NULL) {
-			filter_fmt |= FILTER_AFMT_MULAW;
-		} 
-		if (match_types(value,"dts") != NULL || match_types(value,"DTS") != NULL) {
-			filter_fmt |= FILTER_AFMT_DTS;
-		} 
-		if (match_types(value,"pcms16b") != NULL || match_types(value,"PCMS16B") != NULL) {
-			filter_fmt |= FILTER_AFMT_PCMS16B;
-		} 
-		if (match_types(value,"flac") != NULL || match_types(value,"FLAC") != NULL) {
-			filter_fmt |= FILTER_AFMT_FLAC;
-		}
-		if (match_types(value,"cook") != NULL || match_types(value,"COOK") != NULL) {
-			filter_fmt |= FILTER_AFMT_COOK;
-		} 
-		if (match_types(value,"pcmu8") != NULL || match_types(value,"PCMU8") != NULL) {
-			filter_fmt |= FILTER_AFMT_PCMU8;
-		} 
-		if (match_types(value,"adpcm") != NULL || match_types(value,"ADPCM") != NULL) {
-			filter_fmt |= FILTER_AFMT_ADPCM;
-		} 
-		if (match_types(value,"amr") != NULL || match_types(value,"AMR") != NULL) {
-			filter_fmt |= FILTER_AFMT_AMR;
-		} 
-		if (match_types(value,"raac") != NULL || match_types(value,"RAAC") != NULL) {
-			filter_fmt |= FILTER_AFMT_RAAC;
-		}
-		if (match_types(value,"wma") != NULL || match_types(value,"WMA") != NULL) {
-			filter_fmt |= FILTER_AFMT_WMA;
-		} 
-		if (match_types(value,"wmapro") != NULL || match_types(value,"WMAPRO") != NULL) {
-			filter_fmt |= FILTER_AFMT_WMAPRO;
-		} 
-		if (match_types(value,"pcmblueray") != NULL || match_types(value,"PCMBLUERAY") != NULL) {
-			filter_fmt |= FILTER_AFMT_PCMBLU;
-		} 
-		if (match_types(value,"alac") != NULL || match_types(value,"ALAC") != NULL) {
-			filter_fmt |= FILTER_AFMT_ALAC;
-		} 
-		if (match_types(value,"vorbis") != NULL || match_types(value,"VORBIS") != NULL) {
-			filter_fmt |= FILTER_AFMT_VORBIS;
-		}
-		if (match_types(value,"aac_latm") != NULL || match_types(value,"AAC_LATM") != NULL) {
-			filter_fmt |= FILTER_AFMT_AAC_LATM;
-		} 
-		if (match_types(value,"ape") != NULL || match_types(value,"APE") != NULL) {
-			filter_fmt |= FILTER_AFMT_APE;
-		} 		
-		if (match_types(value,"eac3") != NULL || match_types(value,"EAC3") != NULL) {
-			filter_fmt |= FILTER_AFMT_EAC3;
-		} 		
+        log_print("[%s:%d]disable_adec=%s\n", __FUNCTION__, __LINE__, value);
+        if (match_types(value,"mpeg") != NULL || match_types(value,"MPEG") != NULL) {
+            filter_fmt |= FILTER_AFMT_MPEG;
+        }
+        if (match_types(value,"pcms16l") != NULL || match_types(value,"PCMS16L") != NULL) {
+            filter_fmt |= FILTER_AFMT_PCMS16L;
+        }
+        if (match_types(value,"aac") != NULL || match_types(value,"AAC") != NULL) {
+            filter_fmt |= FILTER_AFMT_AAC;
+        }
+        if (match_types(value,"ac3") != NULL || match_types(value,"AC3") != NULL) {
+            filter_fmt |= FILTER_AFMT_AC3;
+        }
+        if (match_types(value,"alaw") != NULL || match_types(value,"ALAW") != NULL) {
+            filter_fmt |= FILTER_AFMT_ALAW;
+        }
+        if (match_types(value,"mulaw") != NULL || match_types(value,"MULAW") != NULL) {
+            filter_fmt |= FILTER_AFMT_MULAW;
+        }
+        if (match_types(value,"dts") != NULL || match_types(value,"DTS") != NULL) {
+            filter_fmt |= FILTER_AFMT_DTS;
+        }
+        if (match_types(value,"pcms16b") != NULL || match_types(value,"PCMS16B") != NULL) {
+            filter_fmt |= FILTER_AFMT_PCMS16B;
+        }
+        if (match_types(value,"flac") != NULL || match_types(value,"FLAC") != NULL) {
+            filter_fmt |= FILTER_AFMT_FLAC;
+        }
+        if (match_types(value,"cook") != NULL || match_types(value,"COOK") != NULL) {
+            filter_fmt |= FILTER_AFMT_COOK;
+        }
+        if (match_types(value,"pcmu8") != NULL || match_types(value,"PCMU8") != NULL) {
+            filter_fmt |= FILTER_AFMT_PCMU8;
+        }
+        if (match_types(value,"adpcm") != NULL || match_types(value,"ADPCM") != NULL) {
+            filter_fmt |= FILTER_AFMT_ADPCM;
+        }
+        if (match_types(value,"amr") != NULL || match_types(value,"AMR") != NULL) {
+            filter_fmt |= FILTER_AFMT_AMR;
+        }
+        if (match_types(value,"raac") != NULL || match_types(value,"RAAC") != NULL) {
+            filter_fmt |= FILTER_AFMT_RAAC;
+        }
+        if (match_types(value,"wma") != NULL || match_types(value,"WMA") != NULL) {
+            filter_fmt |= FILTER_AFMT_WMA;
+        }
+        if (match_types(value,"wmapro") != NULL || match_types(value,"WMAPRO") != NULL) {
+            filter_fmt |= FILTER_AFMT_WMAPRO;
+        }
+        if (match_types(value,"pcmblueray") != NULL || match_types(value,"PCMBLUERAY") != NULL) {
+            filter_fmt |= FILTER_AFMT_PCMBLU;
+        }
+        if (match_types(value,"alac") != NULL || match_types(value,"ALAC") != NULL) {
+            filter_fmt |= FILTER_AFMT_ALAC;
+        }
+        if (match_types(value,"vorbis") != NULL || match_types(value,"VORBIS") != NULL) {
+            filter_fmt |= FILTER_AFMT_VORBIS;
+        }
+        if (match_types(value,"aac_latm") != NULL || match_types(value,"AAC_LATM") != NULL) {
+            filter_fmt |= FILTER_AFMT_AAC_LATM;
+        }
+        if (match_types(value,"ape") != NULL || match_types(value,"APE") != NULL) {
+            filter_fmt |= FILTER_AFMT_APE;
+        }
+        if (match_types(value,"eac3") != NULL || match_types(value,"EAC3") != NULL) {
+            filter_fmt |= FILTER_AFMT_EAC3;
+        }
+        if (match_types(value,"dra") != NULL || match_types(value,"DRA") != NULL) {
+            filter_fmt |= FILTER_AFMT_DRA;
+        }
     }
 	log_print("[%s:%d]filter_afmt=%x\n", __FUNCTION__, __LINE__, filter_fmt);
     return filter_fmt;

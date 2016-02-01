@@ -85,6 +85,7 @@ void av_register_all(void)
 	
     REGISTER_MUXER    (A64, a64);
     REGISTER_DEMUXER  (AAC, aac);
+    REGISTER_DEMUXER  (DRA, dra);
     REGISTER_MUXDEMUX (AC3, ac3);
     REGISTER_MUXER    (ADTS, adts);
     REGISTER_DEMUXER  (AEA, aea);
