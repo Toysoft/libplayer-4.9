@@ -48,6 +48,7 @@ audio_lib_t audio_lib_list[] = {
     {ACODEC_FMT_ALAW, "libpcm.so"},
     {ACODEC_FMT_MULAW, "libpcm.so"},
     {ACODEC_FMT_ADPCM, "libadpcm.so"},
+    {ACODEC_FMT_DRA, "libdra.so"},
     NULL
 } ;
 

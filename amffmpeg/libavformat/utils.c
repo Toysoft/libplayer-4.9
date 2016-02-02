@@ -4192,7 +4192,7 @@ int av_find_stream_info(AVFormatContext *ic)
         if (!has_codec_parameters_ex(st->codec, fast_switch) && (!st->codec_info_nb_frames)
                 && (st->codec->codec_type == AVMEDIA_TYPE_AUDIO))
         {
-            if (st->codec->codec_id != CODEC_ID_DTS)
+            if (st->codec->codec_id != CODEC_ID_DTS && st->codec->codec_id != CODEC_ID_DRA)
             {
                 av_log(NULL, AV_LOG_INFO, "[%s:%d] stream %d is unvalid! \n", __FUNCTION__, __LINE__, i);
                 st->stream_valid = 0;

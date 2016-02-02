@@ -89,6 +89,7 @@ static const media_type media_array[] = {
     {"dash", MP4_FILE, STREAM_ES},
     {"mhls", MP4_FILE, STREAM_ES},
     {"ogg", OGM_FILE, STREAM_ES},
+    {"dra", DRA_FILE, STREAM_AUDIO},
 };
 
 aformat_t audio_type_convert(enum CodecID id, pfile_type File_type)
@@ -215,6 +216,9 @@ aformat_t audio_type_convert(enum CodecID id, pfile_type File_type)
         break;
     case CODEC_ID_WMALOSSLESS:
         format = AFORMAT_WMALOSSLESS;
+        break;
+    case CODEC_ID_DRA:
+        format = AFORMAT_DRA;
         break;
 
     default:

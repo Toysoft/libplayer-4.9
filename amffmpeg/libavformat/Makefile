@@ -28,6 +28,7 @@ OBJS = allformats.o         \
 # muxers/demuxers
 OBJS-$(CONFIG_A64_MUXER)                 += a64.o
 OBJS-$(CONFIG_AAC_DEMUXER)               += aacdec.o rawdec.o adif.o
+OBJS-$(CONFIG_DRA_DEMUXER)               += drapaser.o
 OBJS-$(CONFIG_AC3_DEMUXER)               += ac3parser.o rawdec.o
 OBJS-$(CONFIG_AC3_MUXER)                 += rawenc.o
 OBJS-$(CONFIG_ADTS_MUXER)                += adtsenc.o
