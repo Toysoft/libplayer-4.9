@@ -1820,6 +1820,14 @@ int time_search(play_para_t *am_p, int flags)
                     }
                 }
 
+                if (av_bluray_supported(s)) {
+                    uint64_t start_time;
+
+                    avio_getinfo(s->pb, AVCMD_GET_CLIP_BASE_PCR, 0, &start_time);
+                    av_log(NULL, AV_LOG_INFO, "time_search: start_time = 0x%llx\n", start_time);
+                    am_p->discontinue_point = start_time/PTS_FREQ;
+                }
+
                 offset = url_ftell(s->pb);
 
                 if ((am_p->playctrl_info.last_seek_time_point != (int)time_point)

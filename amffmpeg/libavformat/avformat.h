@@ -1772,4 +1772,8 @@ int av_match_ext(const char *filename, const char *extensions);
 
 /*cal low level buffering data.*/
 int av_buffering_data(AVFormatContext *s, int size);
+
+/* 1: support, 0: not support*/
+int av_bluray_supported(AVFormatContext *ic);
+
 #endif /* AVFORMAT_AVFORMAT_H */

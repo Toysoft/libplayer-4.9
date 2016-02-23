@@ -248,6 +248,7 @@ typedef enum {
     PLAYER_EVENTS_NOT_SUPPORT_SEEKABLE,     //not support seek;
     PLAYER_EVENTS_VIDEO_SIZE_CHANGED,           ///<ext1 refers to video width,ext2 refers to video height
     PLAYER_EVENTS_SUBTITLE_DATA,            // sub data ext1 refers to subtitledata struct
+    PLAYER_EVENTS_BLURAY_INFO,              // ext1=info id, ext2=info data
 } player_events;
 
 typedef struct {
@@ -321,5 +322,30 @@ typedef struct {
     int SessionID;
     int t_duration_ms;                  //duration parsed from url
 } play_control_t;
+
+#define BLURAY_STREAM_PATH          1
+#define BLURAY_STREAM_TYPE_VIDEO    'V'
+#define BLURAY_STREAM_TYPE_AUDIO    'A'
+#define BLURAY_STREAM_TYPE_SUB      'S'
+
+typedef char LANG[4];
+typedef struct bluray_stream_info_s {
+    uint8_t type;
+    LANG lang;
+} bluray_stream_info_t;
+
+typedef struct bluray_chapter_info_s {
+    uint32_t start;
+    uint32_t duration;
+} bluray_chapter_info_t;
+
+typedef struct bluray_info {
+    int info;
+    char *stream_path;
+    int stream_info_num;
+    bluray_stream_info_t *stream_info;
+    int chapter_num;
+    bluray_chapter_info_t *chapter_info;
+} bluray_info_t;
 
 #endif

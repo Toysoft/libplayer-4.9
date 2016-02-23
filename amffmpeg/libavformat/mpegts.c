@@ -2656,6 +2656,12 @@ static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
                 return AV_NOPTS_VALUE;
             if ((pcr_pid <= 0 || (AV_RB16(buf + 1) & 0x1fff) == pcr_pid) &&
                 parse_pcr(&timestamp, &pcr_l, buf) == 0) {
+                if (av_bluray_supported(s)) {
+                    int64_t start_time;
+                    avio_getinfo(s->pb, AVCMD_GET_CLIP_BASE_PCR, 0, &start_time);
+                    av_log(NULL, AV_LOG_INFO, "mpegts_get_pcr: start_time = 0x%llx\n", start_time);
+                    timestamp += start_time;
+                }
                 break;
             }
             if(t_pos > GET_PCR_POS)
