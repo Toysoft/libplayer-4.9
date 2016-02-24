@@ -11,7 +11,7 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/../amffmpeg/\
 LOCAL_ARM_MODE := arm
 ##LOCAL_STATIC_LIBRARIES :=
 LOCAL_MODULE:= libamstreaming
-
+LOCAL_MODULE_TAGS := optional
 include $(BUILD_STATIC_LIBRARY)
 
 

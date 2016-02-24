@@ -208,7 +208,6 @@ int main(int argc, char *argv[])
     amsysfs_set_sysfs_str(di_bypass_all_path, "1");
 
     player_init();
-    streamsource_init();
     //set_display_axis(0);      //move osd out of screen to set video layer out
 
     player_register_update_callback(&pCtrl->callback_fn, &update_player_info, 1000);
