@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <unistd.h>
 #include <audio-dec.h>
 #include <amthreadpool.h>
 
@@ -711,5 +711,24 @@ int audio_get_decoded_pcm_delay(void *handle)
     } else {
         return 0;
     }
+}
+/**
+ * \brief check if the audio format supported by audio decoder
+ * \param handle pointer to player private data
+ * \return 0 = diable,1 = enable, -1 = error
+ */
+int audio_get_format_supported(int format)
+{
+    int enable = 1;
+    if (format == ACODEC_FMT_DRA) {
+        if (access("/system/lib/libdra.so",F_OK)) {
+            enable = 0;
+        }
+    }
+    else if (format < ACODEC_FMT_MPEG || format > ACODEC_FMT_WMAVOI) {
+        adec_print("unsupported format %d\n",format);
+        enable = 0;
+    }
+    return enable;
 }
 
