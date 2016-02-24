@@ -1017,7 +1017,7 @@ static int decode_subframe(WmallDecodeCtx *s)
               if (s->bits_per_sample == 16)
                   s->out_data[2*j+i+s->decoded_frame_num*2048*2]= s->samples_16[i][j];
               else
-                  *s->out_data++ = s->samples_32[i]++;
+                  s->out_data[2*j+i+s->decoded_frame_num*2048*2]= (s->samples_32[i][j]>>16)&0xffff;
         }
     s->decoded_frame_num++;
     /* handled one subframe */

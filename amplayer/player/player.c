@@ -1207,15 +1207,15 @@ void *player_thread(play_para_t *player)
     update_player_states(player, 1);
     player_mate_init(player, 1000 * 10);
     ffmpeg_seturl_buffered_level(player, 0);
-    if (player->astream_info.has_audio == 1 &&
+    if ((player->astream_info.has_audio == 1 &&
         player->vstream_info.has_video == 0 &&
         (player->astream_info.audio_format == AFORMAT_COOK ||
-         player->astream_info.audio_format == AFORMAT_SIPR ||
+         player->astream_info.audio_format == AFORMAT_SIPR) ||
          player->astream_info.audio_format == AFORMAT_WMALOSSLESS)) {
         AFORMAT_SW_Flag = 1;
     }
     if (player->vstream_info.video_format == VFORMAT_SW || AFORMAT_SW_Flag == 1) {
-        log_print("Use SW video decoder\n");
+        log_print("Use FFMPEG SW video/AUDIO decoder\n");
 
 #ifdef SAVE_YUV_FILE
         out_fp = open("./output.yuv", O_CREAT | O_RDWR);
@@ -1380,7 +1380,7 @@ write_packet:
                     }
 #endif
                 }
-            } else if (AFORMAT_SW_Flag == 1) {
+            } else if (AFORMAT_SW_Flag == 1 && pkt->type == CODEC_AUDIO) {
                 int bytes_used = 0;
                 audio_out_size = MAX(AVCODEC_MAX_AUDIO_FRAME_SIZE, ic->channels * ic->frame_size * sizeof(int16_t));
                 audio_out_buf = malloc(audio_out_size);
@@ -1392,6 +1392,10 @@ write_packet:
                     p->size = pkt->avpkt->size;
                     do {
                        bytes_used = ic->codec->decode(ic, audio_out_buf, &audio_out_size, p);
+                       if (bytes_used < 0) {
+                           log_print("audio decoder error %d\n",bytes_used);
+                           break;
+                       }
                        p->data += bytes_used;
                        p->size -= bytes_used;
                     } while(p->size > 0);
