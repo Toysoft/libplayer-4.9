@@ -1069,7 +1069,11 @@ static int non_raw_read(play_para_t *para)
                                 if (r < 0) {
                                     return r;
                                 }
-                                memset(pkt->avpkt->data, 0, 2048);
+                                /* for amr wb audio, zero data is valid frame data */
+                                if (st->codec->codec_id == CODEC_ID_AMR_WB)
+                                    memset(pkt->avpkt->data, 0xff, 2048);
+                                else
+                                   memset(pkt->avpkt->data, 0, 2048);
                                 //pkt->avpkt->data = av_mallocz(2048);
                                 //strncpy(pkt->avpkt->data,"FREND",5);
                                 pkt->avpkt->size = 2048;
