@@ -3334,7 +3334,7 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset
 int av_bluray_supported(AVFormatContext *ic)
 {
     URLContext *h = (URLContext *)ic->pb->opaque;
-    if (h != NULL && h->prot != NULL && (!strcmp(h->prot->name, "bluray")))
+    if (h && h->prot && h->prot->name && (!strcmp(h->prot->name, "bluray")))
         return 1;
     else
         return 0;
