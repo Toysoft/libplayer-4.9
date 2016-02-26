@@ -175,6 +175,7 @@ struct aml_audio_dec {
 
     //dvb pcr master
     int fill_trackzero_thrsh;
+    int droppcm_ms;
     int adis_flag;
     int tsync_pcr_dispoint;
     int pcrtsync_enable;

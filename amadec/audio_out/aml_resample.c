@@ -101,6 +101,10 @@ void af_resample_linear_init(struct aml_audio_dec *audec)
         if (property_get("media.libplayer.fillzerothrsh", value, NULL) > 0) {
             audec->fill_trackzero_thrsh = atoi(value);
         }
+        // add for dolby av sync test
+        if (property_get("media.libplayer.dolby_test", value, NULL) > 0) {
+            audec->fill_trackzero_thrsh = 27000;
+        }
         audec->pcrmaster_droppcm_thsh = TIME_UNIT90K / 2;
         if (property_get("media.libplayer.pcrdroppcmthsh", value, NULL) > 0) {
             audec->pcrmaster_droppcm_thsh = atoi(value);
