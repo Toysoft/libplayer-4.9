@@ -531,6 +531,12 @@ void check_msg(play_para_t *para, player_cmd_t *msg)
         para->playctrl_info.switch_ts_video_pid = msg->param;
         para->playctrl_info.switch_ts_audio_pid = msg->param1;
         para->playctrl_info.switch_ts_program_flag = 1;
+
+        para->playctrl_info.search_flag = 1;
+        para->playctrl_info.time_point = 0;
+        para->playctrl_info.reset_drop_buffered_data = 1;
+        para->playctrl_info.seek_keyframe = 0;
+        para->state.seek_point = 0;
     }
 #endif
 }

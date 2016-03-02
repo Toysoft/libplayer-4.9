@@ -582,7 +582,6 @@ static void get_ts_program(play_para_t *p_para, int program_num)
         if (pStream->codec->codec_type == CODEC_TYPE_VIDEO) {
             ts_programe_detail->video_pid = pStream->id;
             tag = av_dict_get(pPrograms->metadata, "service_name", NULL, 0);
-
             if ( tag != NULL && tag->value != NULL ) {
                 char* strGB = tag->value;
                 int lenSrc = strlen(tag->value);
@@ -596,7 +595,13 @@ static void get_ts_program(play_para_t *p_para, int program_num)
                 iconv_close(cd);
 
                 memcpy(&(ts_programe_detail->programe_name), pFreeOut, lenSrc_o*5 - lenDst);
+                log_print("[%s %d] programe_name:%s\n", __FUNCTION__, __LINE__, ts_programe_detail->programe_name);
                 free(pFreeOut);
+            } else {
+                char default_name[16];
+                sprintf(default_name, "Programe %d", pStream->id);
+                memcpy(&(ts_programe_detail->programe_name), default_name, strlen(default_name));
+                log_print("[%s %d] no programe_name, set default name:%s\n", __FUNCTION__, __LINE__, ts_programe_detail->programe_name);
             }
         } else if (pStream->codec->codec_type == CODEC_TYPE_AUDIO) {
             for (j = 0; j < MAX_AUDIO_STREAMS; j++) {
@@ -673,8 +678,8 @@ static void get_ts_program_info(play_para_t *p_para)
             pStream = pFormat->streams[index];
             if (pStream->codec->codec_type == CODEC_TYPE_VIDEO) {
                 ts_program = ts_program_exist(p_para, pStream->id);
-                if (ts_program != 0 && pStream->codec->width != 0 && pStream->codec->height != 0)
-                   get_ts_program(p_para, i);
+                if ((ts_program != 0 && pStream->codec->width != 0 && pStream->codec->height != 0) || pStream->codec->codec_id == CODEC_ID_CAVS)
+                    get_ts_program(p_para, i);
                 break;
             }
         }

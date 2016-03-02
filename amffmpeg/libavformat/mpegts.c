@@ -724,8 +724,10 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
     st->codec->codec_tag = pes->stream_type;
 
     mpegts_find_stream_type(st, pes->stream_type, ISO_types);
-    if (st->codec->codec_id == CODEC_ID_CAVS)
+    if (st->codec->codec_id == CODEC_ID_CAVS) {
         st->need_check_avs_version = 1;
+        st->need_parsing = AVSTREAM_PARSE_HEADERS;
+    }
 
     if (st->codec->codec_id == CODEC_ID_NONE) {
         mpegts_find_stream_type(st, pes->stream_type, HDMV_types);
