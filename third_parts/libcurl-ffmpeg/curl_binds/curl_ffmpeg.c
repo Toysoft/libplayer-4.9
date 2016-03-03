@@ -34,6 +34,7 @@ typedef struct _CURLFFContext {
     int read_retry;
     int force_interrupt;
     int64_t read_waittime_s;
+    FILE * dump_handle;
     CFContext * cfc_h;
 } CURLFFContext;
 
@@ -127,6 +128,10 @@ RETRY:
     }
     handle->read_retry = (int)am_getconfig_float_def("libplayer.curl.readretry", 10);
     handle->read_waittime_s = (int64_t)am_getconfig_float_def("libplayer.curl.readwaitS", 3600);
+    handle->dump_handle = NULL;
+    if (am_getconfig_bool_def("libplayer.curl.dump", 0) > 0) {
+        handle->dump_handle = fopen("/data/tmp/curl_dump.dat", "ab+");
+    }
     h->http_code = handle->cfc_h->http_code;
     h->is_slowmedia = 1;
     h->is_streamed = handle->cfc_h->seekable ? 0 : 1;
@@ -193,15 +198,10 @@ static int curl_ffmpeg_read(URLContext *h, uint8_t *buf, int size)
     ret = curl_fetch_read(s->cfc_h, buf, size);
 #endif
 
-
-#if 0
-    FILE * fp = fopen("/temp/curl_dump.dat", "ab+");
-    if (fp) {
-        fwrite(buf, 1, ret, fp);
-        fflush(fp);
-        fclose(fp);
+    if (s->dump_handle && ret > 0) {
+        fwrite(buf, 1, ret, s->dump_handle);
+        fflush(s->dump_handle);
     }
-#endif
 
     return ret;
 }
@@ -245,6 +245,9 @@ static int curl_ffmpeg_close(URLContext *h)
     }
     s->force_interrupt = 1;
     curl_fetch_close(s->cfc_h);
+    if (s->dump_handle) {
+        fclose(s->dump_handle);
+    }
     av_free(s);
     s = NULL;
     return 0;

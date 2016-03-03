@@ -50,6 +50,7 @@ typedef struct _CURLWHandle {
 } CURLWHandle;
 
 typedef struct _CURLWContext {
+    int64_t chunk_size;
     int quited;
     int open_fail;
     int curl_h_num;

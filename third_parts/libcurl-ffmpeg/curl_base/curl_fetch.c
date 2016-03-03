@@ -132,6 +132,7 @@ int curl_fetch_open(CFContext * h)
         if (!h->headers || !strstr(h->headers, "User-Agent:")) {
             curl_wrapper_set_para(h->cwh_h, NULL, C_USER_AGENT, 0, IPAD_IDENT);
         }
+        curl_wrapper_set_para(h->cwh_h, NULL, C_RANGE, 0, NULL); // open with range
     }
 
     curl_fetch_start_local_run(h);
