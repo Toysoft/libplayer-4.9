@@ -177,6 +177,7 @@ static void signal_handler(int signum)
     player_progress_exit();
     signal(signum, SIG_DFL);
     raise(signum);
+    property_set("media.bootplayer.running", "0");
 }
 
 #define TMP_COMMAND_MAX 512
@@ -229,6 +230,7 @@ int main(int argc, char *argv[])
 
     pCtrl->t_pos = -1;  // start position, if live streaming, need set to -1
     pCtrl->need_start = 0; // if 0,you can omit player_start_play API.just play video/audio immediately. if 1,need call "player_start_play" API;
+    property_set("media.bootplayer.running", "1");
 
     pid = player_start(pCtrl, 0);
     if (pid < 0) {
@@ -332,6 +334,7 @@ int main(int argc, char *argv[])
     ALOGD("...........player exit,~,byeybe...........\n");
     amsysfs_set_sysfs_str(di_bypass_all_path, "0");
     amsysfs_set_sysfs_str("/sys/class/video/screen_mode", "0");
+    property_set("media.bootplayer.running", "0");
     return 0;
 }
 
