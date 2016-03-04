@@ -91,6 +91,7 @@ typedef struct {
     int flags;
     int use_old_tcphandle;
     char *cookies;          ///< holds newline (\n) delimited Set-Cookie header field values (without the "Set-Cookie: " field name)
+    FILE * dump_handle;
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
@@ -393,18 +394,15 @@ static int http_open(URLContext *h, const char *uri, int flags)
     s->is_broadcast = 0;
     s->read_seek_count = 0;
     s->use_old_tcphandle=0;
+    s->dump_handle = NULL;
+    if (am_getconfig_bool_def("libplayer.http.dump", 0) > 0) {
+        s->dump_handle = fopen("/data/tmp/http_dump.dat", "ab+");
+    }
     char* tmp = strstr(uri, "livemode=1");
     if(tmp){
         s->is_livemode = 1;
     }
 
-    /*tmp=strstr(uri,".m3u8");
-    if(tmp){
-	s->keep_alive = 0;
-    }
-    else{
-    	s->keep_alive = enable_http_keepalive;
-    }*/
     s->flags = flags;
     av_strlcpy(s->location, uri, sizeof(s->location));
     s->max_connects=MAX_CONNECT_LINKS;
@@ -432,6 +430,9 @@ static int http_open(URLContext *h, const char *uri, int flags)
     if(ret < 0){
         bandwidth_measure_free(s->bandwidth_measure);
         inflateEnd(&s->b_inflate.stream);
+        if (s->dump_handle) {
+            fclose(s->dump_handle);
+        }
     }  
 	s->port=-1;
     av_log(h, AV_LOG_INFO,"http  connect used %d ms\n",(int)(av_gettime()-http_starttime));	
@@ -456,18 +457,14 @@ static int shttp_open(URLContext *h, const char *uri, int flags)
     s->is_broadcast = 0;
     s->read_seek_count = 0;
     s->use_old_tcphandle=0;
+    s->dump_handle = NULL;
+    if (am_getconfig_bool_def("libplayer.http.dump", 0) > 0) {
+        s->dump_handle = fopen("/data/tmp/http_dump.dat", "ab+");
+    }
     char* tmp = strstr(uri, "livemode=1");
     if(tmp){
         s->is_livemode = 1;
     }
-    /*
-	tmp=strstr(uri,".m3u8");
-	if(tmp){
-		s->keep_alive = 0;
-	}
-	else{
-    s->keep_alive = enable_http_keepalive;
-	}*/
     s->flags = flags;
     av_strlcpy(s->location, uri+1, sizeof(s->location));	
     s->max_connects=MAX_CONNECT_LINKS;
@@ -492,15 +489,18 @@ static int shttp_open(URLContext *h, const char *uri, int flags)
     	ret = http_open_cnx(h);
     }
 
-	s->is_seek = 0;
-        if(ret < 0){
-            bandwidth_measure_free(s->bandwidth_measure);
-            inflateEnd(&s->b_inflate.stream);
+    s->is_seek = 0;
+    if (ret < 0) {
+        bandwidth_measure_free(s->bandwidth_measure);
+        inflateEnd(&s->b_inflate.stream);
+        if (s->dump_handle) {
+            fclose(s->dump_handle);
         }
-	h->is_slowmedia=1;	
-	s->port=-1;
-	av_log(h, AV_LOG_INFO,"http  connect used %d ms\n",(int)(av_gettime()-http_starttime)); 
-	return ret;
+    }
+    h->is_slowmedia=1;
+    s->port=-1;
+    av_log(h, AV_LOG_INFO,"http  connect used %d ms\n",(int)(av_gettime()-http_starttime));
+    return ret;
 }
 
 
@@ -1132,8 +1132,11 @@ errors:
 		}
 	}
 	bandwidth_measure_finish_read(s->bandwidth_measure,len);
+	if (s->dump_handle && len > 0) {
+		fwrite(buf, 1, len, s->dump_handle);
+		fflush(s->dump_handle);
+	}
 	return len;
-
 }
 
 // for gzip
@@ -1227,7 +1230,9 @@ static int http_close(URLContext *h)
     inflateEnd(&s->b_inflate.stream);
     av_free(s->b_inflate.p_buffer);
     /*-----------------------------*/
-	
+    if (s->dump_handle) {
+        fclose(s->dump_handle);
+    }
     return ret;
 }
 

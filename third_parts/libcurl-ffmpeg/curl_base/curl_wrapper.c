@@ -9,6 +9,27 @@
 
 #define CURL_FIFO_BUFFER_SIZE 2*1024*1024
 
+
+// output fail/info in curl
+static int debug_callback(CURL * handle, curl_infotype type, char * data, size_t size, void * userp)
+{
+    switch (type) {
+        case CURLINFO_TEXT:
+            CLOGE("[CURL] : %s", data);
+            return 0;
+        case CURLINFO_HEADER_OUT:
+        {
+            char * tmp_buf = (char *)c_mallocz(size + 1);
+            c_strlcpy(tmp_buf, data, size);
+            CLOGE("[HEADER] : %s", tmp_buf);
+            c_free(tmp_buf);
+            return 0;
+        }
+        default:
+            return 0;
+    }
+}
+
 static int curl_wrapper_open_cnx(CURLWContext *con, CURLWHandle *h, Curl_Data *buf, curl_prot_type flags, int64_t off);
 
 static void response_process(char * line, Curl_Data * buf)
@@ -39,11 +60,13 @@ static void response_process(char * line, Curl_Data * buf)
                 ptr++;
             }
             buf->handle->chunk_size = atoll(ptr);
+            buf->ctx->chunk_size = buf->handle->chunk_size;
         }
         if (!strncasecmp(line, "Content-Range", 13)) {
             const char * slash = NULL;
             if ((slash = strchr(ptr, '/')) && strlen(slash) > 0) {
                 buf->handle->chunk_size = atoll(slash + 1);
+                buf->ctx->chunk_size = buf->handle->chunk_size;
             }
         }
         if (!strncasecmp(line, "Transfer-Encoding", 17) && strstr(line, "chunked")) {
@@ -354,6 +377,13 @@ int curl_wrapper_set_para(CURLWHandle *h, void *buf, curl_para para, int iarg, c
         ret2 = curl_wrapper_setopt_error(h, curl_easy_setopt(h->curl, CURLOPT_WRITEHEADER, buf));
         ret = (ret1 || ret2) ? -1 : 0;
         break;
+    case C_RANGE:
+        if (iarg > 0) {
+            ret = curl_wrapper_setopt_error(h, curl_easy_setopt(h->curl, CURLOPT_RESUME_FROM_LARGE, (curl_off_t)iarg));
+        } else {
+            ret = curl_wrapper_setopt_error(h, curl_easy_setopt(h->curl, CURLOPT_RANGE, "0-"));
+        }
+        break;
     default:
         return ret;
     }
@@ -507,11 +537,11 @@ static int curl_wrapper_open_cnx(CURLWContext *con, CURLWHandle *h, Curl_Data *b
         }
     }
     if (flags == C_PROT_HTTPS) {
-        //curl_wrapper_setopt_error(h, curl_easy_setopt(h->curl, CURLOPT_SSL_VERIFYPEER, 0L));
-        //curl_wrapper_setopt_error(h, curl_easy_setopt(h->curl, CURLOPT_SSL_VERIFYHOST, 0L));
         curl_wrapper_setopt_error(h, curl_easy_setopt(h->curl, CURLOPT_CAINFO, "/etc/curl/cacerts/ca-certificates.crt"));
     }
     curl_wrapper_setopt_error(h, curl_easy_setopt(h->curl, CURLOPT_ACCEPT_ENCODING, "gzip"));
+    curl_wrapper_setopt_error(h, curl_easy_setopt(h->curl, CURLOPT_DEBUGFUNCTION, debug_callback));
+    con->chunk_size = 0;
     con->quited = 0;
     con->chunked = 0;
     con->connected = 0;
@@ -537,6 +567,7 @@ int curl_wrapper_http_keepalive_open(CURLWContext *con, CURLWHandle *h, const ch
         CLOGE("Invalid CURLWHandle\n");
         return ret;
     }
+    con->chunk_size = 0;
     con->quited = 0;
     con->chunked = 0;
     con->connected = 0;
@@ -643,10 +674,18 @@ int curl_wrapper_perform(CURLWContext *con)
             }
             break;
         }
-        // need to do read seek in upper layer if chunked.
-        if (con->connected/* && !con->chunked */&& select_zero_cnt == SELECT_RETRY_TIMES) {
-            select_breakout_flag = 1;
-            break;
+        if (con->connected) {
+            if (con->chunked && con->chunk_size > 0) { // retry less in chunked mode.
+                if (select_zero_cnt == 5) {
+                    select_breakout_flag = 1;
+                    break;
+                }
+            } else {
+	            if (select_zero_cnt == SELECT_RETRY_TIMES) {
+                    select_breakout_flag = 1;
+                    break;
+                }
+            }
         }
         if (!con->connected && select_zero_cnt == SELECT_RETRY_WHEN_CONNECTING) {
             con->open_fail = 1;
@@ -803,17 +842,20 @@ int curl_wrapper_seek(CURLWContext * con, CURLWHandle * h, int64_t off, Curl_Dat
     }
     ret = curl_wrapper_open_cnx(con, h, buf, flags, off);
     if (!ret) {
-#if 0
-        char range[256];
-        snprintf(range, sizeof(range), "%lld-", off);
-        if (CURLE_OK != curl_easy_setopt(h->curl, CURLOPT_RANGE, range)) {
-            return -1;
-        }
-#else
         if (h->chunk_size > 0 && off > 0) {  // not support this when transfer in chunked mode.
             ret = curl_easy_setopt(h->curl, CURLOPT_RESUME_FROM_LARGE, (curl_off_t)off);
+        } else if (h->chunk_size < 0) {
+            if (!off) {
+                return ret;
+            } else if (off < 0) {
+                if (CURLE_OK != curl_easy_setopt(h->curl, CURLOPT_RANGE, "0-")) {
+                    return -1;
+                } else {
+                    return 0;
+                }
+            }
+            ret = curl_easy_setopt(h->curl, CURLOPT_RESUME_FROM_LARGE, (curl_off_t)off);
         }
-#endif
     }
     return ret;
 }
