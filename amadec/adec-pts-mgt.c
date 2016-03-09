@@ -587,9 +587,9 @@ int adec_refresh_pts(aml_audio_dec_t *audec)
                 audec->tsync_pcr_dispoint = (int64_t)tsync_pcr_dispoint;
                 audec->adis_flag = 100;
 
-                adec_print("## pcrmaster, pcr:%lx,apts:%lx,lastapts:%lx,---\n", tsync_pcr_dispoint, pts, last_pts);
-                // drop pcm
-                if (pcrscr64 - apts64 > APTS_DISCONTINUE_THRESHOLD) {
+                adec_print("## pcrmaster, tsync_pcr_dispoint,pcr:%lx,apts:%lx,lastapts:%lx,---\n", tsync_pcr_dispoint, pts, last_pts);
+                // drop pcm, if larger than 10s, not to drop pcm
+                if (pcrscr64 - apts64 > APTS_DISCONTINUE_THRESHOLD && pcrscr64 - apts64 < 10 * 90000) {
                     int drop_size, droppts;
                     droppts = pcrscr64 - apts64;
 
