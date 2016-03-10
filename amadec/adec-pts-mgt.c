@@ -23,6 +23,7 @@
 #define DROP_PCM_DURATION_THRESHHOLD 4 //unit:s
 #define DROP_PCM_MAX_TIME 1000 // unit :ms
 #define DROP_PCM_PTS_DIFF_THRESHHOLD   90000*10
+#define DROP_PCM_RESET_PCR_THRESHOLD 90000/2
 
 int adec_pts_droppcm(aml_audio_dec_t *audec);
 int vdec_pts_resume(void);
@@ -408,6 +409,15 @@ int adec_pts_droppcm(aml_audio_dec_t *audec)
     apts = adec_calc_pts(audec);
     diff = (apts > refpts) ? (apts - refpts) : (refpts - apts);
     adec_print("after drop:--apts 0x%x,droped:0x%x, vpts 0x%x,apts %s, diff 0x%x\n", apts, apts - oldapts, refpts, (apts > refpts) ? "big" : "small", diff);
+		if (diff > DROP_PCM_RESET_PCR_THRESHOLD){
+		    char buf[64];
+				sprintf(buf, "0x%lx", apts);
+				adec_print("## [%s::%d] reset pcr =0x%x \n", __FUNCTION__, __LINE__);
+        if (amsysfs_set_sysfs_str(TSYNC_PCRSCR, buf)){
+					adec_print("## [%s::%d] reset pcr error \n", __FUNCTION__, __LINE__);
+				}
+		}
+		
     {
         sysfs_get_int(TSYNC_PCRSCR, &cur_pcr);
         ioctl(audec->adsp_ops.amstream_fd, AMSTREAM_IOC_AB_STATUS, (unsigned long)&am_io);
@@ -566,7 +576,7 @@ int adec_refresh_pts(aml_audio_dec_t *audec)
         adec_print("audio time interrupt: 0x%lx->0x%lx, 0x%lx\n", last_pts, pts, abs(pts - last_pts));
         if (audec->tsync_mode == TSYNC_MODE_PCRMASTER && audec->pcrtsync_enable) {
             unsigned long tsync_pcr_dispoint = 0;
-            int count = 4;
+            int count = 50;
             audec->apts64 = (int64_t)pts;
             audec->adis_flag = 0;
 
@@ -576,7 +586,7 @@ int adec_refresh_pts(aml_audio_dec_t *audec)
                     audec->adis_flag = 100;
                     break;
                 }
-                amthreadpool_thread_usleep(20);
+                amthreadpool_thread_usleep(20000);
                 count--;
             } while (tsync_pcr_dispoint == 0 && count > 0);
 
@@ -938,8 +948,7 @@ int droppcm_get_refpts(aml_audio_dec_t *audec, unsigned long *refpts)
 #endif
 
     unsigned long checkin_firstvpts = 0;
-
-    while ((!firstvpts || !checkin_firstvpts) && audec->has_video) {
+    while ((!firstvpts || !checkin_firstvpts)) {
         if (audec->need_stop) {
             return 0;
         }
