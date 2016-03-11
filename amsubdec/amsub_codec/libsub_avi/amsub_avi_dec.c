@@ -685,7 +685,7 @@ int xsub_subtitle_decode(amsub_dec_t *amsub_dec, int read_handle)
         }
         rd_oft = 0;
         if ((spu_buf_piece[rd_oft++] != 0x41) || (spu_buf_piece[rd_oft++] != 0x4d) ||
-                (spu_buf_piece[rd_oft++] != 0x4c) || (spu_buf_piece[rd_oft++] != 0x55) || (spu_buf_piece[rd_oft++] != 0xaa))
+                (spu_buf_piece[rd_oft++] != 0x4c) || (spu_buf_piece[rd_oft++] != 0x55) || ((spu_buf_piece[rd_oft++] & 0xfe) != 0xaa))
         {
             LOGI("\n wrong subtitle header :%x %x %x %x    %x %x %x %x    %x %x %x %x \n", spu_buf_piece[0], spu_buf_piece[1], spu_buf_piece[2], spu_buf_piece[3], spu_buf_piece[4], spu_buf_piece[5],
                  spu_buf_piece[6], spu_buf_piece[7], spu_buf_piece[8], spu_buf_piece[9], spu_buf_piece[10], spu_buf_piece[11]);
@@ -733,7 +733,8 @@ int xsub_subtitle_decode(amsub_dec_t *amsub_dec, int read_handle)
                 duration_pts |= spu_buf_piece[rd_oft++] << 16;
                 duration_pts |= spu_buf_piece[rd_oft++] << 8;
                 duration_pts |= spu_buf_piece[rd_oft++];
-                LOGI("duration_pts is %d, current_length=%d  ,rd_oft is %d\n", duration_pts, current_length, rd_oft);
+                int has_alpha = spu_buf_piece[4] & 0x01;
+                LOGI("duration_pts is %d, current_length=%d  ,rd_oft is %d, has_alpha=%d\n", duration_pts, current_length, rd_oft, has_alpha);
                 avihandle = (DivXSubPictHdr *)(spu_buf_piece + rd_oft);
                 amsub_ps->amsub_data = malloc(VOB_SUB_SIZE);
                 memset(amsub_ps->amsub_data, 0, VOB_SUB_SIZE);
@@ -769,8 +770,11 @@ int xsub_subtitle_decode(amsub_dec_t *amsub_dec, int read_handle)
                     goto error;
                 }
                 ptrPXDRead = (unsigned short *) & (avihandle->rleData);
+                //if has alpha, header had another 4 bytes
+                if (has_alpha)
+                    ptrPXDRead += 2;
                 FillPixel(ptrPXDRead, amsub_ps->amsub_data, 1, amsub_ps, avihandle->field_offset);
-                ptrPXDRead = (unsigned short *)((unsigned long)(&avihandle->rleData) + (unsigned long)(avihandle->field_offset));
+                //ptrPXDRead = (unsigned short *)((unsigned long)(&avihandle->rleData) + (unsigned long)(avihandle->field_offset));
                 FillPixel(ptrPXDRead, amsub_ps->amsub_data + VOB_SUB_SIZE / 2, 2, amsub_ps, avihandle->field_offset);
                 ret = 0;
                 break;

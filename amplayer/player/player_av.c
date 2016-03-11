@@ -3256,6 +3256,7 @@ int process_es_subtitle(play_para_t *para)
     unsigned char sub_header[20] = {0x41, 0x4d, 0x4c, 0x55, 0xaa, 0};
     unsigned int sub_type;
     int64_t sub_pts = 0;
+    unsigned int codec_tag;
     //static int last_duration = 0;
     float duration = para->sstream_info.sub_pts;
     int64_t start_time = para->sstream_info.start_time;
@@ -3315,6 +3316,15 @@ int process_es_subtitle(play_para_t *para)
         sub_pts = str2ms(buf) * 90;
         //log_print("[%s:%d] sub_pts:%llx, %c %c %c %c %c %c %c %c %c %c %c %c %c, %c,%c, \n", __FUNCTION__, __LINE__, sub_pts,
         //  buf[0],buf[1],buf[2],buf[3],buf[4],buf[5],buf[6],buf[7],buf[8],buf[9],buf[10],buf[11],buf[12],pkt->avpkt->data[0],pkt->avpkt->data[1]);
+
+        // add flag for xsub to indicate alpha
+        if (para->sstream_info.sub_index == pkt->avpkt->stream_index) {
+            codec_tag = pFCtx->streams[pkt->avpkt->stream_index]->codec->codec_tag;
+
+            if (codec_tag == MKTAG('D','X','S','A')) {
+                sub_header[4] = sub_header[4] | 0x01;
+            }
+        }
     }
 
     sub_header[5] = (sub_type >> 16) & 0xff;
