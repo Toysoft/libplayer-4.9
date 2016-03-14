@@ -2638,6 +2638,8 @@ static int mpegts_read_close(AVFormatContext *s)
 }
 
 #define GET_PCR_POS 5*1024*1024
+#define PCR_HIGH_MAX (0x200000000L)
+#define PCR_NEAR_WRAP_CHECK (0x200000000L-0x20000000)//about 1.5h
 
 static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
                               int64_t *ppos, int64_t pos_limit)
@@ -2689,6 +2691,15 @@ static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
         }
     }
     *ppos = pos;
+    if (ts->first_pcrscr != AV_NOPTS_VALUE &&
+                ts->first_pcrscr > PCR_NEAR_WRAP_CHECK) {
+        if (timestamp < ts->first_pcrscr) {
+            av_log(NULL, AV_LOG_INFO, "mpegts_get_pcr: start PCR Near Wrap"
+                    "timestamp = 0x%llx, ts->first_pcrscr = 0x%llx\n",
+                    timestamp, ts->first_pcrscr);
+            timestamp += PCR_HIGH_MAX;
+        }
+    }
 
     return timestamp;
 }
