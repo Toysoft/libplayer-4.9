@@ -47,6 +47,10 @@ typedef enum {
 } curl_prot_type;
 
 typedef enum {
+    C_FLAGS_NO_BODY                 = 'nobd',
+} curl_flags;
+
+typedef enum {
     C_ERROR_OK                      = 0,
     C_ERROR_UNKNOW                  = -1,
     C_ERROR_EAGAIN                  = -11, // consider for ffmpeg compatibility

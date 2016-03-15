@@ -457,6 +457,11 @@ CURLWContext * curl_wrapper_init(int flags)
         CLOGE("CURLWContext multi_curl init failed\n");
         return NULL;
     }
+    if (flags == C_FLAGS_NO_BODY) {
+        handle->no_body = 1;
+    } else {
+        handle->no_body = 0;
+    }
     handle->interrupt = NULL;
     handle->interruptwithpid = NULL;
     handle->parent_thread_id = NULL;
@@ -535,11 +540,11 @@ static int curl_wrapper_open_cnx(CURLWContext *con, CURLWHandle *h, Curl_Data *b
             CLOGE("curl_wrapper_easy_setopt_http_basic failed\n");
             return ret;
         }
+        curl_wrapper_setopt_error(h, curl_easy_setopt(h->curl, CURLOPT_ACCEPT_ENCODING, "gzip"));
     }
     if (flags == C_PROT_HTTPS) {
         curl_wrapper_setopt_error(h, curl_easy_setopt(h->curl, CURLOPT_CAINFO, "/etc/curl/cacerts/ca-certificates.crt"));
     }
-    curl_wrapper_setopt_error(h, curl_easy_setopt(h->curl, CURLOPT_ACCEPT_ENCODING, "gzip"));
     curl_wrapper_setopt_error(h, curl_easy_setopt(h->curl, CURLOPT_DEBUGFUNCTION, debug_callback));
     con->chunk_size = 0;
     con->quited = 0;
@@ -675,6 +680,10 @@ int curl_wrapper_perform(CURLWContext *con)
             break;
         }
         if (con->connected) {
+            if (con->no_body) {
+                CLOGI("Got headers, no body output!");
+                break;
+            }
             if (con->chunked && con->chunk_size > 0) { // retry less in chunked mode.
                 if (select_zero_cnt == 5) {
                     select_breakout_flag = 1;
