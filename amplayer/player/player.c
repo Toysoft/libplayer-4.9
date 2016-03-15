@@ -1517,15 +1517,18 @@ write_packet:
                                 && (((player->playctrl_info.trick_start_us - cur_us) > discontinue_threshold) || ((player->playctrl_info.trick_start_us - cur_us) < 0)))) {
                             log_print("[%s:%d]reset player->playctrl_info.trick_start_us from %lld to %lld\n", __FUNCTION__, __LINE__, player->playctrl_info.trick_start_us, cur_us);
                             player->playctrl_info.trick_start_us = cur_us;
+			    player->playctrl_info.trick_start_sysus = gettime();
                         }
                         if (0 == player->playctrl_info.f_step) {
                             wait_time = 0;
                         } else {
                             if (cur_us > player->playctrl_info.trick_start_us) {
                                 wait_time = (cur_us - player->playctrl_info.trick_start_us) / player->playctrl_info.f_step;
-                            } else {
+                            } else if(cur_us < player->playctrl_info.trick_start_us){
                                 wait_time = (player->playctrl_info.trick_start_us - cur_us) / player->playctrl_info.f_step;
-                            }
+                            }else{
+				wait_time = 500000;
+			    }
                         }
                         //player->playctrl_info.last_trick_us = cur_us;
                         player->playctrl_info.trick_wait_time = wait_time + player->playctrl_info.trick_start_sysus;
