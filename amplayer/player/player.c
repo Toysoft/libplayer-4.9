@@ -1049,6 +1049,19 @@ void *player_thread(play_para_t *player)
     }
     if (player->pFormatCtx && player->pFormatCtx->pb && player->pFormatCtx->pb->is_slowmedia) {
         url_set_seek_flags(player->pFormatCtx->pb, LESS_BUFF_DATA | NO_READ_RETRY);
+        if (!player->buffering_enable) {
+            /*local m3u8 with http ts, seek can not exit buffering*/
+            float level = am_getconfig_float_def("media.amplayer.lpbufferlevel", 0.02);
+            player->div_buf_time = (int)am_getconfig_float_def("media.amplayer.divtime", 1);
+            player->buffering_exit_time_s = player->buffering_enter_time_s =
+                    am_getconfig_float_def("media.amplayer.onbuffering.S", 0.120); //120ms
+            player->buffering_threshhold_min = (level < 0.001 && level > 0.0) ? level / 10 : 0.001;
+            player->buffering_threshhold_middle = level > 0 ? level : 0.02;
+            player->buffering_threshhold_max = level < 0.8 ? 0.8 : level;
+            player->buffering_enable = 1;
+            player->pFormatCtx->pb->local_playback = 0;
+            log_print("player->buffering_enable set to 1\n");
+        }
     }
     ffmpeg_parse_file_type(player, &filetype);
     set_player_state(player, PLAYER_TYPE_REDY);
