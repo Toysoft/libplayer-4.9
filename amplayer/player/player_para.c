@@ -925,21 +925,33 @@ static void get_stream_info(play_para_t *p_para)
         p_para->sstream_info.has_sub = 0;
     }
 
-    if ((p_para->vstream_num >= 1) ||
-        (p_para->astream_num >= 1) ||
-        (p_para->sstream_num >= 1)) {
-        if ((video_index > (p_para->vstream_num + p_para->astream_num)) || (video_index < 0)) {
-            video_index = temp_vidx;
-        }
+    if (p_para->playctrl_info.switch_ts_program_flag != 1) {
+        if ((p_para->vstream_num >= 1) ||
+            (p_para->astream_num >= 1) ||
+            (p_para->sstream_num >= 1)) {
+            if ((video_index > (p_para->vstream_num + p_para->astream_num)) || (video_index < 0)) {
+                video_index = temp_vidx;
+            }
 
-        if (audio_index > (p_para->vstream_num + p_para->astream_num) || audio_index < 0) {
-            audio_index = temp_aidx;
-        }
+            if (audio_index > (p_para->vstream_num + p_para->astream_num) || audio_index < 0) {
+                audio_index = temp_aidx;
+            }
 
-        if ((sub_index > p_para->sstream_num) || (sub_index < 0)) {
-            sub_index = temp_sidx;
+            if ((sub_index > p_para->sstream_num) || (sub_index < 0)) {
+                sub_index = temp_sidx;
+            }
+        }
+    } else {
+        pStream = pFormat->streams[audio_index];
+        pCodec = pStream->codec;
+        int filter_afmt = PlayerGetAFilterFormat("media.amplayer.disable-acodecs");
+        audio_format = audio_type_convert(pCodec->codec_id, p_para->file_type);
+        if (((1 << audio_format) & filter_afmt) != 0) {
+            audio_index = -1;
+            log_error("[%s %d] dont support current audio index:%d\n", __FUNCTION__, __LINE__, audio_index);
         }
     }
+
     if (p_para->astream_info.has_audio && audio_index != -1) {
         p_para->astream_info.audio_channel = pFormat->streams[audio_index]->codec->channels;
         p_para->astream_info.audio_samplerate = pFormat->streams[audio_index]->codec->sample_rate;
@@ -1439,6 +1451,9 @@ int player_dec_reset(play_para_t *p_para)
         p_para->playctrl_info.switch_ts_video_pid = 0;
         p_para->playctrl_info.switch_ts_audio_pid = 0;
     }
+
+    get_stream_info(p_para);
+    get_av_codec_type(p_para);
 
     player_startsync_set(); // maybe reset
     timestamp = (int64_t)(time_point * AV_TIME_BASE);
