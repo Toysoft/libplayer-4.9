@@ -1366,9 +1366,11 @@ MSG_LOOP:
 
         adec_reset_track(audec);
         adec_flag_check(audec);
+        if (audec->state == ACTIVE)
+            adec_refresh_pts(audec);
         msg = adec_get_message(audec);
         if (!msg) {
-            amthreadpool_thread_usleep(100 * 1000); //if not wait,need changed to amthread usleep
+            amthreadpool_thread_usleep(10 * 1000); //if not wait,need changed to amthread usleep
             continue;
         }
 
