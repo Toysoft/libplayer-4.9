@@ -2155,6 +2155,14 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
                 av_dlog(s, "using cached pos_max=0x%"PRIx64" pos_limit=0x%"PRIx64" dts_max=%"PRId64"\n",
                         pos_max, pos_limit, ts_max);
             }
+            if ((ts_min != AV_NOPTS_VALUE && ts_max != AV_NOPTS_VALUE) &&
+                        (ts_min > ts_max || pos_min > pos_max)) {
+                av_log(NULL, AV_LOG_ERROR, "do not use cached position, pos[%lld,%lld], ts[%lld, %lld]\n",
+                    pos_min, pos_max, ts_min, ts_max);
+                ts_max = ts_min = AV_NOPTS_VALUE;
+                pos_min = pos_max = 0;
+                pos_limit = -1; //gcc falsely says it may be uninitialized
+            }
         }
     }
     pos = av_gen_search(s, stream_index, target_ts, pos_min, pos_max, pos_limit, ts_min, ts_max, flags, &ts, avif->read_timestamp);
