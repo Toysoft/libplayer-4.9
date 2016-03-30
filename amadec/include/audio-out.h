@@ -29,7 +29,9 @@ typedef struct {
     int (*mute)(struct aml_audio_dec *, adec_bool_t);           /* 1: enable mute ; 0: disable mute */
     int (*set_volume)(struct aml_audio_dec *, float);
     int (*set_lrvolume)(struct aml_audio_dec *, float, float);
+    int (*set_track_rate)(struct aml_audio_dec *, void *rate);
     int audio_out_raw_enable;
+    float track_rate;
 } audio_out_operations_t;
 
 ADEC_END_DECLS

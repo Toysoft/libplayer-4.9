@@ -879,7 +879,7 @@ int droppcm_get_refpts(aml_audio_dec_t *audec, unsigned long *refpts)
     int64_t start_time = gettime();
     unsigned long firstvpts = 0;
     unsigned long cur_vpts = 0;
-
+    audio_out_operations_t * aout_ops = &audec->aout_ops;
     if (amsysfs_get_sysfs_str(TSYNC_MODE, buf, sizeof(buf)) == -1) {
         adec_print("unable to get tsync_mode from: %s", buf);
         return -1;
@@ -952,7 +952,12 @@ int droppcm_get_refpts(aml_audio_dec_t *audec, unsigned long *refpts)
         if (audec->need_stop) {
             return 0;
         }
-
+        aout_ops = &audec->aout_ops;
+        if (aout_ops) {
+            /*cts if audio track rate is set,skip */
+            if (aout_ops->track_rate != 8.8f)
+                return 0;
+        }
         if (sysfs_get_int(TSYNC_FIRSTVPTS, &firstvpts) == -1) {
             adec_print("## [%s::%d] unable to get firstpts! \n", __FUNCTION__, __LINE__);
             return -1;

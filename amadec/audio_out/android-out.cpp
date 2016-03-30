@@ -1498,6 +1498,28 @@ extern "C" int android_set_lrvolume(struct aml_audio_dec* audec, float lvol,floa
 
     return 0;
 }
+extern "C" int android_set_track_rate(struct aml_audio_dec* audec,void *rate)
+{
+#if ANDROID_PLATFORM_SDK_VERSION >= 23
+    Mutex::Autolock _l(mLock);
+    adec_print("android_set_track_rate");
+    struct AudioPlaybackRate  Rate = *(struct AudioPlaybackRate*)rate;
+    audio_out_operations_t *out_ops = &audec->aout_ops;
+#if ANDROID_PLATFORM_SDK_VERSION < 19
+    AudioTrack *track = (AudioTrack *)out_ops->private_data;
+#else
+    AudioTrack *track = mpAudioTrack.get();
+#endif
+    if (!track) {
+        adec_print("No track instance!\n");
+        return -1;
+    }
+
+    track->setPlaybackRate(Rate);
+    out_ops->track_rate = Rate.mSpeed;
+#endif
+    return 0;
+}
 
 extern "C" void android_basic_init()
 {
@@ -1523,6 +1545,9 @@ extern "C" void get_output_func(struct aml_audio_dec* audec)
     out_ops->mute = android_mute;
     out_ops->set_volume = android_set_volume;
     out_ops->set_lrvolume = android_set_lrvolume;
+    out_ops->set_track_rate = android_set_track_rate;
+    /* default set a invalid value*/
+    out_ops->track_rate = 8.8f;
 }
 
 }

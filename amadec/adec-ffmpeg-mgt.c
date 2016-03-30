@@ -207,6 +207,10 @@ unsigned long  armdec_get_pts(dsp_operations_t *dsp_ops)
     unsigned long delay_pts;
     char value[PROPERTY_VALUE_MAX];
     aml_audio_dec_t *audec = (aml_audio_dec_t *)dsp_ops->audec;
+    audio_out_operations_t * aout_ops = &audec->aout_ops;
+    float  track_speed = 1.0f;
+    if (aout_ops->track_rate != 8.8f)
+        track_speed = aout_ops->track_rate;
     switch (audec->g_bst->data_width) {
     case AV_SAMPLE_FMT_U8:
         data_width = 8;
@@ -287,6 +291,7 @@ unsigned long  armdec_get_pts(dsp_operations_t *dsp_ops)
     int len = audec->g_bst->buf_level + audec->pcm_cache_size;
     frame_nums = (len * 8 / (data_width * channels));
     delay_pts = (frame_nums * 90000 / samplerate);
+    delay_pts = delay_pts*track_speed;
     if (pts > delay_pts) {
         pts -= delay_pts;
     } else {

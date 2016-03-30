@@ -356,3 +356,8 @@ int codec_get_decoder_enable(codec_para_t *p)
 {
     return audio_decoder_get_enable_status(p->adec_priv);
 }
+int codec_set_track_rate(codec_para_t *p,void *rate)
+{
+    return audio_decoder_set_trackrate(p->adec_priv,rate);
+}
+

@@ -97,7 +97,7 @@ int player_get_streaming_track_count(int pid, int * trackNum);
 int player_get_streaming_track_info(int pid, int * info_num, AVStreamInfo *** info_t);
 int player_select_streaming_track(int pid, int index, int select);
 int player_get_streaming_selected_track(int pid, int type, int * selected_track);
-
+int audio_set_playback_rate(int pid,void *rate);
 #ifdef  __cplusplus
 }
 #endif

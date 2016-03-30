@@ -731,4 +731,17 @@ int audio_get_format_supported(int format)
     }
     return enable;
 }
+int audio_decoder_set_trackrate(void* handle, void *rate)
+{
+    aml_audio_dec_t *audec = (aml_audio_dec_t *)handle;
+    audio_out_operations_t *aout_ops = NULL;
+    if (!audec) {
+        adec_print("audio handle is NULL !\n");
+        return -1;
+    }
+    aout_ops =  &audec->aout_ops;
+    if (aout_ops->set_track_rate)
+        return aout_ops->set_track_rate(audec,rate);
+    return 0;
+}
 

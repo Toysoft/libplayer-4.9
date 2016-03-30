@@ -2324,3 +2324,19 @@ int player_get_streaming_selected_track(int pid, int type, int * selected_track)
     player_close_pid_data(pid);
     return ret;
 }
+int audio_set_playback_rate(int pid,void *rate)
+{
+    play_para_t *player_para;
+    log_print("[audio_set_playback_rate:enter]pid=%d\n", pid);
+    player_para = player_open_pid_data(pid);
+    if (player_para == NULL) {
+        log_print("player ID is NULL!\n");
+        return -1;
+    }
+    if (player_para->acodec == NULL) {
+        log_print("codec is not ready!\n");
+        return -1;
+    }
+    return codec_set_track_rate(player_para->acodec, rate);
+}
+
