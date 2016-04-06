@@ -1450,10 +1450,10 @@ int player_dec_reset(play_para_t *p_para)
 
         p_para->playctrl_info.switch_ts_video_pid = 0;
         p_para->playctrl_info.switch_ts_audio_pid = 0;
-    }
 
-    get_stream_info(p_para);
-    get_av_codec_type(p_para);
+        get_stream_info(p_para);
+        get_av_codec_type(p_para);
+    }
 
     player_startsync_set(); // maybe reset
     timestamp = (int64_t)(time_point * AV_TIME_BASE);
