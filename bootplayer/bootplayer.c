@@ -247,6 +247,7 @@ int main(int argc, char *argv[])
                 ALOGD("set_display_axis =%s\n", newframestring);
                 set_display_axis(0);
                 osd_is_blank = 1;
+                property_set("service.bootanim.shown", "1");
             }
         }
         switch (tmpstep) {
