@@ -24,7 +24,7 @@ namespace android {
 #define     ISDDP(bsid)         ((bsid) <= BS_AXE && (bsid) > 10)
 #define     BS_BITOFFSET      40
 #define     PTR_HEAD_SIZE 7	//20
-
+#define     FRAME_RECORD_NUM   40
 	typedef struct {
 		DDPshort *buf;
 		DDPshort bitptr;
@@ -106,7 +106,9 @@ namespace android {
 		DDPerr ddbs_skip(DDP_BSTRM * p_bstrm, DDPshort numbits);
 		DDPerr ddbs_getbsid(DDP_BSTRM * p_inbstrm, DDPshort * p_bsid);
 		int Get_ChNum_AC3_Frame(void *buf);
-		//---------------------------------------
+                int get_frame_size(void);
+                void store_frame_size(int lastFrameLen);
+                //---------------------------------------
 
 		int sample_rate;
 		int ChNum;
@@ -118,8 +120,8 @@ namespace android {
 		int extractor_cost_bytes_last;
 		int *pStop_ReadBuf_Flag;
 		int ChNumOriginal;
-
- protected:
+                int frame_length_his[FRAME_RECORD_NUM];
+protected:
 		 virtual ~ DDP_MediaSource();
 
  private:

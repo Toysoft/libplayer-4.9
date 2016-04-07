@@ -119,8 +119,6 @@ int DDP_MediaSource::Get_ChNum_DD(void *buf)//at least need:56bit(=7 bytes)
     return numch;
 
 }
-
-
 int DDP_MediaSource::Get_ChNum_DDP(void *buf)//at least need:40bit(=5 bytes)
 {
 
@@ -275,6 +273,7 @@ DDP_MediaSource::DDP_MediaSource(void *read_buffer)
     extractor_cost_bytes = 0;
     extractor_cost_bytes_last = 0;
     memset(frame.rawbuf, 0, 6144);
+    memset(frame_length_his,0,sizeof(frame_length_his));
     frame.len = 0;
     ChNumOriginal=0;
 }
@@ -376,7 +375,32 @@ static int calc_dd_frame_size(int code)
 
     return 0;
 }
+int DDP_MediaSource::get_frame_size(void)
+{
+    int i;
+    unsigned sum = 0;
+    unsigned valid_his_num = 0;
+    for (i = 0; i < FRAME_RECORD_NUM; i++) {
+        if (frame_length_his[i] > 0) {
+            valid_his_num ++;
+            sum += frame_length_his[i];
+        }
+    }
 
+    if (valid_his_num == 0) {
+        return 768;
+    }
+    return sum / valid_his_num;
+}
+void DDP_MediaSource::store_frame_size(int lastFrameLen)
+{
+    /* record the frame length into the history buffer */
+    int i = 0;
+    for (i = 0; i < FRAME_RECORD_NUM - 1; i++) {
+        frame_length_his[i] = frame_length_his[i + 1];
+    }
+    frame_length_his[FRAME_RECORD_NUM - 1] = lastFrameLen;
+}
 int DDP_MediaSource::MediaSourceRead_buffer(unsigned char *buffer,int size)
 {
    int readcnt=0;
@@ -414,9 +438,10 @@ status_t DDP_MediaSource::read(MediaBuffer **out, const ReadOptions *options)
 {
     *out = NULL;
     int readdiff = 0;
+    int read_delta = 0;
     while(1){
         frame_size = 0;
-        frame.len += MediaSourceRead_buffer(frame.rawbuf + frame.len, 6144 - frame.len);
+        frame.len += MediaSourceRead_buffer(frame.rawbuf + frame.len, get_frame_size()+PTR_HEAD_SIZE+read_delta - frame.len);
 
         if(frame.len < PTR_HEAD_SIZE){
             ALOGI("WARNING: fpread_buffer read failed [%s %d]!\n",__FUNCTION__,__LINE__);
@@ -435,32 +460,27 @@ status_t DDP_MediaSource::read(MediaBuffer **out, const ReadOptions *options)
             Get_ChNum_AC3_Frame(frame.rawbuf);
             frame_size=frame_size*2;
 
-            if((frame_size==0)||(frame_size<PTR_HEAD_SIZE))
+            if ((frame_size == 0) || (frame_size < PTR_HEAD_SIZE) || (frame_size > 4096))
             {
-                ALOGI("frame_size failed\n");
+                ALOGI("frame_size %d error\n",frame_size);
                 memcpy((char*)(frame.rawbuf),(char *)(frame.rawbuf+1), frame.len-1);
                 frame.len -= 1;
                 readdiff ++;
                 continue;
             }
-
-            if(frame_size > frame.len - 2){
-                ALOGI("frame_size:%d, len:%d\n", frame_size, frame.len);
-                ALOGI("WARNING: fpread_buffer read failed [%s %d]!\n",__FUNCTION__,__LINE__);
-                return ERROR_END_OF_STREAM;
-            }else{
-                if(frame_size == frame.len){
-                    break;
-                }
+            /* if framesize bigger than current frame size + syncword size.read more */
+            if (frame_size > (frame.len - 2)) {
+                ALOGI("frame size %d exceed cached size %d,read more\n",frame_size,frame.len);
+                read_delta = frame_size - (frame.len -2);
+                continue;
             }
-
             head = (frame.rawbuf[frame_size] << 8) | frame.rawbuf[frame_size + 1];
 
-            if(head == 0x0b77 || head == 0x770b){
-                ALOGI("next frame is ok\n");
+            if (head == 0x0b77 || head == 0x770b) {
+                ALOGI("next frame is ok,frame size %d\n",frame_size);
                 break;
             }else{
-                ALOGI("=====next frame faile=====\n");
+                ALOGI("=====next frame sync word error %x,resync\n",head);
                 memcpy((char*)(frame.rawbuf),(char *)(frame.rawbuf+1), frame.len-1);
                 frame.len -= 1;
                 readdiff ++;
@@ -492,6 +512,7 @@ status_t DDP_MediaSource::read(MediaBuffer **out, const ReadOptions *options)
     {
         extractor_cost_bytes += readdiff;
     }
+    store_frame_size(frame_size);
     return OK;
 }
 
