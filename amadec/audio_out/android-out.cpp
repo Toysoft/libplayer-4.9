@@ -375,7 +375,7 @@ void audioCallback(int event, void* user, void *info)
 	struct am_io_param am_io;
 
     if (event != AudioTrack::EVENT_MORE_DATA) {
-        adec_refresh_pts(audec);
+        //adec_refresh_pts(audec);
         adec_print(" ****************** audioCallback: event = %d g_bst->buf_level/%d g_bst_raw->buf_level/%d [-1:mean unknown] \n", event,audec->g_bst==NULL?-1:audec->g_bst->buf_level,audec->g_bst_raw==NULL?-1:audec->g_bst_raw->buf_level);
         return;
     }
@@ -396,11 +396,6 @@ void audioCallback(int event, void* user, void *info)
 
         //ioctl(audec->adsp_ops.amstream_fd, AMSTREAM_IOC_GET_LAST_CHECKOUT_APTS, (int)&last_checkout);
     }
-
-    if(1){//!wfd_enable){
-      adec_refresh_pts(audec);
-    }
-
     if(wfd_enable){
       // filtering
       diff_record[diff_wp++] = diff;
