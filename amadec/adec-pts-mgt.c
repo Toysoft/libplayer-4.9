@@ -371,6 +371,13 @@ int adec_pts_droppcm(aml_audio_dec_t *audec)
     if (property_get("media.amplayer.sync_switch_ms", value, NULL) > 0) {
         sync_switch_ms = atoi(value);
     }
+
+    if (am_getconfig_bool("media.libplayer.show_firstframe") &&
+        audec->tsync_mode == TSYNC_MODE_PCRMASTER) {
+        const char * show_first_frame = "/sys/class/video/show_first_frame_nosync";
+        amsysfs_set_sysfs_int(show_first_frame, 1);
+        sync_switch_ms = 10000;//10s
+    }
     adec_print("sync switch setting: %d ms \n", sync_switch_ms);
     //auto switch -- if diff not too much, using slow sync
     if (audec->first_apts >= refpts || diff / 90 < sync_switch_ms) {
@@ -551,7 +558,7 @@ int adec_refresh_pts(aml_audio_dec_t *audec)
                    audec->tsync_mode, pcrscr64, apts64, u32_vpts, audec->last_apts64, pcrmaster_droppcm_flag, audec->adis_flag);
 
         // drop pcm
-        if (pcrscr64 - apts64 > audec->pcrmaster_droppcm_thsh && abs(pcrscr64 - apts64) < 3 * 90000) {
+        if (pcrscr64 - apts64 > audec->pcrmaster_droppcm_thsh && abs(pcrscr64 - apts64) < 3 * 90000  && abs(u32_vpts - apts64) >= 45000) {
             if (pcrmaster_droppcm_flag++ > 20) {
                 int drop_size, droppts;
                 droppts = pcrscr64 - apts64;
@@ -874,7 +881,7 @@ int droppcm_get_refpts(aml_audio_dec_t *audec, unsigned long *refpts)
     char buf[32];
     char tsync_mode_str[10];
     int tsync_mode;
-    int circount = 2000; // default: 2000ms
+    int circount = 3000; // default: 3000ms
     int refmode = TSYNC_MODE_AMASTER;
     int64_t start_time = gettime();
     unsigned long firstvpts = 0;
