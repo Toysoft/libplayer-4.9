@@ -166,6 +166,74 @@ int codec_get_volume(codec_para_t *p, float *val)
 
 /* --------------------------------------------------------------------------*/
 /**
+* @brief  codec_set_pre_gain  Set audio decoder pre-gain
+*
+* @param[in]  p    Pointer of codec parameter structure
+* @param[in]  gain  gain to be set
+*
+* @return     command result
+*/
+/* --------------------------------------------------------------------------*/
+int codec_set_pre_gain(codec_para_t *p, float gain)
+{
+    int ret;
+
+    ret = audio_decode_set_pre_gain(p->adec_priv, gain);
+    return ret;
+}
+
+/* --------------------------------------------------------------------------*/
+/**
+* @brief  codec_get_pre_gain  Get audio decoder pre-gain
+*
+* @param[in]  p  Pointer of codec parameter structure
+*
+* @return     command result
+*/
+/* --------------------------------------------------------------------------*/
+int codec_get_pre_gain(codec_para_t *p, float *gain)
+{
+    int ret;
+    ret = audio_decode_get_pre_gain(p->adec_priv, gain);
+    return ret;
+}
+
+/* --------------------------------------------------------------------------*/
+/**
+* @brief  codec_set_pre_mute  Set audio decoder pre-mute
+*
+* @param[in]  p    Pointer of codec parameter structure
+* @param[in]  gain  gain to be set
+*
+* @return     command result
+*/
+/* --------------------------------------------------------------------------*/
+int codec_set_pre_mute(codec_para_t *p, uint mute)
+{
+    int ret;
+
+    ret = audio_decode_set_pre_mute(p->adec_priv, mute);
+    return ret;
+}
+
+/* --------------------------------------------------------------------------*/
+/**
+* @brief  codec_get_pre_mute  Get audio decoder pre-mute
+*
+* @param[in]  p  Pointer of codec parameter structure
+*
+* @return     command result
+*/
+/* --------------------------------------------------------------------------*/
+int codec_get_pre_mute(codec_para_t *p, uint *mute)
+{
+    int ret;
+    ret = audio_decode_get_pre_mute(p->adec_priv, mute);
+    return ret;
+}
+
+/* --------------------------------------------------------------------------*/
+/**
 * @brief  codec_set_volume  Set audio volume seperately
 *
 * @param[in]  p    Pointer of codec parameter structure

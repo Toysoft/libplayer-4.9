@@ -342,6 +342,7 @@ struct am_io_param {
 };
 
 static int  mix_lr_channel_enable=0;
+static int  pre_gain_enable=0;
 static void momo2_mode_mix(short*buf, int nsamps, int channels)
 {
     int i;
@@ -359,6 +360,13 @@ static void momo2_mode_mix(short*buf, int nsamps, int channels)
        p16tmp[i]=(tmpSum&0x0000ffff);
        p16tmp[i+1]=(tmpSum&0x0000ffff);
     }
+}
+
+static void apply_audio_pregain(void *buf, int size, float gain) {
+    int i;
+    short *sample = (short*)buf;
+    for (i = 0; i < size/sizeof(short); i++)
+        sample[i] = gain*sample[i];
 }
 
 #define  RESAMPLE_THRESHOLD     (30 * TIME_UNIT90K / 1000)
@@ -548,11 +556,21 @@ void audioCallback(int event, void* user, void *info)
         } else {
             af_resample_api_normal((char*)(buffer->i16), (unsigned int*)&buffer->size, channels, audec);
         }
-        if(audec->mix_lr_channel_enable>=0)
-            mix_lr_channel_enable=audec->mix_lr_channel_enable;
-        if(mix_lr_channel_enable && channels==2)
-        {
-             momo2_mode_mix((short*)(buffer->i16), buffer->size/2,channels);
+        if (!audec->pre_mute) {
+            if (audec->pre_gain_enable >= 0) {
+                pre_gain_enable = audec->pre_gain_enable;
+            }
+            if (pre_gain_enable) {
+                apply_audio_pregain(buffer->i16, buffer->size, audec->pre_gain);
+            }
+            if (audec->mix_lr_channel_enable >= 0)
+                mix_lr_channel_enable = audec->mix_lr_channel_enable;
+            if (mix_lr_channel_enable && channels == 2) {
+                momo2_mode_mix((short*)(buffer->i16), buffer->size/2,channels);
+            }
+        } else {
+            //mute the buffer by pre-mute flag on
+            memset(buffer->i16, 0, buffer->size);
         }
      } else {
         adec_print("audioCallback: dsp not work!\n");

@@ -315,6 +315,47 @@ int audio_decode_set_volume(void *handle, float vol)
 }
 
 /**
+ * \brief set audio pre-gain
+ * \param handle pointer to player private data
+ * \param gain pre-gain value
+ * \return 0 on success otherwise -1 if an error occurred
+ */
+int audio_decode_set_pre_gain(void *handle, float gain)
+{
+    int ret = 0;
+    aml_audio_dec_t *audec = (aml_audio_dec_t *)handle;
+    if (!handle) {
+        adec_print("audio handle is NULL !\n");
+        ret = -1;
+    } else {
+        audec->pre_gain_enable = 1;
+        audec->pre_gain = powf(10, gain/20);
+        adec_print("[%s] set pre-gain[%f] \n", __FUNCTION__, audec->pre_gain);
+    }
+    return ret;
+}
+
+/**
+ * \brief set audio decode pre-mute
+ * \param handle pointer to player private data
+ * \param mute pre-mute value
+ * \return 0 on success otherwise -1 if an error occurred
+ */
+int audio_decode_set_pre_mute(void *handle, uint mute)
+{
+    int ret = 0;
+    aml_audio_dec_t *audec = (aml_audio_dec_t *)handle;
+    if (!handle) {
+        adec_print("audio handle is NULL !\n");
+        ret = -1;
+    } else {
+        audec->pre_mute = mute;
+        adec_print("[%s] set pre-mute[%d] \n", __FUNCTION__, audec->pre_mute);
+    }
+    return ret;
+}
+
+/**
  * \brief set audio volume
  * \param handle pointer to player private data
  * \param vol volume value
@@ -366,6 +407,50 @@ int audio_decode_get_volume(void *handle, float *vol)
     }
 
     *vol = audec->volume;
+
+    return ret;
+}
+
+/**
+ * \brief get audio pre-gain
+ * \param handle pointer to player private data
+ * \param gain pre-gain value
+ * \return 0 on success otherwise -1 if an error occurred
+ */
+int audio_decode_get_pre_gain(void *handle, float *gain)
+{
+    int ret = 0;
+    adec_cmd_t *cmd;
+    aml_audio_dec_t *audec = (aml_audio_dec_t *)handle;
+
+    if (!handle) {
+        adec_print("audio handle is NULL !\n");
+        return -1;
+    }
+
+    *gain = 20*log10f(audec->pre_gain);
+
+    return ret;
+}
+
+/**
+ * \brief get audio decode pre-mute
+ * \param handle pointer to player private data
+ * \param mute pre-mute value
+ * \return 0 on success otherwise -1 if an error occurred
+ */
+int audio_decode_get_pre_mute(void *handle, uint *mute)
+{
+    int ret = 0;
+    adec_cmd_t *cmd;
+    aml_audio_dec_t *audec = (aml_audio_dec_t *)handle;
+
+    if (!handle) {
+        adec_print("audio handle is NULL !\n");
+        return -1;
+    }
+
+    *mute = audec->pre_mute;
 
     return ret;
 }
