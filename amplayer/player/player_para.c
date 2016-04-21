@@ -1547,6 +1547,9 @@ int player_dec_reset(play_para_t *p_para)
     if (p_para->stream_type == STREAM_AUDIO) {
         p_para->astream_info.check_first_pts = 0;
     }
+   if (p_para->astream_info.has_audio && p_para->astream_info.audio_format == AFORMAT_VORBIS) {
+      codec_set_av_threshold(get_audio_codec(p_para),200 * 90);/*200ms*/
+   }
 
     /* set disable slow sync */
     if (p_para->vstream_info.has_video) {
@@ -2177,7 +2180,9 @@ int player_decoder_init(play_para_t *p_para)
             codec_set_drmmode(p_para->codec, 1);
         }
     }
-
+    if (p_para->astream_info.has_audio && p_para->astream_info.audio_format == AFORMAT_VORBIS) {
+        codec_set_av_threshold(get_audio_codec(p_para),200 * 90);/*200ms*/
+    }
     return PLAYER_SUCCESS;
 failed:
     return ret;
