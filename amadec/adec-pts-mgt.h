@@ -39,10 +39,13 @@ typedef enum {
 #define TSYNC_FIRSTVPTS "/sys/class/tsync/firstvpts"
 #define TSYNC_FIRSTAPTS "/sys/class/tsync/firstapts"
 #define TSYNC_CHECKIN_FIRSTVPTS "/sys/class/tsync/checkin_firstvpts"
+#define TSYNC_PCR_DISCONTINUE "/sys/class/tsync_pcr/tsync_pcr_discontinue"
+#define TSYNC_PCR_PLAY_MODE "/sys/class/tsync_pcr/play_mode"
 
 #define SYSTIME_CORRECTION_THRESHOLD        (90000*6/100)//modified for amlogic-pd-91949
 #define APTS_DISCONTINUE_THRESHOLD          (90000*3)
 #define REFRESH_PTS_TIME_MS                 (1000/10)
+#define VIDEO_DISCONTINUE   0x02
 
 #define abs(x) ({                               \
                 long __x = (x);                 \

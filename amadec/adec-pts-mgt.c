@@ -72,12 +72,29 @@ static int mysysfs_get_sysfs_int16(const char *path)
         adec_print("unable to open file %s\n", path);
         return -1;
     }
-    if (sscanf(valstr, "0x%lx", &val) < 1) {
+    if (sscanf(valstr, "0x%x", &val) < 1) {
         adec_print("unable to get pts from: %s", valstr);
         return -1;
     }
     return val;
 }
+
+static int mysysfs_get_sysfs_int(const char *path)
+{
+    int fd;
+    int val = 0;
+    char  bcmd[16];
+    fd = open(path, O_RDONLY);
+    if (fd >= 0) {
+        read(fd, bcmd, sizeof(bcmd));
+        val = strtol(bcmd, NULL, 10);
+        close(fd);
+    } else {
+        adec_print("unable to open file %s,err: %s", path, strerror(errno));
+    }
+    return val;
+}
+
 static int set_tsync_enable(int enable)
 {
     char *path = "/sys/class/tsync/enable";
@@ -535,9 +552,12 @@ int adec_refresh_pts(aml_audio_dec_t *audec)
         //}
     }
 #if 1
+    unsigned int u32_vpts = mysysfs_get_sysfs_int16(TSYNC_VPTS);
+    unsigned int last_checkin_apts = mysysfs_get_sysfs_int16(TSYNC_LAST_CHECKIN_APTS);
+    //int play_mode = mysysfs_get_sysfs_int(TSYNC_PCR_PLAY_MODE);
+
     if (audec->tsync_mode == TSYNC_MODE_PCRMASTER  && audec->pcrtsync_enable
         && ((((int64_t)pts) - audec->last_apts64 > TIME_UNIT90K / 10) || ((int64_t)pts < audec->last_apts64))) {
-        //sysfs_get_int(TSYNC_PCRSCR, &pcrscr);
 
         int64_t apts64 = (int64_t)pts;
         int64_t pcrscr64 = (int64_t)systime;
@@ -553,10 +573,11 @@ int adec_refresh_pts(aml_audio_dec_t *audec)
             audec->last_apts64 = apts64;
         }
 
-        unsigned int u32_vpts = mysysfs_get_sysfs_int16(TSYNC_VPTS);
+        unsigned int adiff = (unsigned int)((int64_t)last_checkin_apts - apts64);
         adec_print("## tsync_mode:%d, pcr:%llx,apts:%llx, u32_vpts = 0x%x,lastapts:%llx, flag:%d,%d,---\n",
-                   audec->tsync_mode, pcrscr64, apts64, u32_vpts, audec->last_apts64, pcrmaster_droppcm_flag, audec->adis_flag);
-
+            audec->tsync_mode, pcrscr64, apts64, u32_vpts, audec->last_apts64, pcrmaster_droppcm_flag, audec->adis_flag);
+        //adec_print("## tsync_mode:%d,apts:%llx,last_checkin_apts=0x%x,diff=%ld, play_mode=%d\n",
+        //    audec->tsync_mode, apts64, last_checkin_apts, adiff, play_mode);
         // drop pcm
         if (pcrscr64 - apts64 > audec->pcrmaster_droppcm_thsh && abs(pcrscr64 - apts64) < 3 * 90000  && abs(u32_vpts - apts64) >= 45000) {
             if (pcrmaster_droppcm_flag++ > 20) {
@@ -578,10 +599,19 @@ int adec_refresh_pts(aml_audio_dec_t *audec)
 #endif
     if ((abs(pts - last_pts) > APTS_DISCONTINUE_THRESHOLD) && (audec->adsp_ops.last_pts_valid)) {
         /* report audio time interruption */
-        adec_print("pts = %lx, last pts = %lx\n", pts, last_pts);
+        adec_print("pts = %lx, last pts = %lx, u32_vpts=0x%x, pcr=0x%lx\n", pts, last_pts, u32_vpts, systime);
 
         adec_print("audio time interrupt: 0x%lx->0x%lx, 0x%lx\n", last_pts, pts, abs(pts - last_pts));
-        if (audec->tsync_mode == TSYNC_MODE_PCRMASTER && audec->pcrtsync_enable) {
+        int tsync_pcr_discontinue = 0;
+        unsigned int adiff = (unsigned int)((unsigned long)last_checkin_apts - pts);
+        if (audec->tsync_mode == TSYNC_MODE_PCRMASTER) {
+            tsync_pcr_discontinue = mysysfs_get_sysfs_int16(TSYNC_PCR_DISCONTINUE);
+            adec_print("%s,tsync_pcr_discontinue=0x%x-\n",__FUNCTION__,tsync_pcr_discontinue);
+            //adec_print("audio interrupt:%d,apts:%llx,last_checkin_apts=0x%x,diff=%ld, play_mode=%d\n",
+            //    audec->tsync_mode, pts, last_checkin_apts, adiff,play_mode);
+
+        }
+        if (audec->tsync_mode == TSYNC_MODE_PCRMASTER && audec->pcrtsync_enable && (tsync_pcr_discontinue & VIDEO_DISCONTINUE)) {
             unsigned long tsync_pcr_dispoint = 0;
             int count = 50;
             audec->apts64 = (int64_t)pts;
