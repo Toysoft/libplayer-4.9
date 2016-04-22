@@ -68,14 +68,22 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
 
 static int read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, size = avio_rl32(s->pb);
-    int64_t   pts = avio_rl64(s->pb);
+    int ret, size;
+    int64_t   pts;
+    if (url_feof(s->pb)) {
+        return AVERROR_EOF;
+    }
+	size = avio_rl32(s->pb);
+    pts = avio_rl64(s->pb);
 
     ret = av_get_packet(s->pb, pkt, size);
     pkt->stream_index = 0;
     pkt->pts          = pts;
     pkt->pos         -= 12;
-
+    if (size == 0 && url_interrupt_cb()) {
+        av_log(s, AV_LOG_WARNING, "interrupt, exit\n");
+        return AVERROR_EXIT;
+    }
     return ret;
 }
 
