@@ -860,6 +860,7 @@ static int raw_read(play_para_t *para)
 
                 if (fdr_raw > 0) {
                     close(fdr_raw);
+                    fdr_raw = -1;
                 }
             }
 
@@ -1094,10 +1095,12 @@ static int non_raw_read(play_para_t *para)
 
                         if (fdr_video >= 0) {
                             close(fdr_video);
+                            fdr_video = -1;
                         }
 
                         if (fdr_audio >= 0) {
                             close(fdr_audio);
+                            fdr_audio = -1;
                         }
                     }
                 }
@@ -2598,14 +2601,17 @@ int write_av_packet(play_para_t *para)
         }
         if (fdw_raw >= 0) {
             close(fdw_raw);
+            fdw_raw = -1;
         }
 
         if (fdw_video >= 0) {
             close(fdw_video);
+            fdw_video = -1;
         }
 
         if (fdw_audio >= 0) {
             close(fdw_audio);
+            fdw_audio = -1;
         }
 
         return PLAYER_WR_FINISH;
