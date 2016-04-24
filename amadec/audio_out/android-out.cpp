@@ -669,7 +669,7 @@ void audioCallback_raw(int event, void* user, void *info)
     if (audec->adsp_ops.dsp_on) {
          int bytes_cnt=0;
          while(bytes_cnt<buffer->size && !audec->need_stop){
-                 len=audec->adsp_ops.dsp_read_raw(&audec->adsp_ops, (char*)(buffer->i16)+bytes_cnt,buffer->size-bytes_cnt); 
+                 len=audec->adsp_ops.dsp_read_raw(&audec->adsp_ops, (char*)(buffer->i16)+bytes_cnt,buffer->size-bytes_cnt);
                  bytes_cnt+=len;
                  if (len == 0) 
                     break;
@@ -827,13 +827,16 @@ extern "C" int android_init_raw(struct aml_audio_dec* audec)
 
     int SessionID = 0;//audec->SessionID;
     adec_print("[%s %d]SessionID = %d audec->codec_type/%f audec->samplerate/%d",__FUNCTION__,__LINE__,SessionID,audec->codec_type,audec->samplerate);
-        
+    int flags  = AUDIO_OUTPUT_FLAG_DIRECT;
+#if ANDROID_PLATFORM_SDK_VERSION >= 21
+    flags |= AUDIO_OUTPUT_FLAG_IEC958_NONAUDIO;
+#endif
    status = track->set(AUDIO_STREAM_MUSIC,
         SampleRate,
         aformat,
         AUDIO_CHANNEL_OUT_STEREO,
         0,                       // frameCount
-        AUDIO_OUTPUT_FLAG_DIRECT, // flags
+        (audio_output_flags_t)flags,
         audioCallback_raw,
         audec,       // user when callback
         0,           // notificationFrames
