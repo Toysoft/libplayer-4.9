@@ -828,7 +828,8 @@ extern "C" int android_init_raw(struct aml_audio_dec* audec)
     int SessionID = 0;//audec->SessionID;
     adec_print("[%s %d]SessionID = %d audec->codec_type/%f audec->samplerate/%d",__FUNCTION__,__LINE__,SessionID,audec->codec_type,audec->samplerate);
     int flags  = AUDIO_OUTPUT_FLAG_DIRECT;
-#if ANDROID_PLATFORM_SDK_VERSION >= 21
+//only defined from android M
+#if ANDROID_PLATFORM_SDK_VERSION >= 23
     flags |= AUDIO_OUTPUT_FLAG_IEC958_NONAUDIO;
 #endif
    status = track->set(AUDIO_STREAM_MUSIC,
