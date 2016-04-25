@@ -1415,6 +1415,8 @@ int vp9_update_frame_header(am_packet_t *pkt)
     int mag_ptr;
     int ret;
 
+
+    if (buf == NULL) return PLAYER_SUCCESS; /*something error. skip add header*/
     marker = buf[dsize - 1];
     if ((marker & 0xe0) == 0xc0) {
         frame_number = (marker & 0x7) + 1;
