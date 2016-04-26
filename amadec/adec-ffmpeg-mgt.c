@@ -765,6 +765,10 @@ static int start_adec(aml_audio_dec_t *audec)
             adec_pts_resume();
             audec->auto_mute = 0;
         }
+        if (audec->tsync_mode == TSYNC_MODE_PCRMASTER) {
+            adec_print("[wcs-%s]-before audio track start,sleep 200ms\n",__FUNCTION__);
+            amthreadpool_thread_usleep(200 * 1000); //200ms
+        }
         aout_ops->start(audec);
         audec->state = ACTIVE;
     } else {
