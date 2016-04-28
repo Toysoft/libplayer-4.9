@@ -176,6 +176,7 @@ struct MpegTSContext {
     /** filters for various streams specified by PMT + for the PAT and PMT */
     MpegTSFilter *pids[NB_PID_MAX];
     int current_pid;
+    int get_pcr_valid; //used for get pcr,if not get pcr when seek,use get dts instead
 };
 
 typedef int HDCPDecryptFunc(const void *inData, size_t size, uint32_t streamCTR, uint64_t inputCTR, void *outData);
@@ -2497,6 +2498,7 @@ reget_packet_size:
     ts->first_packet = 1;
     ts->hevc_first_packet = 1;
     ts->hevc_stream_index = -1;
+    ts->get_pcr_valid = 1;
     check_ac3_dts(s);
     avio_seek(pb, pos, SEEK_SET);
     return 0;
@@ -2641,6 +2643,41 @@ static int mpegts_read_close(AVFormatContext *s)
 #define PCR_HIGH_MAX (0x200000000L)
 #define PCR_NEAR_WRAP_CHECK (0x200000000L-0x20000000)//about 1.5h
 
+static int64_t mpegts_get_dts(AVFormatContext *s, int stream_index,
+        int64_t *ppos, int64_t pos_limit)
+{
+    MpegTSContext *ts = s->priv_data;
+    int64_t pos;
+    int pos47 = ts->pos47;
+    pos = ((*ppos  + ts->raw_packet_size - 1 - pos47) / ts->raw_packet_size) * ts->raw_packet_size + pos47;
+    ff_read_frame_flush(s);
+    if (avio_seek(s->pb, pos, SEEK_SET) < 0)
+        return AV_NOPTS_VALUE;
+    while (pos < pos_limit) {
+        int ret;
+        AVPacket pkt;
+        av_init_packet(&pkt);
+        ret = av_read_frame(s, &pkt);
+        if (ret < 0)
+            return AV_NOPTS_VALUE;
+
+        if (pkt.dts != AV_NOPTS_VALUE && pkt.pos >= 0) {
+            ff_reduce_index(s, pkt.stream_index);
+            av_add_index_entry(s->streams[pkt.stream_index], pkt.pos, pkt.dts, 0, 0, AVINDEX_KEYFRAME /*  FIXME keyframe? */);
+            if (pkt.stream_index == stream_index && pkt.pos >= *ppos) {
+                *ppos = pkt.pos;
+                av_free_packet(&pkt);
+                ff_read_frame_flush(s);
+                return pkt.dts;
+            }
+            pos = pkt.pos;
+        }
+        av_free_packet(&pkt);
+    }
+    ff_read_frame_flush(s);
+    return AV_NOPTS_VALUE;
+}
+
 static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
                               int64_t *ppos, int64_t pos_limit)
 {
@@ -2668,8 +2705,11 @@ static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
                 }
                 break;
             }
-            if(t_pos > GET_PCR_POS)
-			return AV_NOPTS_VALUE;
+            if (t_pos > GET_PCR_POS || !ts->get_pcr_valid) {
+                ts->get_pcr_valid = 0;
+                int64_t timestamp = mpegts_get_dts(s, stream_index, ppos, pos_limit);
+                return timestamp;
+            }
             pos += ts->raw_packet_size;
             t_pos += ts->raw_packet_size;
         }
