@@ -243,6 +243,16 @@ static int set_last_file(char *filename)
     return set_sysfs_str("/sys/class/video/file_name", filename);
 }
 
+int set_di_prog_proc_flag(int val)
+{
+    return set_sysfs_int("/sys/module/di/parameters/prog_proc_config", val);
+}
+
+int set_di_detect_3d_enable(int val)
+{
+    return set_sysfs_int("/sys/module/di/parameters/det3d_en", val);
+}
+
 int check_file_same(char *filename2)
 {
     char filename1[512];
