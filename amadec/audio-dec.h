@@ -117,6 +117,9 @@ struct aml_audio_dec {
     int avsync_threshold;
     float volume; //left or main volume
     float volume_ext; //right
+    float pre_gain; //gain scope[-12dB,12dB]
+    int pre_gain_enable;
+    uint pre_mute;
     //codec_para_t *pcodec;
     hw_command_t soundtrack;
     audio_out_operations_t aout_ops;

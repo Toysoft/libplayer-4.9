@@ -716,6 +716,9 @@ int audiodec_init(aml_audio_dec_t *audec)
     audec->format_changed_flag = 0;
     audec->audio_decoder_enabled  = -1;//default set a invalid value
     audec->mix_lr_channel_enable  = -1;
+    audec->pre_gain_enable  = -1;
+    audec->pre_gain = 1.0;
+    audec->pre_mute = 0;
     audec->VersionNum = -1;
     if (am_getconfig_bool("media.libplayer.wfd"))  {
         wfd = 1;

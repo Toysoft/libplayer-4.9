@@ -43,6 +43,11 @@ int     audio_set_mute(int pid, int mute);
 int     audio_get_volume_range(int pid, float *min, float *max);
 int     audio_set_volume(int pid, float val);
 int     audio_get_volume(int pid, float *val);
+// set audio adec pre_gain dB format
+int     audio_set_pre_gain(int pid, float gain);
+int     audio_get_pre_gain(int pid, float *gain);
+int     audio_set_pre_mute(int pid, uint mute);
+int     audio_get_pre_mute(int pid, uint *mute);
 
 int     audio_set_lrvolume(int pid, float lvol, float rvol);
 int     audio_get_lrvolume(int pid, float* lvol, float* rvol);

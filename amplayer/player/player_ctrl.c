@@ -1269,6 +1269,88 @@ int audio_get_volume(int pid, float *vol)
 
 /* --------------------------------------------------------------------------*/
 /**
+ * @function    audio_set_pre_gain
+ *
+ * @brief       set val to source pre_gain
+ *
+ * @param[in]   pid player tag which get from player_start return value
+ * @param[in]   gain pre-gain value in dB
+ *
+ * @return      PLAYER_SUCCESS  success
+ *              PLAYER_FAILED   failed
+ *
+ * @details     gain range: -12dB~+12dB
+ */
+/* --------------------------------------------------------------------------*/
+int audio_set_pre_gain(int pid, float gain)
+{
+    return codec_set_pre_gain(NULL, gain);
+}
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @function    audio_get_pre_gain
+ *
+ * @brief       get pre_gain
+ *
+ * @param[in]   pid player tag which get from player_start return value
+ *
+ * @return      r = 0  success
+ *
+ * @details     gain range: -12dB~+12dB
+ */
+/* --------------------------------------------------------------------------*/
+int audio_get_pre_gain(int pid, float *gain)
+{
+    int r;
+
+    r = codec_get_pre_gain(NULL, gain);
+    log_print("[audio_get_pre_gain:%d]r=%d\n", __LINE__, r);
+
+    return r;
+}
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @function    audio_set_pre_mute
+ *
+ * @brief       set val to source pre_gain
+ *
+ * @param[in]   pid player tag which get from player_start return value
+ * @param[in]   pre mute value
+ *
+ * @return      PLAYER_SUCCESS  success
+ *              PLAYER_FAILED   failed
+ */
+/* --------------------------------------------------------------------------*/
+int audio_set_pre_mute(int pid, uint mute)
+{
+    return codec_set_pre_mute(NULL, mute);
+}
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @function    audio_get_pre_mute
+ *
+ * @brief       get pre mute
+ *
+ * @param[in]   pid player tag which get from player_start return value
+ *
+ * @return      r = 0  success
+ */
+/* --------------------------------------------------------------------------*/
+int audio_get_pre_mute(int pid, uint *mute)
+{
+    int r;
+
+    r = codec_get_pre_mute(NULL, mute);
+    log_print("[audio_get_pre_mute:%d]r=%d\n", __LINE__, r);
+
+    return r;
+}
+
+/* --------------------------------------------------------------------------*/
+/**
  * @function    audio_set_lrvolume
  *
  * @brief       set left and right volume
