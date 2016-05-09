@@ -6,7 +6,7 @@
 #include "player_priv.h"
 
 #define ADTS_HEADER_SIZE        (7)
-#define HDR_BUF_SIZE                (1024)
+#define HDR_BUF_SIZE                (2048)
 
 typedef struct {
     unsigned short syncword;
