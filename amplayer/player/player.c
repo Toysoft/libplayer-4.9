@@ -723,6 +723,17 @@ int check_flag(play_para_t *p_para)
         }
 
         if (p_para->sstream_info.has_sub) {
+            if (p_para->need_reset_sub_flag && ((p_para->state.status == PLAYER_RUNNING) ||
+            (p_para->state.last_sta == PLAYER_SEARCHING && p_para->state.status == PLAYER_SEARCHOK))) {
+                log_print("--last_sta=%s,cur_status=%s--\n", player_status2str(p_para->state.last_sta),
+                    player_status2str(p_para->state.status));
+                //after seek, ps stream use hardware demux,sid init to sub[0]
+                if (p_para->stream_type == STREAM_PS) {
+                    set_subtitle_curr (p_para->sstream_info.cur_subindex);
+                    p_para->sstream_info.cur_subindex = 0;
+                    p_para->need_reset_sub_flag = 0;
+                }
+            }
             subtitle_curr = av_get_subtitle_curr();
         }
 
@@ -746,7 +757,8 @@ int check_flag(play_para_t *p_para)
             if (p_para->stream_type == STREAM_PS) {
                 p_para->codec->sub_pid = p_para->media_info.sub_info[subtitle_curr]->id;
                 p_para->codec->sub_type = CODEC_ID_DVD_SUBTITLE;
-                log_print("[%s]defatult:sub_info[1] id=0x%x\n", __FUNCTION__, p_para->media_info.sub_info[1]->id);
+                log_print("[%s]defatult:sub_info[0] id=0x%x,curr_sid=0x%x\n",
+                    __FUNCTION__, p_para->media_info.sub_info[0]->id, p_para->codec->sub_pid);
                 if (p_para->astream_info.start_time > 0) {
                     set_subtitle_startpts(p_para->astream_info.start_time);
                 } else if (p_para->vstream_info.start_time > 0) {
@@ -1613,6 +1625,8 @@ write_packet:
                 && player->playctrl_info.streaming_track_switch_flag == 0) {
                 set_auto_refresh_rate(0);
                 set_player_state(player, PLAYER_SEARCHING);
+                if (player->stream_type == STREAM_PS)
+                    player->need_reset_sub_flag = 1;
                 update_playing_info(player);
                 update_player_states(player, 1);
             }
