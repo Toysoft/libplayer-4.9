@@ -1039,7 +1039,7 @@ void *player_thread(play_para_t *player)
     log_print("\npid[%d]::enter into player_thread\n", player->player_id);
 
     // for di detect 3D format for local playing wxl add 20160429
-    set_di_detect_3d_enable(1);
+    //set_di_detect_3d_enable(1);
     set_di_prog_proc_flag(3);
 
     update_player_start_paras(player, player->start_param);
