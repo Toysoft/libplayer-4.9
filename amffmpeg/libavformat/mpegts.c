@@ -170,9 +170,7 @@ struct MpegTSContext {
     /** structure to keep track of Program->pids mapping     */
     unsigned int nb_prg;
     struct Program *prg;
-
     int8_t crc_validity[NB_PID_MAX];
-
     /** filters for various streams specified by PMT + for the PAT and PMT */
     MpegTSFilter *pids[NB_PID_MAX];
     int current_pid;
@@ -1681,6 +1679,8 @@ static int recalcpts_startwhetherornot(AVFormatContext *s,AVPacket *pkt)
 	int i;
 
 	AVStream *st = s->streams[pkt->stream_index];
+	if (pkt->stream_index > 31)
+		return -1;
 	ts->store_pts_count++;
 	if ((ts->pts_nb[pkt->stream_index]>2)&&(st->codec->codec_type == AVMEDIA_TYPE_VIDEO)){
 		vjump_val = pkt->pts-ts->pts[pkt->stream_index]; 
