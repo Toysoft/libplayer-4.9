@@ -86,6 +86,24 @@ static inline short CLIPTOSHORT(int x)
     return res;
 }
 
+static int set_sysfs_type(const char *path, const char *type)
+{
+    int ret = -1;
+    int fd = open(path, O_CREAT | O_RDWR | O_TRUNC, 0644);
+    if (fd >= 0) {
+        char set_type[10] = {0};
+        int length = snprintf(set_type, sizeof(set_type), "%s", type);
+        if (length > 0)
+            ret = write(fd, set_type, length);
+        adec_print("%s , %s\n", path, set_type);
+        close(fd);
+    }else{
+        adec_print("open hdmi-tx node:%s failed!\n", path);
+    }
+    return ret;
+}
+
+
 static void pcm_interpolation(int interpolation, unsigned num_channel, unsigned num_sample, short *samples)
 {
     int i, k, l, ch;
@@ -202,9 +220,12 @@ static int set_params(alsa_param_t *alsa_params)
     //bits_per_frame = bits_per_sample * hwparams.realchanl;
     alsa_params->bits_per_frame = alsa_params->bits_per_sample * alsa_params->channelcount;
     adec_print("bits_per_sample %d,bits_per_frame %d\n",alsa_params->bits_per_sample,alsa_params->bits_per_frame);
-    bufsize =   PERIOD_NUM * PERIOD_SIZE;
-    if (tv_mode)
-        bufsize = bufsize*8;
+    bufsize = PERIOD_NUM * PERIOD_SIZE;
+
+    if (tv_mode) {
+        set_sysfs_type("/sys/class/amhdmitx/amhdmitx0/aud_output_chs", "2:1");
+    }
+
     err = snd_pcm_hw_params_set_buffer_size_near(alsa_params->handle, hwparams, &bufsize);
     if (err < 0) {
         adec_print("Unable to set	buffer	size \n");
