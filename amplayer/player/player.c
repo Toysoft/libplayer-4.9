@@ -1040,7 +1040,9 @@ void *player_thread(play_para_t *player)
 
     // for di detect 3D format for local playing wxl add 20160429
     //set_di_detect_3d_enable(1);
-    set_di_prog_proc_flag(3);
+
+    //close 3D auto detect for debug
+    //set_di_prog_proc_flag(3);
 
     update_player_start_paras(player, player->start_param);
     player_para_init(player);
@@ -1738,8 +1740,9 @@ release0:
     update_player_states(player, 1);
 
     // for di detect 3D format for local playing wxl add 20160429
-    set_di_detect_3d_enable(0);
-    set_di_prog_proc_flag(35);
+    //close 3D auto detect for debug
+    //set_di_detect_3d_enable(0);
+    //set_di_prog_proc_flag(35);
 
     log_print("\npid[%d]::stop play, exit player thead!(sta:0x%x)\n", player->player_id, get_player_state(player));
     pthread_exit(NULL);
