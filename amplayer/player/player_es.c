@@ -43,7 +43,8 @@ static void vcodec_info_init(play_para_t *p_para, codec_para_t *v_codec)
         || (vinfo->video_format == VFORMAT_H264)
         || (vinfo->video_format == VFORMAT_H264MVC)
         || (vinfo->video_format == VFORMAT_H264_4K2K)
-        || (vinfo->video_format == VFORMAT_HEVC)) {
+        || (vinfo->video_format == VFORMAT_HEVC)
+        || (vinfo->video_format == VFORMAT_VP9)) {
         if (((vinfo->video_format == VFORMAT_H264)
             || (vinfo->video_format == VFORMAT_H264MVC)
             || (vinfo->video_format == VFORMAT_H264_4K2K)
@@ -51,8 +52,13 @@ static void vcodec_info_init(play_para_t *p_para, codec_para_t *v_codec)
             && (p_para->file_type == AVI_FILE)) {
             v_codec->am_sysinfo.param     = (void *)(EXTERNAL_PTS | SYNC_OUTSIDE);
         }
-        if ((vinfo->video_format == VFORMAT_H264) && (p_para->file_type == MKV_FILE)) {
-            if ((vinfo->video_rate == 4004 /*23.97fps*/) || (vinfo->video_rate == 3203 /*29.97fps*/)) {
+        if (((vinfo->video_format == VFORMAT_H264)
+            || (vinfo->video_format == VFORMAT_VP9))
+            && (p_para->file_type == MKV_FILE)) {
+            if ((vinfo->video_rate == 4004 /*23.97fps*/)
+                || (vinfo->video_rate == 3203 /*29.97fps*/)
+                || (vinfo->video_rate == 1601 /*59.94fps*/)
+                || (vinfo->video_rate == 1602 /*59.94fps*/)) {
                 v_codec->am_sysinfo.param = (void *)(UNSTABLE_PTS | (unsigned long)v_codec->am_sysinfo.param);
             }
         }
