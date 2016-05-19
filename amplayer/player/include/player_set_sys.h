@@ -75,7 +75,9 @@ extern "C" {
     int get_amutils_cmd(char* cmd);
     int check_audio_output();
     int set_poweron_clock_level(int level);
-    int set_di_prog_proc_flag(int val);
+    int get_di_prog_proc_config();
+    int set_di_prog_proc_config(int val);
+    int get_di_detect_3d_enable();
     int set_di_detect_3d_enable(int val);
 
 #ifdef  __cplusplus
