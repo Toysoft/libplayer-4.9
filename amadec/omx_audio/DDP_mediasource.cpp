@@ -439,10 +439,13 @@ status_t DDP_MediaSource::read(MediaBuffer **out, const ReadOptions *options)
     *out = NULL;
     int readdiff = 0;
     int read_delta = 0;
+    int read_size =0;
     while(1){
         frame_size = 0;
-        frame.len += MediaSourceRead_buffer(frame.rawbuf + frame.len, get_frame_size()+PTR_HEAD_SIZE+read_delta - frame.len);
-
+        read_size = 	get_frame_size()+PTR_HEAD_SIZE+read_delta;
+	if (read_size > frame.len)
+            read_size -= frame.len;
+        frame.len += MediaSourceRead_buffer(frame.rawbuf + frame.len, read_size/* - frame.len*/);
         if(frame.len < PTR_HEAD_SIZE){
             ALOGI("WARNING: fpread_buffer read failed [%s %d]!\n",__FUNCTION__,__LINE__);
             return ERROR_END_OF_STREAM;
@@ -491,7 +494,7 @@ status_t DDP_MediaSource::read(MediaBuffer **out, const ReadOptions *options)
             readdiff ++;
         }
     }
-
+    read_delta = 0;
     MediaBuffer *buffer;
     status_t err = mGroup->acquire_buffer(&buffer);
 
@@ -502,7 +505,6 @@ status_t DDP_MediaSource::read(MediaBuffer **out, const ReadOptions *options)
     memcpy((unsigned char*)(buffer->data()), (unsigned char*)frame.rawbuf, frame_size);
     memcpy((unsigned char*)frame.rawbuf, (unsigned char*)(frame.rawbuf+frame_size), frame.len - frame_size);
     frame.len -= frame_size;
-
     buffer->set_range(0, frame_size);
     buffer->meta_data()->setInt64(kKeyTime, mCurrentTimeUs);
     buffer->meta_data()->setInt32(kKeyIsSyncFrame, 1);
