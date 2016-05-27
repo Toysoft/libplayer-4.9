@@ -221,7 +221,7 @@ include $(BUILD_SHARED_LIBRARY)
 # audio_firmware module
 #   includes all audio firmware files, which are modules themselves.
 #
-
+ifeq (0, $(shell expr $(PLATFORM_VERSION) \>= 6.0))
 include $(CLEAR_VARS)
 
 ifeq ($(TARGET_BOARD_PLATFORM),meson6)
@@ -277,5 +277,4 @@ include $(BUILD_PHONY_PACKAGE)
 
 _audio_firmware_modules :=
 _audio_firmware :=
-
-
+endif

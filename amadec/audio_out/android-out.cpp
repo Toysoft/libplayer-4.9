@@ -745,6 +745,8 @@ extern "C" int android_init_raw(struct aml_audio_dec* audec)
     if(dgraw == 1){
         if((audec->format == ACODEC_FMT_AC3) ||
            (audec->format == ACODEC_FMT_EAC3)){
+            /* if spdif pass through,force to DD otuput */
+            aformat = AUDIO_FORMAT_AC3;
             amsysfs_set_sysfs_int("/sys/class/audiodsp/digital_codec",2);
             audec->codec_type=1;
         }else if(audec->format==ACODEC_FMT_DTS){
