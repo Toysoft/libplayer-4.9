@@ -633,6 +633,7 @@ static const StreamType REGD_types[] = {
     { MKTAG('H','E','V','C'), AVMEDIA_TYPE_VIDEO, CODEC_ID_HEVC },
     { MKTAG('D','T','S','H'), AVMEDIA_TYPE_AUDIO,   CODEC_ID_DTS },
     { MKTAG('D','R','A','1'), AVMEDIA_TYPE_AUDIO,   CODEC_ID_DRA },
+    { MKTAG('d','t','s','+'), AVMEDIA_TYPE_AUDIO,   CODEC_ID_DTS },
     { 0 },
 };
 
