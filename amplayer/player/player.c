@@ -1039,11 +1039,19 @@ void *player_thread(play_para_t *player)
     log_print("\npid[%d]::enter into player_thread\n", player->player_id);
 
     // for di detect 3D format for local playing wxl add 20160429
-    set_di_detect_3d_enable(1);
-    int prog_proc_config = get_di_prog_proc_config();
-    log_print("\prog_proc_config:%d\n", prog_proc_config);
-    if (prog_proc_config != 3) {
-        set_di_prog_proc_config(3);
+    int prog_proc_config = 35;//default value 35
+    char prop[16] = {0};
+    int open_3d_detect = 0;
+    if ((property_get("sys.auto3ddetect.enable", prop, "false") && strcmp(prop, "true") == 0)
+        || (property_get("sys.3ddetect.enable", prop, "false") && strcmp(prop, "true") == 0)) {
+        open_3d_detect = 1;
+    }
+    if (open_3d_detect) {
+        set_di_detect_3d_enable(1);
+        prog_proc_config = get_di_prog_proc_config();
+        if (prog_proc_config != 3) {
+            set_di_prog_proc_config(3);
+        }
     }
 
     update_player_start_paras(player, player->start_param);
@@ -1742,8 +1750,10 @@ release0:
     update_player_states(player, 1);
 
     // for di detect 3D format for local playing wxl add 20160429
-    set_di_detect_3d_enable(0);
-    set_di_prog_proc_config(prog_proc_config/*35*/);
+    if (open_3d_detect) {
+        set_di_detect_3d_enable(0);
+        set_di_prog_proc_config(prog_proc_config/*35*/);
+    }
 
     log_print("\npid[%d]::stop play, exit player thead!(sta:0x%x)\n", player->player_id, get_player_state(player));
     pthread_exit(NULL);
