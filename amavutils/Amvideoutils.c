@@ -436,12 +436,18 @@ void get_axis(const char *path, int *x, int *y, int *w, int *h)
     }
 }
 
+
 void set_scale(int x, int y, int w, int h, int *dst_x, int *dst_y, int *dst_w, int *dst_h, int disp_w, int disp_h)
 {
-    *dst_x = (*dst_x) * w / disp_w + x;
-    *dst_y = (*dst_y) * h / disp_h + y;
-    *dst_w = (*dst_w) * w / disp_w;
-    *dst_h = (*dst_h) * h / disp_h;
+    float tmp_x,tmp_y,tmp_w,tmp_h;
+    tmp_x = (float)((float)((*dst_x) * w) / (float)disp_w);
+    tmp_y = (float)((float)((*dst_y) * h) / (float)disp_h);
+    tmp_w = (float)((float)((*dst_w) * w) / (float)disp_w);
+    tmp_h = (float)((float)((*dst_h) * h) / (float)disp_h);
+    *dst_x = (int)(tmp_x+0.5) + x;
+    *dst_y = (int)(tmp_y+0.5) + y;
+    *dst_w = (int)(tmp_w+0.5);
+    *dst_h = (int)(tmp_h+0.5);
 }
 
 int amvideo_utils_set_virtual_position(int32_t x, int32_t y, int32_t w, int32_t h, int rotation)
