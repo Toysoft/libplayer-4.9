@@ -23,6 +23,7 @@
 #include "stream_decoder.h"
 #include "player_ffmpeg_ctrl.h"
 #include <amconfigutils.h>
+#include <cutils/properties.h>
 
 
 /******************************
@@ -1040,7 +1041,7 @@ void *player_thread(play_para_t *player)
 
     // for di detect 3D format for local playing wxl add 20160429
     int prog_proc_config = 35;//default value 35
-    char prop[16] = {0};
+    char prop[256] = {0};
     int open_3d_detect = 0;
     if ((property_get("sys.auto3ddetect.enable", prop, "false") && strcmp(prop, "true") == 0)
         || (property_get("sys.3ddetect.enable", prop, "false") && strcmp(prop, "true") == 0)) {
