@@ -1009,8 +1009,11 @@ static void get_stream_info(play_para_t *p_para)
                 }
             }
         } else if (p_para->vstream_info.video_format == VFORMAT_MPEG4) {
-            if ((p_para->vstream_info.video_width * p_para->vstream_info.video_height) > (1920 * 1088)) {
+            if ((p_para->vstream_info.video_width * p_para->vstream_info.video_height) > (2048 * 1152)) {
                 unsupported_video = 1;
+                /*mpeg4 can support 2048x1152.
+                more bigger?
+                */
             }
         } else if (p_para->vstream_info.video_format == VFORMAT_AVS) {
             if (p_para->pFormatCtx->streams[video_index]->codec->profile == 1
