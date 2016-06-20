@@ -137,18 +137,23 @@ static int get_axis(const char *para, int para_num, int *result)
 
 static int set_display_axis()
 {
-    char *path1 = "/sys/class/graphics/fb0/blank";
-    char *path2 = "/sys/class/graphics/fb1/blank";
-
     char *videoaxis_patch = "/sys/class/video/axis";
     char *videodisable_patch = "/sys/class/video/disable_video";
     char *videoscreenmode_patch = "/sys/class/video/screen_mode";
 
-    amsysfs_set_sysfs_str(path1, "1");
-    amsysfs_set_sysfs_str(path2, "1");
     amsysfs_set_sysfs_str(videoaxis_patch, "0 0 -1 -1");
     amsysfs_set_sysfs_str(videoscreenmode_patch, "1");
     amsysfs_set_sysfs_str(videodisable_patch, "2");
+    return 0;
+}
+
+static int set_osd_blank()
+{
+    char *path1 = "/sys/class/graphics/fb0/blank";
+    char *path2 = "/sys/class/graphics/fb1/blank";
+
+    amsysfs_set_sysfs_str(path1, "1");
+    amsysfs_set_sysfs_str(path2, "1");
     return 0;
 }
 
@@ -213,11 +218,14 @@ int main(int argc, char *argv[])
 
     signal(SIGSEGV, signal_handler);
     //SYS_disable_osd0();
+    set_display_axis();
     while ((!tmpneedexit) && (!PLAYER_THREAD_IS_STOPPED(player_get_state(pid)))) {
         if (!osd_is_blank) {
             int new_frame_count = amsysfs_get_sysfs_int16("/sys/module/amvideo/parameters/new_frame_count");
-            if (new_frame_count > 0) {
-                set_display_axis();
+            int disable_video = amsysfs_get_sysfs_int16("/sys/class/video/disable_video");
+            if (new_frame_count > 0 && (disable_video == 0)) {
+                usleep(30000);
+                set_osd_blank();
                 osd_is_blank = 1;
                 property_set("service.bootanim.shown", "1");
             }
