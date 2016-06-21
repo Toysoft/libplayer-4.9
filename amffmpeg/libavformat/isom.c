@@ -254,6 +254,7 @@ const AVCodecTag codec_movaudio_tags[] = {
     { CODEC_ID_DTS, MKTAG('d', 't', 's', 'h') }, /*frameworks\av\media\libstagefright\MPEG4Extractor.cpp>*/
     { CODEC_ID_DTS, MKTAG('d', 't', 's', 'l') },
     { CODEC_ID_DTS, MKTAG('d', 't', 's', 'e') },
+    { CODEC_ID_DTS, MKTAG('d', 't', 's', '+') },
     { CODEC_ID_AMR_NB, MKTAG('s', 'a', 'm', 'r') }, /* AMR-NB 3gp */
     { CODEC_ID_AMR_WB, MKTAG('s', 'a', 'w', 'b') }, /* AMR-WB 3gp */
 

@@ -970,14 +970,16 @@ extern "C" int android_init(struct aml_audio_dec* audec)
     //5: rawoutput==2 &&  format==ACODEC_FMT_DTS &&  (FS= =32000||FS = =44100||FS = =88200||FS = =96000|| FS = =176400|| FS = =192000)
     //6: rawoutput==0 &&  format==ACODEC_FMT_AC3 && CH==8
     //summary:always effect in case: rawoutput>0 && (format=ACODEC_FMT_DTS or ACODEC_FMT_AC3) or 8chPCM _output
+/*after 6.0,need not this code*/
+#if ANDROID_PLATFORM_SDK_VERSION < 23
     reset_system_samplerate(audec);
-
-	int user_raw_enable = amsysfs_get_sysfs_int("/sys/class/audiodsp/digital_raw");
+#endif
+    int user_raw_enable = amsysfs_get_sysfs_int("/sys/class/audiodsp/digital_raw");
 #ifdef USE_ARM_AUDIO_DEC
 	out_ops->audio_out_raw_enable = user_raw_enable && (audec->format == ACODEC_FMT_DTS || 
                                                             audec->format == ACODEC_FMT_AC3 ||
                                                             audec->format == ACODEC_FMT_EAC3||
-                                                            audec->format == ACODEC_FMT_TRUEHD);
+                                                            (audec->format == ACODEC_FMT_TRUEHD && user_raw_enable == 2));
     if(out_ops->audio_out_raw_enable)
        android_init_raw(audec);
 #endif	
@@ -1034,7 +1036,12 @@ extern "C" int android_init(struct aml_audio_dec* audec)
             adec_print("create HD-PCM(Fs/%d>48000)Direct Ouputtrack\n",audec->samplerate);
             ChMask=AUDIO_CHANNEL_OUT_STEREO;
             Flag =AUDIO_OUTPUT_FLAG_DIRECT;
-            aformat=AUDIO_FORMAT_DTS;
+//TODO
+#if ANDROID_PLATFORM_SDK_VERSION < 23
+            aformat = AUDIO_FORMAT_DTS;
+#else
+            aformat = AUDIO_FORMAT_PCM_16_BIT;
+#endif
         }
         status = track->set(AUDIO_STREAM_MUSIC,
                         audec->samplerate,
@@ -1379,7 +1386,10 @@ extern "C" int android_stop(struct aml_audio_dec* audec)
     mpAudioTrack.clear();
 #endif
     out_ops->private_data = NULL;
+/*after 6.0,not need this code*/
+#if ANDROID_PLATFORM_SDK_VERSION < 23
     restore_system_samplerate(audec);
+#endif
     if(wfd_enable){
         restore_system_framesize();
     }	

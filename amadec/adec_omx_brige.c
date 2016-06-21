@@ -129,6 +129,10 @@ void *audio_decode_loop_omx(void *args)
 
     rawoutput_enable = amsysfs_get_sysfs_int("/sys/class/audiodsp/digital_raw");
     adec_print("rawoutput_enable/%d", rawoutput_enable);
+    if (rawoutput_enable == 1 && audec->StageFrightCodecEnableType == OMX_ENABLE_CODEC_TRUEHD) {
+        adec_print("truehd passthrough enable only when hdmi passthr\n");
+        rawoutput_enable = 0;
+    }
     if (audec->parm_omx_codec_init && audec->parm_omx_codec_start) {
         (*audec->parm_omx_codec_init)(audec, audec->StageFrightCodecEnableType, (void*)read_buffer, &audec->exit_decode_thread);
         (*audec->parm_omx_codec_start)(audec);
