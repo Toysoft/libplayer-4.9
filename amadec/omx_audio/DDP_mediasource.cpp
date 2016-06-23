@@ -445,6 +445,10 @@ status_t DDP_MediaSource::read(MediaBuffer **out, const ReadOptions *options)
         read_size = 	get_frame_size()+PTR_HEAD_SIZE+read_delta;
 	if (read_size > frame.len)
             read_size -= frame.len;
+        /*check if the read_size exceed buffer size*/
+	if ((frame.len+read_size) > 6144) {
+            read_size = 6144 - frame.len;
+        }
         frame.len += MediaSourceRead_buffer(frame.rawbuf + frame.len, read_size/* - frame.len*/);
         if(frame.len < PTR_HEAD_SIZE){
             ALOGI("WARNING: fpread_buffer read failed [%s %d]!\n",__FUNCTION__,__LINE__);
