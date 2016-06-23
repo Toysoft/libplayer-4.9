@@ -2184,7 +2184,7 @@ int player_decoder_init(play_para_t *p_para)
         }
     }
     if (p_para->astream_info.has_audio && p_para->astream_info.audio_format == AFORMAT_VORBIS) {
-        codec_set_av_threshold(get_audio_codec(p_para),200 * 90);/*200ms*/
+        codec_set_av_threshold(get_audio_codec(p_para),200);/*200ms*/
     }
     return PLAYER_SUCCESS;
 failed:
