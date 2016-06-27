@@ -674,6 +674,7 @@ int check_flag(play_para_t *p_para)
             p_para->playctrl_info.fast_forward = 0;
             p_para->playctrl_info.fast_backward = 0;
             p_para->playctrl_info.search_flag = 1;
+            p_para->playctrl_info.end_flag = 1;
             p_para->playctrl_info.trick_start_us = 0;
             p_para->astream_info.has_audio = p_para->astream_info.resume_audio;
             set_cntl_mode(p_para, TRICKMODE_NONE);
