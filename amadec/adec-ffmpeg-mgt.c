@@ -444,7 +444,7 @@ static int OutBufferInit_raw(aml_audio_dec_t *audec)
     if (audec->adec_ops->nOutBufSize <= 0) { //set default if not set
         audec->adec_ops->nOutBufSize = DEFAULT_PCM_BUFFER_SIZE;
     }
-    if (audec->format == ACODEC_FMT_DTS && amsysfs_get_sysfs_int("/sys/class/audiodsp/digital_raw") == 2) {
+    if ((audec->format == ACODEC_FMT_DTS || audec->format == ACODEC_FMT_TRUEHD) && amsysfs_get_sysfs_int("/sys/class/audiodsp/digital_raw") == 2) {
         audec->adec_ops->nOutBufSize *= 2;
     }
     int ret = init_buff(audec->g_bst_raw, audec->adec_ops->nOutBufSize);

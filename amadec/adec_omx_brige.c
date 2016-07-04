@@ -223,7 +223,7 @@ exit_decode_loop:
                 audec->pcm_cache_size -= wlen;
             }
 
-            while (rawoutput_enable && !audec->exit_decode_thread && outlen_raw) {
+            while (rawoutput_enable && !audec->exit_decode_thread && outlen_raw && aout_ops->audio_out_raw_enable) {
                 if (g_bst_raw->buf_length - g_bst_raw->buf_level < outlen_raw) {
                     amthreadpool_thread_usleep(20000);
                     continue;

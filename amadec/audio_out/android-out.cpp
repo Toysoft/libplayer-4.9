@@ -875,6 +875,7 @@ extern "C" int android_init_raw(struct aml_audio_dec* audec)
               track = NULL;
               mpAudioTrack_raw.clear();
 #endif
+              out_ops->audio_out_raw_enable = 0;
               out_ops->private_data_raw=NULL;
              return -1;
        }
@@ -1575,6 +1576,7 @@ extern "C" void get_output_func(struct aml_audio_dec* audec)
     out_ops->set_volume = android_set_volume;
     out_ops->set_lrvolume = android_set_lrvolume;
     out_ops->set_track_rate = android_set_track_rate;
+    out_ops->audio_out_raw_enable = 1;
     /* default set a invalid value*/
     out_ops->track_rate = 8.8f;
 }
