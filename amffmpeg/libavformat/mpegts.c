@@ -728,7 +728,6 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
         st->need_check_avs_version = 1;
         st->need_parsing = AVSTREAM_PARSE_HEADERS;
     }
-
     if (st->codec->codec_id == CODEC_ID_NONE) {
         mpegts_find_stream_type(st, pes->stream_type, HDMV_types);
         if ((prog_reg_desc == AV_RL32("HDMV")) || (prog_reg_desc == AV_RL32("HDPR"))) {
@@ -779,8 +778,25 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
                 sub_st->discard = AVDISCARD_ALL;
                 sub_pes->sub_st = pes->sub_st = sub_st;
             }
-        } 
-        else {
+        }else if (pes->stream_type == 0x82) {
+                AVStream *sub_st;
+                PESContext *sub_pes = av_malloc(sizeof(*sub_pes));
+                if (!sub_pes)
+                    return AVERROR(ENOMEM);
+                memcpy(sub_pes, pes, sizeof(*sub_pes));
+                sub_st = av_new_stream(pes->stream, pes->pid);
+                if (!sub_st) {
+                    av_free(sub_pes);
+                    return AVERROR(ENOMEM);
+                }
+
+                av_set_pts_info(sub_st, 33, 1, 90000);
+                sub_st->priv_data = sub_pes;
+                sub_st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+                sub_st->codec->codec_id   = CODEC_ID_DTS;
+                sub_st->need_parsing = AVSTREAM_PARSE_FULL;
+                sub_pes->sub_st = pes->sub_st = sub_st;
+            } else {
             if (st->codec->codec_id != CODEC_ID_NONE
                 || pes->stream_type == 0x15) {
                 /* wrong case, don't have to probe */
