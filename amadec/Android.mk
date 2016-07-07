@@ -197,7 +197,7 @@ else
         LOCAL_CFLAGS += -D_VERSION_ICS
     endif
 endif		
-		
+LOCAL_CFLAGS += -DANDROID_PLATFORM_SDK_VERSION=$(PLATFORM_SDK_VERSION)		
 LOCAL_C_INCLUDES:= \
     external/tinyalsa/include
 

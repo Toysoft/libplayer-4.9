@@ -80,7 +80,13 @@ static float get_android_stream_volume()
     unsigned int sr = 0;
 #else
     int sr = 0;
-#endif 
+#endif
+#if ANDROID_PLATFORM_SDK_VERSION >= 21
+    audio_stream_type_t media_type = AUDIO_STREAM_SYSTEM;
+#else
+    audio_stream_type_t media_type = AUDIO_STREAM_MUSIC;
+#endif
+
 	AudioSystem::getOutputSamplingRate(&sr,AUDIO_STREAM_MUSIC);
 	if(sr > 0){
 		audio_io_handle_t handle = -1;		
@@ -95,7 +101,7 @@ static float get_android_stream_volume()
 #endif	                            
 		);
 		if(handle > 0){
-			if(AudioSystem::getStreamVolume(AUDIO_STREAM_MUSIC,&vol,handle) == 	NO_ERROR){
+			if(AudioSystem::getStreamVolume(media_type,&vol,handle) == 	NO_ERROR){
 				last_vol = vol;
 			//	adec_print("stream volume %f \n",vol);
 			}
