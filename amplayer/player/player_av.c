@@ -2331,7 +2331,7 @@ int write_av_packet(play_para_t *para)
                     return PLAYER_WR_FAILED;
                 } else {
                     /* EAGAIN to see if buffer full or write time out too much */
-                    if (check_avbuffer_enough_for_ape(para)) {
+                    if (check_avbuffer_enough_for_ape(para, -1)) {
                         if (!para->playctrl_info.check_lowlevel_eagain_time) {
                             check_time_interrupt(&para->playctrl_info.check_lowlevel_eagain_time, -1);    //always update
                         }
@@ -2498,7 +2498,7 @@ int write_av_packet(play_para_t *para)
                     return PLAYER_WR_FAILED;
                 } else {
                     /* EAGAIN to see if buffer full or write time out too much */
-                    if (check_avbuffer_enough(para)) {
+                    if (check_avbuffer_enough(para, -1)) {
                         if (!para->playctrl_info.check_lowlevel_eagain_time) {
                             check_time_interrupt(&para->playctrl_info.check_lowlevel_eagain_time, -1);    //always update
                         }
@@ -2508,23 +2508,27 @@ int write_av_packet(play_para_t *para)
 
                     if (para->playctrl_info.check_lowlevel_eagain_time != 0 &&
                         check_time_interrupt(&para->playctrl_info.check_lowlevel_eagain_time, WRITE_BLOCK_TIMEOUT_MS)) {
-                        /* reset decoder */
-                        para->playctrl_info.check_lowlevel_eagain_time = 0;
-                        para->playctrl_info.reset_flag = 1;
-                        set_black_policy(0);
-                        para->playctrl_info.end_flag = 1;
-
-                        if (para->state.start_time != -1) {
-                            para->playctrl_info.time_point = (para->state.pts_video - para->state.start_time) / PTS_FREQ;
+                        if (pkt->type == CODEC_SUBTITLE) {
+						    len += write_bytes; /*dop current write datas when is subtitle blocked.*/
+                            log_print("$$$$$$[type:%d] subtile write blocked, droped data at %f\n",
+                                pkt->type,
+                                para->playctrl_info.time_point);
                         } else {
-                            para->playctrl_info.time_point = para->state.pts_video / PTS_FREQ;
+                            /* reset decoder */
+                            para->playctrl_info.check_lowlevel_eagain_time = 0;
+                            para->playctrl_info.reset_flag = 1;
+                            set_black_policy(0);
+                            para->playctrl_info.end_flag = 1;
+                            if (para->state.start_time != -1) {
+                                para->playctrl_info.time_point = (para->state.pts_video - para->state.start_time) / PTS_FREQ;
+                            } else {
+                                para->playctrl_info.time_point = para->state.pts_video / PTS_FREQ;
+                            }
+                            if (para->stream_type == STREAM_RM) {
+                                para->playctrl_info.time_point = -1.0;    //if searchime is -1 ,just do reset;
+                            }
+                            log_print("$$$$$$[type:%d] write blocked, need reset decoder!$$$$$$ at time =%f\n", pkt->type, para->playctrl_info.time_point);
                         }
-
-                        if (para->stream_type == STREAM_RM) {
-                            para->playctrl_info.time_point = -1.0;    //if searchime is -1 ,just do reset;
-                        }
-
-                        log_print("$$$$$$[type:%d] write blocked, need reset decoder!$$$$$$ at time =%f\n", pkt->type, para->playctrl_info.time_point);
                     }
 
                     pkt->data += len;
@@ -2539,7 +2543,10 @@ int write_av_packet(play_para_t *para)
                                   __FUNCTION__, pkt->data_size, pkt->type, para->read_size.total_bytes, \
                                   para->write_size.total_bytes, para->playctrl_info.check_lowlevel_eagain_time);
                     }
-
+                    if (pkt->data_size <= 0) {
+						pkt->avpkt_isvalid = 0;
+						return PLAYER_WR_FINISH;
+                    }
                     return PLAYER_SUCCESS;
                 }
             } else {
@@ -3217,11 +3224,12 @@ int read_sub_data(am_packet_t *pkt, char *buf, unsigned int length)
     }
 }
 
-int write_sub_data(am_packet_t *pkt, char *buf, unsigned int length)
+int write_sub_data(play_para_t *player, am_packet_t *pkt, char *buf, unsigned int length)
 {
     int write_bytes, size;
     unsigned int len = 0;
-
+	unsigned long starttime = 0;
+	check_time_interrupt(&starttime, 0);
     if (!pkt || !pkt->codec) {
         return 0;
     }
@@ -3248,11 +3256,15 @@ int write_sub_data(am_packet_t *pkt, char *buf, unsigned int length)
                 log_print("[%s:%d]write sub data failed!\n", __FUNCTION__, __LINE__);
                 return PLAYER_WR_FAILED;
             } else {
-                if (amthreadpool_on_requare_exit(0)) {
-                    return PLAYER_WR_FAILED;
-                }
-
-                continue;
+               if (amthreadpool_on_requare_exit(0)) {
+                   return PLAYER_WR_FAILED;
+               }
+               if (check_avbuffer_enough(player, CODEC_TYPE_SUBTITLE) || check_time_interrupt(&starttime, 1000)) {
+                   log_print("[%s:%d]write sub data header failed!\n", __FUNCTION__, __LINE__);
+                   break;
+               }
+			   player_thread_wait(player, 20);
+               continue;
             }
         } else {
             len += write_bytes;
@@ -3368,7 +3380,7 @@ int process_es_subtitle(play_para_t *para)
     log_print("## [ sizeof:%d , sub_index=%d, pkt_stream_index=%d,]\n", sizeof(sub_header), para->sstream_info.sub_index, pkt->avpkt->stream_index);
 
     if (para->sstream_info.sub_index == pkt->avpkt->stream_index) {
-        if (write_sub_data(pkt, (char *)&sub_header, sizeof(sub_header))) {
+        if (write_sub_data(para, pkt, (char *)&sub_header, sizeof(sub_header))) {
             log_print("[%s:%d]write sub header failed\n", __FUNCTION__, __LINE__);
         }
     }
@@ -4209,17 +4221,21 @@ int get_avbuf_min_size(play_para_t *p_para)
     return min_size;
 }
 
-int check_avbuffer_enough(play_para_t *para)
+int check_avbuffer_enough(play_para_t *para, int type)
 {
 #define VIDEO_RESERVED_SPACE    (0x10000)   // 64k
 #define AUDIO_RESERVED_SPACE    (0x2000)    // 8k
+
     am_packet_t *pkt = para->p_pkt;
     int vbuf_enough = 1;
     int abuf_enough = 1;
     int ret = 1;
     float high_limit = (para->buffering_threshhold_max > 0) ? para->buffering_threshhold_max : 0.8;
 
-    if (pkt->type == CODEC_COMPLEX) {
+	if (type == -1 && pkt && pkt->avpkt_isvalid)
+		type = pkt->type;
+
+    if (type == CODEC_COMPLEX) {
         if (para->vstream_info.has_video &&
             (para->state.video_bufferlevel >= high_limit)) {
             vbuf_enough = 0;
@@ -4231,23 +4247,35 @@ int check_avbuffer_enough(play_para_t *para)
         }
 
         ret = vbuf_enough && abuf_enough;
-    } else if (pkt->type == CODEC_VIDEO || pkt->type == CODEC_AUDIO) {
-        /*if(pkt->type == CODEC_VIDEO)
-            log_print("[%s]type:%d data=%x size=%x total=%x\n", __FUNCTION__, pkt->type, para->vbuffer.data_level,pkt->data_size,para->vbuffer.buffer_size);
-            if(pkt->type == CODEC_AUDIO)
-            log_print("[%s]type:%d data=%x size=%x total=%x\n", __FUNCTION__, pkt->type, para->abuffer.data_level,pkt->data_size,para->abuffer.buffer_size);
-        */
-        if (para->vstream_info.has_video && (pkt->type == CODEC_VIDEO) &&
+    } else if (type == CODEC_VIDEO || type == CODEC_AUDIO) {
+        if (para->vstream_info.has_video && (type == CODEC_VIDEO) &&
             ((para->vbuffer.data_level + pkt->data_size) >= (para->vbuffer.buffer_size - VIDEO_RESERVED_SPACE))) {
             vbuf_enough = 0;
         }
 
-        if (para->astream_info.has_audio && (pkt->type == CODEC_AUDIO) &&
+        if (para->astream_info.has_audio && (type == CODEC_AUDIO) &&
             ((para->abuffer.data_level + pkt->data_size) >= (para->abuffer.buffer_size - AUDIO_RESERVED_SPACE))) {
             abuf_enough = 0;
         }
 
         ret = vbuf_enough && abuf_enough;
+    } if (type == CODEC_SUBTITLE) {
+        int v_low = 0;
+        int a_low = 0;
+        if (para->vstream_info.has_video &&
+        (para->state.video_bufferlevel < 0.2)) {
+            v_low = 1;
+        }
+        if (para->astream_info.has_audio &&
+            (para->state.audio_bufferlevel < 0.2)) {
+            a_low = 1;
+        }
+        /*if vbuf level abuf level is low,we think subtile buffer is full, do drop.
+               if vbuf & abuf is high, do wait.
+               only one low, return 1; mean subtitle have buffers but blocked... wait some time to drop..
+               other return 0; enough buffers. always wait.
+           */
+        return (v_low || a_low);
     }
 
     /*if(!abuf_enough || !vbuf_enough) {

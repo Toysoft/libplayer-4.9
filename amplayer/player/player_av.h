@@ -60,7 +60,7 @@ void av_packet_release(am_packet_t *pkt);
 int poll_sub(am_packet_t *pkt);
 int get_sub_size(am_packet_t *pkt);
 int read_sub_data(am_packet_t *pkt, char *buf, unsigned int length);
-int write_sub_data(am_packet_t *pkt, char *buf, unsigned int length);
+int write_sub_data(play_para_t *player, am_packet_t *pkt, char *buf, unsigned int length);
 int process_es_subtitle(play_para_t *para);
 int poll_cntl(am_packet_t *pkt);
 int set_cntl_mode(play_para_t *para, unsigned int mode);
@@ -71,7 +71,7 @@ void player_switch_sub(play_para_t *para);
 int get_cntl_state(am_packet_t *pkt);
 int time_search(struct play_para *para, int flags);
 int player_reset(play_para_t *p_para);
-int check_avbuffer_enough(play_para_t *para);
+int check_avbuffer_enough(play_para_t *para, int type);
 int64_t gettime(void);
 
 
