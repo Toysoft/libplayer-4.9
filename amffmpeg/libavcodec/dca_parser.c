@@ -141,12 +141,20 @@ static const uint32_t avpriv_dca_sample_rates[16] =
     12000, 24000, 48000, 96000, 192000
 };
 
+static const uint32_t avpriv_dca_bit_rates[32] =
+{
+    32000, 56000, 64000, 96000, 112000, 128000, 192000, 224000, 256000, 320000, 384000,
+    448000, 512000, 576000, 640000, 768000,960000,1024000,1152000,1280000,1344000,1408000,
+    1411200,1472000,1536000,1920000,2048000,3072000,3840000,0,0,0
+};
+
+
 static int dca_parse_params(const uint8_t *buf, int buf_size, int *duration,
-                            int *sample_rate)
+                            int *sample_rate,int *fsize,int *bitrate, int *channels)
 {
     GetBitContext gb;
     uint8_t hdr[12 + FF_INPUT_BUFFER_PADDING_SIZE] = { 0 };
-    int ret, sample_blocks, sr_code;
+    int ret, sample_blocks, sr_code,br_code,lfe;
 
     if (buf_size < 12)
         return AVERROR_INVALIDDATA;
@@ -161,11 +169,17 @@ static int dca_parse_params(const uint8_t *buf, int buf_size, int *duration,
     if (sample_blocks < 8)
         return AVERROR_INVALIDDATA;
     *duration = 256 * (sample_blocks / 8);
-
-    skip_bits(&gb, 20);
+    //skip_bits(&gb, 20);
+    fsize = get_bits(&gb, 14);
+    channels = get_bits(&gb, 6);
     sr_code = get_bits(&gb, 4);
+    br_code = get_bits(&gb, 5);
+    skip_bits(&gb, 10);
+    lfe = get_bits(&gb, 2);
     *sample_rate = avpriv_dca_sample_rates[sr_code];
-    if (*sample_rate == 0)
+    *bitrate = avpriv_dca_bit_rates[br_code];
+    //av_log(NULL,AV_LOG_INFO,"sample_blocks:%d,fsize:%d,channels:%d,sample_rate:%d,bitrate:%d,lfe:%d\n",sample_blocks,fsize,channels,*sample_rate,*bitrate,lfe);
+    if (*sample_rate == 0 || *bitrate == 0)
         return AVERROR_INVALIDDATA;
 
     return 0;
@@ -177,7 +191,7 @@ static int dca_parse(AVCodecParserContext * s,
 {
     DCAParseContext *pc1 = s->priv_data;
     ParseContext *pc = &pc1->pc;
-    int next, duration, sample_rate;
+    int next, duration, sample_rate,fsize,bitrate,channels;
 
     if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         next = buf_size;
@@ -190,11 +204,13 @@ static int dca_parse(AVCodecParserContext * s,
             return buf_size;
         }
     }
-    /* read the duration and sample rate from the frame header */
-    if (!dca_parse_params(buf, buf_size, &duration, &sample_rate)) {
+    /* read the duration ,sample rate,bitrate from the frame header */
+    if (!dca_parse_params(buf, buf_size, &duration, &sample_rate,&fsize,&bitrate,&channels)) {
         s->duration = duration;
         if (!avctx->sample_rate)
             avctx->sample_rate = sample_rate;
+        if (!avctx->bit_rate && bitrate)
+            avctx->bit_rate = bitrate;
     } else
         s->duration = 0;
     *poutbuf = buf;
