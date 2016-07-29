@@ -350,3 +350,13 @@ AVCodecParser ff_h264_parser = {
     close,
     h264_split,
 };
+
+AVCodecParser ff_h264mvc_parser = {
+    { CODEC_ID_H264MVC },
+    sizeof(H264Context),
+    init,
+    h264_parse,
+    close,
+    h264_split,
+};
+
