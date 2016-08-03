@@ -137,6 +137,9 @@ static int parse_vp9_param(char *str, sys_hevc_profile_t *para, int size)
 
 static int parse_real_param(char *str, sys_real_profile_t *para, int size)
 {
+    if (strstr(str, "1080p+")) {
+        para->exceed_1080p_enable = 1;
+    }
     return 0;
 }
 

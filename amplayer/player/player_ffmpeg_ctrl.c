@@ -336,7 +336,9 @@ int ffmpeg_parse_file_type(play_para_t *am_p, player_file_type_t *type)
                     }
                 }
 
-                if (st->codec->codec_id == CODEC_ID_RV40 && (st->codec->width * st->codec->height > 1920 * 1088)) {
+                if (st->codec->codec_id == CODEC_ID_RV40 && (
+                    (st->codec->width * st->codec->height > 1920 * 1088) &&
+                     !am_p->vdec_profile.real_para.exceed_1080p_enable)) {
                     if (rm_flag == 0) {
                         rm_flag = 1;
                         sprintf(vpx_string, "%s", "rmsoft");

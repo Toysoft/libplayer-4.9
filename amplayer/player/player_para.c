@@ -975,8 +975,11 @@ static void get_stream_info(play_para_t *p_para)
         }
         log_print("[%s:%d]real offset %lld\n", __FUNCTION__, __LINE__, p_para->data_offset);
 
-        if (p_para->vstream_info.video_height * p_para->vstream_info.video_width > 1920 * 1088) {
-            log_print("[%s:%d]real video_height=%d, exceed 1080p not support!\n", __FUNCTION__, __LINE__, p_para->vstream_info.video_height);
+        if (!p_para->vdec_profile.real_para.exceed_1080p_enable &&
+            (p_para->vstream_info.video_height * p_para->vstream_info.video_width > 1920 * 1088)) {
+            log_print("[%s:%d]real video size =%d X %d, exceed 1080p not support!\n", __FUNCTION__, __LINE__,
+            p_para->vstream_info.video_width,
+            p_para->vstream_info.video_height);
             p_para->vstream_info.has_video = 0;
         }
     } else {
@@ -985,7 +988,9 @@ static void get_stream_info(play_para_t *p_para)
     }
 
     if (video_index != -1) {
-        if (p_para->vstream_info.video_format == VFORMAT_VP9) {
+        if (p_para->stream_type == STREAM_RM) {
+            /*have check size before. not chek now.*/
+        } else if (p_para->vstream_info.video_format == VFORMAT_VP9) {
             if (p_para->vdec_profile.vp9_para.exist) {
                 ;
             } else {

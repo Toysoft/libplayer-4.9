@@ -40,6 +40,7 @@ typedef struct {
 typedef struct {
     int es_support;
     int exceed_720p_enable;
+    int exceed_1080p_enable;
 } sys_real_profile_t;
 
 typedef struct {
