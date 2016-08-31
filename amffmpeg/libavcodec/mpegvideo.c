@@ -1416,13 +1416,13 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
         ptr= pict->data[0];
         block_height = 16>>v_chroma_shift;
 
-        for(mb_y=0; mb_y<s->mb_height; mb_y++){
+        for (mb_y=0; mb_y<s->mb_height; mb_y++) {
             int mb_x;
-            for(mb_x=0; mb_x<s->mb_width; mb_x++){
+            for (mb_x=0; mb_x<s->mb_width; mb_x++) {
                 const int mb_index= mb_x + mb_y*s->mb_stride;
-                if((s->avctx->debug_mv) && pict->motion_val){
+                if ((s->avctx->debug_mv)/* && pict->motion_val*/) {
                   int type;
-                  for(type=0; type<3; type++){
+                  for (type=0; type<3; type++) {
                     int direction = 0;
                     switch (type) {
                       case 0: if ((!(s->avctx->debug_mv&FF_DEBUG_VIS_MV_P_FOR)) || (pict->pict_type!=AV_PICTURE_TYPE_P))
@@ -1489,15 +1489,15 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
                     }
                   }
                 }
-                if((s->avctx->debug&FF_DEBUG_VIS_QP) && pict->motion_val){
+                if ((s->avctx->debug&FF_DEBUG_VIS_QP)/* && pict->motion_val*/) {
                     uint64_t c= (pict->qscale_table[mb_index]*128/31) * 0x0101010101010101ULL;
                     int y;
-                    for(y=0; y<block_height; y++){
+                    for (y=0; y<block_height; y++) {
                         *(uint64_t*)(pict->data[1] + 8*mb_x + (block_height*mb_y + y)*pict->linesize[1])= c;
                         *(uint64_t*)(pict->data[2] + 8*mb_x + (block_height*mb_y + y)*pict->linesize[2])= c;
                     }
                 }
-                if((s->avctx->debug&FF_DEBUG_VIS_MB_TYPE) && pict->motion_val){
+                if ((s->avctx->debug&FF_DEBUG_VIS_MB_TYPE)/* && pict->motion_val*/) {
                     int mb_type= pict->mb_type[mb_index];
                     uint64_t u,v;
                     int y;

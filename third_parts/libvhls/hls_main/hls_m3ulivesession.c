@@ -1082,7 +1082,7 @@ static void _set_session_para(M3ULiveSession * s, SessionMediaItem * item) {
     if (is_encrypt_media == -1) { //simply detect encrypted stream
         //add codes for stream that the field "METHOD" of EXT-X-KEY is "NONE".
         char* method = NULL;
-        if (node->key != NULL && node->key->method != NULL) {
+        if (node->key != NULL && node->key->method[0]) {
             method = node->key->method;
         } else {
             method = "NONE";

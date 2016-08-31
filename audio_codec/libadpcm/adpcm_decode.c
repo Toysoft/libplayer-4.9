@@ -822,7 +822,7 @@ int audio_dec_decode(audio_decoder_operations_t *adec_ops, char *outbuf, int *ou
 int audio_dec_init(audio_decoder_operations_t *adec_ops)
 {
     aml_audio_dec_t *audec = (aml_audio_dec_t *)(adec_ops->priv_data);
-    PRINTF("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    //PRINTF("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
     adpcm_init(audec);
     return 0;
 }

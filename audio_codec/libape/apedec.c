@@ -145,7 +145,7 @@ void ape_decoder_delete(APE_Decoder_t *decoder)
         dsp_free(decoder->private_data->data);
         decoder->private_data->data = NULL;
     }
-    if (decoder->private_data->filterbuf) {
+    if (decoder->private_data->filterbuf[0]) {
         for (i = 0; i < APE_FILTER_LEVELS; i++) {
             if (s->filterbuf[i]) {
                 dsp_free(s->filterbuf[i]);
@@ -1074,7 +1074,7 @@ int audio_dec_init(audio_decoder_operations_t *adec_ops)
 {
     int x = 1;
     char *p = (char *)&x;
-    audio_codec_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    //audio_codec_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
     if (*p == 1) {
         audio_codec_print("Little endian\n");
     } else {

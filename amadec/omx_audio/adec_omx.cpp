@@ -2,7 +2,8 @@
 interface to call OMX codec 
 */
 
-#include "OMXCodec.h"
+#include <media/stagefright/MediaBuffer.h>
+#include <media/stagefright/SimpleDecodingSource.h>
 #include "../adec_omx_brige.h"
 #include "adec_omx.h"
 #include "audio_mediasource.h"
@@ -101,10 +102,7 @@ AmlOMXCodec::AmlOMXCodec(int codec_type,void *read_buffer,int *exit,aml_audio_de
         sp<MetaData> metadata = m_OMXMediaSource->getFormat();
         metadata->setCString(kKeyMIMEType,mine_type);
         
-        m_codec = OMXCodec::Create(
-                        m_OMXClient.interface(),
-                        metadata,
-                        false, // createEncoder
+        m_codec = SimpleDecodingSource::Create(
                         m_OMXMediaSource,
                         0,
                         0); 
@@ -149,12 +147,13 @@ status_t AmlOMXCodec::read(unsigned char *buf,unsigned *size,int *exit)
         *size=0;
         return OK;
     }
-        
+
+    /*
     if(*size>srcBuffer->range_length()) //surpose buf is large enough
          *size=srcBuffer->range_length();
     
     if(status == OK && (*size!=0) ){
-        memcpy( buf,srcBuffer->data() + srcBuffer->range_offset(),*size);
+        memcpy(buf, (void*)((unsigned long)srcBuffer->data() + srcBuffer->range_offset()), *size);
         srcBuffer->set_range(srcBuffer->range_offset() + (*size),srcBuffer->range_length() - (*size));
         srcBuffer->meta_data()->findInt64(kKeyTime, &buf_decode_offset);
     }
@@ -169,6 +168,7 @@ status_t AmlOMXCodec::read(unsigned char *buf,unsigned *size,int *exit)
          m_codec->adec_omx_lock_unlocked();
 #endif
     }
+    */
    
     return OK;
 }

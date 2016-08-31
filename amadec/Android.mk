@@ -173,7 +173,7 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_ARM_MODE := arm
 
 LOCAL_SHARED_LIBRARIES += libutils libmedia libz libbinder libdl libcutils libc libstagefright \
-                          libstagefright_omx  libstagefright_yuv liblog libamavutils
+                          libstagefright_omx  libstagefright_yuv liblog libamavutils libstagefright_foundation
 LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE_TAGS := optional
 

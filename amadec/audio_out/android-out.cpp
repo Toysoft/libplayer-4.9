@@ -845,7 +845,7 @@ extern "C" int android_init_raw(struct aml_audio_dec* audec)
     track = mpAudioTrack_raw.get();
 #endif
 
-    int SessionID = 0;//audec->SessionID;
+    audio_session_t SessionID = AUDIO_SESSION_NONE;//audec->SessionID;
     adec_print("[%s %d]SessionID = %d audec->codec_type/%f audec->samplerate/%d",__FUNCTION__,__LINE__,SessionID,audec->codec_type,audec->samplerate);
     int flags  = AUDIO_OUTPUT_FLAG_DIRECT;
 //only defined from android M
@@ -997,7 +997,7 @@ extern "C" int android_init(struct aml_audio_dec* audec)
     track = mpAudioTrack.get();
 #endif
 
-	int SessionID = audec->SessionID;
+    audio_session_t SessionID = audec->SessionID;
     adec_print("[%s %d]SessionID = %d audec->dtshdll_flag/%d audec->channels/%d",__FUNCTION__,__LINE__,SessionID,audec->dtshdll_flag,audec->channels);
 #if defined(_VERSION_JB)
     char tmp[128]={0};

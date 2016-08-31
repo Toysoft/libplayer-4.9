@@ -47,14 +47,13 @@ void aml_sub_start(void **amsub_handle, amsub_info_t *amsub_info)
     }
     *amsub_handle = (void *)amsub_dec;
     amsub_print("aml_sub_start ok, amsub_dec=%p \n", amsub_dec);
-    return NULL;
+    return;
 error:
     if (amsub_dec)
     {
         free(amsub_dec);
         amsub_dec = NULL;
     }
-    return;
 }
 
 /* --------------------------------------------------------------------------*/

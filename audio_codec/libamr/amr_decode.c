@@ -123,7 +123,7 @@ int audio_dec_init(audio_decoder_operations_t *adec_ops)
 {
     //struct audio_info *real_data;
     //real_data = (struct audio_info *)fmt->private_data;
-    amr_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    //amr_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
     if (adec_ops->samplerate == 16000) {
         SampleRateOut = 16000;
     } else {

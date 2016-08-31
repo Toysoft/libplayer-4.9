@@ -25,6 +25,7 @@
 #include <amconfigutils.h>
 #include <cutils/properties.h>
 
+extern player_cmd_t * peek_message(play_para_t *para);
 
 /******************************
  * reset subtitle prop
@@ -166,7 +167,7 @@ static int check_decoder_worksta(play_para_t *para)
                     int is_decoder_fatal_error = vdec.status & (DECODER_FATAL_ERROR_SIZE_OVERFLOW | DECODER_FATAL_ERROR_UNKNOW);
                     if (vdec.status & DECODER_FATAL_ERROR_NO_MEM) {
                         log_error("pid:[%d]::not enough codec memory for this file.\n", para->player_id);
-                        send_event(para, PLAYER_EVENTS_ERROR, PLAYER_NOMEM, "not enough memory!");
+                        send_event(para, PLAYER_EVENTS_ERROR, PLAYER_NOMEM, (unsigned long)"not enough memory!");
                         return PLAYER_NOMEM;
                     }
                     if (!para->vbuffer.rp_is_changed) {
@@ -1073,7 +1074,7 @@ void *player_thread(play_para_t *player)
     ret = ffmpeg_open_file(player);
     if (ret != FFMPEG_SUCCESS) {
         set_player_state(player, PLAYER_ERROR);
-        send_event(player, PLAYER_EVENTS_ERROR, ret, "Open File failed");
+        send_event(player, PLAYER_EVENTS_ERROR, ret, (unsigned long)"Open File failed");
         log_print("[player_dec_init]ffmpeg_open_file failed(%s)*****ret=%x!\n", player->file_name, ret);
         goto release0;
     }
@@ -1096,7 +1097,7 @@ void *player_thread(play_para_t *player)
     ffmpeg_parse_file_type(player, &filetype);
     set_player_state(player, PLAYER_TYPE_REDY);
     send_event(player, PLAYER_EVENTS_STATE_CHANGED, PLAYER_TYPE_REDY, 0);
-    send_event(player, PLAYER_EVENTS_FILE_TYPE, &filetype, 0);
+    send_event(player, PLAYER_EVENTS_FILE_TYPE, (unsigned long)&filetype, 0);
     if (player->start_param->is_type_parser) {
         player_cmd_t *msg;
         player_thread_wait(player, 10 * 1000);

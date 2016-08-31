@@ -246,7 +246,7 @@ int update_player_states(play_para_t *para, int force)
         if (fn) {
             fn(para->player_id, &state);
         }
-        send_event(para, PLAYER_EVENTS_PLAYER_INFO, &state, 0);
+        send_event(para, PLAYER_EVENTS_PLAYER_INFO, (unsigned long)&state, 0);
         para->state.error_no = 0;
         player_hwbuflevel_update(para);
         player_read_streaming_subtitle(para);

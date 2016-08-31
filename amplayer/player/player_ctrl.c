@@ -37,6 +37,7 @@
 #define  FBIOPUT_OSD_SRCKEY_ENABLE  0x46fa
 #endif
 
+extern codec_para_t *get_subtitle_codec(play_para_t *player);
 extern void print_version_info();
 int auto_refresh_rate_enable = 0;
 

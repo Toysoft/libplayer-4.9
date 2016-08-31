@@ -977,7 +977,7 @@ static int init_input(AVFormatContext *s, const char *orig_filename, const char 
             if (av_strstart(filename, "rtp:", NULL))
                 flags |= AVIO_FLAG_CACHE;
             if (options && *options)
-                ret = avio_open_h2(&s->pb, filename, flags, headers, options);
+                ret = avio_open_h2(&s->pb, filename, flags, headers, (unsigned long )options);
             else
                 ret = avio_open_h(&s->pb, filename, flags, headers);
             if (ret < 0)
@@ -1049,7 +1049,7 @@ static int init_input(AVFormatContext *s, const char *orig_filename, const char 
         s->pb = NULL;
         av_log(NULL, AV_LOG_INFO, "[%s:%d]Use new url=%s to open\n", __FUNCTION__, __LINE__, listfile);
         if (options && *options)
-            err = avio_open_h2(&s->pb, listfile, AVIO_FLAG_READ, headers, options);
+            err = avio_open_h2(&s->pb, listfile, AVIO_FLAG_READ, headers, (unsigned long)options);
         else
             err = avio_open_h(&s->pb, listfile, AVIO_FLAG_READ, headers);
         if (err < 0)

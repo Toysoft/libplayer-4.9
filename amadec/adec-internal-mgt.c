@@ -144,7 +144,7 @@ static void start_adec(aml_audio_dec_t *audec)
                 amsysfs_get_sysfs_str(TSYNC_VPTS, buf, sizeof(buf));
                 if (sscanf(buf, "0x%lx", &vpts) < 1) {
                     adec_print("unable to get vpts from: %s", buf);
-                    return -1;
+                    return;
                 }
 
                 // save vpts to apts

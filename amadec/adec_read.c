@@ -41,7 +41,7 @@ volatile unsigned* reg_base = 0;
 #define AIFIFO_READY  (((READ_MPEG_REG(AIU_MEM_AIFIFO_CONTROL)&(1<<9))))
 #define min(x,y) ((x<y)?(x):(y))
 
-static volatile unsigned memmap = MAP_FAILED;
+static volatile void *memmap = MAP_FAILED;
 static int phys_size = 0;
 
 static unsigned long  get_num_infile(char *file)

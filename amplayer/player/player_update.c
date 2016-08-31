@@ -1821,7 +1821,7 @@ int player_hwbuflevel_update(play_para_t *player)
             hwbufs.adatasize = abuf.data_len;
         }
         if (hwbufs.vbufused || hwbufs.abufused) {
-            send_event(player, PLAYER_EVENTS_HWBUF_DATA_SIZE_CHANGED, &hwbufs, 0);
+            send_event(player, PLAYER_EVENTS_HWBUF_DATA_SIZE_CHANGED, (unsigned long)&hwbufs, 0);
         }
     }
     return 0;
@@ -1839,7 +1839,7 @@ int player_read_streaming_subtitle(play_para_t * player)
     if (!subData) {
         return ret;
     }
-    send_event(player, PLAYER_EVENTS_SUBTITLE_DATA, subData, 0);
+    send_event(player, PLAYER_EVENTS_SUBTITLE_DATA, (unsigned long)subData, 0);
     return ret;
 }
 

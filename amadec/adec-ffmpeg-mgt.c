@@ -49,7 +49,7 @@ audio_lib_t audio_lib_list[] = {
     {ACODEC_FMT_MULAW, "libpcm.so"},
     {ACODEC_FMT_ADPCM, "libadpcm.so"},
     {ACODEC_FMT_DRA, "libdra.so"},
-    NULL
+    0
 } ;
 
 int find_audio_lib(aml_audio_dec_t *audec)
@@ -57,7 +57,7 @@ int find_audio_lib(aml_audio_dec_t *audec)
     int i;
     int num;
     audio_lib_t *f;
-    int fd = 0;
+
     adec_print("[%s %d]audec->format/%d audec->codec_id/0x%x\n", __FUNCTION__, __LINE__, audec->format, audec->codec_id);
     num = ARRAY_SIZE(audio_lib_list);
     audio_decoder_operations_t *adec_ops = audec->adec_ops;
@@ -69,7 +69,7 @@ int find_audio_lib(aml_audio_dec_t *audec)
     for (i = 0; i < num; i++) {
         f = &audio_lib_list[i];
         if (f->codec_id == audec->format) {
-            fd = dlopen(audio_lib_list[i].name, RTLD_NOW);
+            void *fd = dlopen(audio_lib_list[i].name, RTLD_NOW);
             if (fd != 0) {
                 adec_ops->init    = dlsym(fd, "audio_dec_init");
                 adec_ops->decode  = dlsym(fd, "audio_dec_decode");
@@ -899,7 +899,7 @@ static void start_decode_thread(aml_audio_dec_t *audec)
 {
     if (audec->state != INITTED) {
         adec_print("decode not inited quit \n");
-        return -1;
+        return;
     }
 
     pthread_t    tid;
@@ -910,7 +910,7 @@ static void start_decode_thread(aml_audio_dec_t *audec)
     ret = amthreadpool_pthread_create_name(&tid, NULL, (void *)audio_decode_loop, (void *)audec, "decodeloop");
     if (ret != 0) {
         adec_print("[%s]Create ffmpeg decode thread failed!\n", __FUNCTION__);
-        return ret;
+        return;
     }
     audec->sn_threadid = tid;
     audec->audio_decoder_enabled = 0x1;

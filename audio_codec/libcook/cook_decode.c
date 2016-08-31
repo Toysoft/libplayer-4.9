@@ -112,7 +112,7 @@ int audio_dec_decode(audio_decoder_operations_t *adec_ops, char *outbuf, int *ou
         int read_len;
         read_len = (inlen > cook_input.buf_max) ? cook_input.buf_max : inlen;
         if (len > 0) {
-            int temp = memcpy(cook_input.buf + cook_input.buf_len,
+            memcpy(cook_input.buf + cook_input.buf_len,
                               inbuf + cook_input.buf_len, read_len - cook_input.buf_len);
             cook_input.buf_len += read_len - cook_input.buf_len;
         }
@@ -346,7 +346,7 @@ int audio_dec_init(audio_decoder_operations_t *adec_ops)
     unsigned ulCodec4CC = 0;
     int i;
     struct audio_info real_data;
-    libcook_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    //libcook_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
     real_data.bitrate = adec_ops->bps;
     real_data.channels = adec_ops->channels;
     real_data.extradata_size = adec_ops->extradata_size;

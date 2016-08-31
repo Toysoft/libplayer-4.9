@@ -194,19 +194,19 @@ status_t THD_MediaSource::read(MediaBuffer **out, const ReadOptions *options)
 
     if(syncheader == TRUEHDSYNC){
         memcpy((uchar *)(buffer->data()), &fourheader, 4);
-        memcpy((uchar *)(buffer->data() + 4), &syncheader, 4);	
-        if (MediaSourceRead_buffer((uchar*)(buffer->data() + 8), ausize - 8) != (ausize - 8)) {
+        memcpy((uchar *)((unsigned long)buffer->data() + 4), &syncheader, 4);
+        if (MediaSourceRead_buffer((uchar*)((unsigned long)buffer->data() + 8), ausize - 8) != (ausize - 8)) {
             ALOGI("[%s %d]stream read failed\n",__FUNCTION__,__LINE__); 
             buffer->release();
             buffer = NULL;
             return ERROR_END_OF_STREAM;
         }
-        char *ptr = (char *)(buffer->data() + 8);
+        char *ptr = (char *)((unsigned long)buffer->data() + 8);
         sample_rate = ((ptr[0] >> 4) & 0xf) & 8 ? 44100 : 48000;
         ALOGI("[%s:%d] sample_rate = %d\n", __FUNCTION__, __LINE__, sample_rate);
     }else{
         memcpy((uchar *)(buffer->data()), &byte2, 2);	
-        if (MediaSourceRead_buffer((uchar*)(buffer->data() + 2), ausize - 2) != (ausize - 2)) {
+        if (MediaSourceRead_buffer((uchar*)((unsigned long)buffer->data() + 2), ausize - 2) != (ausize - 2)) {
             ALOGI("[%s %d]stream read failed\n",__FUNCTION__,__LINE__); 
             buffer->release();
             buffer = NULL;

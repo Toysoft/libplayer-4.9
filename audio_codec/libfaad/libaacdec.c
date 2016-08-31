@@ -277,7 +277,7 @@ int audio_dec_init(
 #endif
 )
 {
-    audio_codec_print("[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    //audio_codec_print("[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
     FaadContext *gFaadCxt = NULL;
     adec_ops->pdecoder = calloc(1, sizeof(FaadContext));
     if (!adec_ops->pdecoder) {

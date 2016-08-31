@@ -270,7 +270,7 @@ static inline void codec_check_new_cmd(CODEC_HANDLE handle)
     if (!codec_h_is_support_new_cmd()) {
         int r;
         int version = 0;
-        r = codec_h_control(handle, AMSTREAM_IOC_GET_VERSION, &version);
+        r = codec_h_control(handle, AMSTREAM_IOC_GET_VERSION, (unsigned long)&version);
         if ((r == 0) && (version >= 0x20000)) {
             CODEC_PRINT("codec_init amstream version : %d.%d\n", (version & 0xffff0000) >> 16, version & 0xffff);
             codec_h_set_support_new_cmd(1);
@@ -2207,7 +2207,7 @@ int codec_get_audio_resample_ena(codec_para_t *pcodec)
 {
     unsigned long audio_resample_ena;
     int ret;
-    ret = codec_h_control(pcodec->audio_utils_handle, AMAUDIO_IOC_GET_RESAMPLE_ENA, &audio_resample_ena);
+    ret = codec_h_control(pcodec->audio_utils_handle, AMAUDIO_IOC_GET_RESAMPLE_ENA, (unsigned long)&audio_resample_ena);
     if (ret < 0) {
         return system_error_to_codec_error(ret);
     } else {
@@ -2369,7 +2369,7 @@ int codec_get_audio_cur_bitrate(codec_para_t *pcodec, int *bitrate)
 /* --------------------------------------------------------------------------*/
 int codec_get_video_checkin_bitrate(codec_para_t *pcodec, int *bitrate)
 {
-    return codec_h_control(pcodec->handle, AMSTREAM_IOC_GET_VIDEO_CHECKIN_BITRATE_BPS, bitrate);
+    return codec_h_control(pcodec->handle, AMSTREAM_IOC_GET_VIDEO_CHECKIN_BITRATE_BPS, (unsigned long)bitrate);
 }
 /* --------------------------------------------------------------------------*/
 /**
@@ -2382,7 +2382,7 @@ int codec_get_video_checkin_bitrate(codec_para_t *pcodec, int *bitrate)
 /* --------------------------------------------------------------------------*/
 int codec_get_audio_checkin_bitrate(codec_para_t *pcodec, int *bitrate)
 {
-    return codec_h_control(pcodec->handle, AMSTREAM_IOC_GET_AUDIO_CHECKIN_BITRATE_BPS, bitrate);
+    return codec_h_control(pcodec->handle, AMSTREAM_IOC_GET_AUDIO_CHECKIN_BITRATE_BPS, (unsigned long)bitrate);
 }
 
 /* --------------------------------------------------------------------------*/

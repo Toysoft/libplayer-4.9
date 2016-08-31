@@ -366,7 +366,7 @@ int audio_dec_decode(audio_decoder_operations_t *adec_ops, char *outbuf, int *ou
         int read_len;
         read_len = (inlen > cook_input.buf_max) ? cook_input.buf_max : inlen;
         if (len > 0) {
-            int temp = memcpy(cook_input.buf + cook_input.buf_len,
+            memcpy(cook_input.buf + cook_input.buf_len,
                               inbuf + cook_input.buf_len, read_len - cook_input.buf_len);
             cook_input.buf_len += read_len - cook_input.buf_len;
         }
@@ -544,7 +544,7 @@ HX_RESULT _raac_block_available(void* pAvail, UINT32 ulSubStream, ra_block* pBlo
 //static int raac_decode_init(struct frame_fmt * fmt)
 int audio_dec_init(audio_decoder_operations_t *adec_ops)
 {
-    raac_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    //raac_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
     raac_print("enter into %s:%d\n", __FUNCTION__, __LINE__);
     HX_RESULT retVal = HXR_OK;
     unsigned ulNumStreams = 0;

@@ -89,7 +89,7 @@ int _media_info_dump(media_info_t* minfo)
         for (i = 0; i < minfo->stream_info.total_sub_num; i++) {
             if (0 == minfo->sub_info[i]->internal_external) {
                 ALOGD("%d 'st internal subtitle pid:%d\n", i, minfo->sub_info[i]->id);
-                ALOGD("%d 'st internal subtitle language:%s\n", i, minfo->sub_info[i]->sub_language ? minfo->sub_info[i]->sub_language : "unknow");
+                ALOGD("%d 'st internal subtitle language:%s\n", i, minfo->sub_info[i]->sub_language /*? minfo->sub_info[i]->sub_language : "unknow"*/);
                 ALOGD("%d 'st internal subtitle width:%d\n", i, minfo->sub_info[i]->width);
                 ALOGD("%d 'st internal subtitle height:%d\n", i, minfo->sub_info[i]->height);
                 ALOGD("%d 'st internal subtitle resolution:%d\n", i, minfo->sub_info[i]->resolution);

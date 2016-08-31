@@ -948,7 +948,7 @@ int audio_dec_init(
 #endif
 )
 {
-    audio_codec_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    //audio_codec_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
     memset(&decoder, 0, sizeof(struct mad_decoder));
 
     mad_decoder_init(&decoder, 0/*&buffer*/,

@@ -39,7 +39,7 @@ int update_dump_dir_path(void)
     char path[CONFIG_VALUE_MAX];
 
     if (am_getconfig("media.libplayer.dumppath", path, NULL) > 0) {
-        if (path != NULL && strlen(path) > 0 && strlen(path) < 63) {
+        if (/*path != NULL && */strlen(path) > 0 && strlen(path) < 63) {
             memcpy(dump_dir, path, strlen(path) + 1);
             log_info("changed dump dir to %s\n", dump_dir);
         }

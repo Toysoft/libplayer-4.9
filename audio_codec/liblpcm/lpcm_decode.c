@@ -295,7 +295,7 @@ int frame_size_check = 0;
 int jump_read_head_flag = 0;
 int audio_dec_init(audio_decoder_operations_t *adp)
 {
-    printk("\n\n[%s]WFD LPCMDEC BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    //printk("\n\n[%s]WFD LPCMDEC BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
     char value[PROPERTY_VALUE_MAX];
     if (property_get("media.wfd.debug_dec", value, NULL) > 0) {
         enable_debug_print = atoi(value);

@@ -12,7 +12,18 @@
 #include "amsub_log.h"
 
 
-
+void dump_amsub_data_info(amsub_para_s *amsub_para)
+{
+    //int size = amsub_para->spu_width * amsub_para->spu_height;
+    amsub_print("subtitle data info: \n\n");
+    amsub_print("sub_type       :  %d--\n", amsub_para->sub_type);
+    amsub_print("sub_pts        :  %u--\n", amsub_para->pts);
+    amsub_print("sub_delay      :  %u--\n", amsub_para->m_delay);
+    amsub_print("sub_width      :  %d--\n", amsub_para->spu_width);
+    amsub_print("sub_height     :  %d--\n", amsub_para->spu_height);
+    amsub_print("sub_buf_size   :  %d--\n", amsub_para->buffer_size);
+    amsub_print("sub_amsub_data :  %p--\n", amsub_para->amsub_data);
+}
 
 int amsub_dec_out_init(amsub_para_t *amsub_para)
 {
@@ -55,20 +66,6 @@ int amsub_dec_out_add(amsub_para_t *amsub_para)
     return 0;
 }
 
-void dump_amsub_data_info(amsub_para_s *amsub_para)
-{
-    //int size = amsub_para->spu_width * amsub_para->spu_height;
-    amsub_print("subtitle data info: \n\n");
-    amsub_print("sub_type       :  %d--\n", amsub_para->sub_type);
-    amsub_print("sub_pts        :  %u--\n", amsub_para->pts);
-    amsub_print("sub_delay      :  %u--\n", amsub_para->m_delay);
-    amsub_print("sub_width      :  %d--\n", amsub_para->spu_width);
-    amsub_print("sub_height     :  %d--\n", amsub_para->spu_height);
-    amsub_print("sub_buf_size   :  %d--\n", amsub_para->buffer_size);
-    amsub_print("sub_amsub_data :  %p--\n", amsub_para->amsub_data);
-    return NULL;
-}
-
 void amsub_get_odata_info(amsub_para_s *amsub_para, amsub_info_t *amsub_info)
 {
     amsub_info->sub_type = amsub_para->sub_type;
@@ -79,9 +76,7 @@ void amsub_get_odata_info(amsub_para_s *amsub_para, amsub_info_t *amsub_info)
     amsub_info->buffer_size = amsub_para->buffer_size;
     amsub_info->odata = amsub_para->amsub_data;
     amsub_print("amsub_get_odata_info over !\n");
-    return NULL;
 }
-
 
 int amsub_dec_out_get(amsub_para_t *amsub_para, amsub_info_t *amsub_info)
 {

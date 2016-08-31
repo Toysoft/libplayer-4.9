@@ -26,6 +26,13 @@
 #   define ELF @
 #endif
 
+#if HAVE_AS_FUNC
+#   define FUNC
+#else
+#   define FUNC @
+#endif
+
+
         .syntax unified
 
 .macro  require8 val=1
@@ -39,17 +46,20 @@ ELF     .eabi_attribute 25, \val
 .macro  function name, export=0
     .macro endfunc
 ELF     .size   \name, . - \name
-        .endfunc
+FUNC    .endfunc
         .purgem endfunc
     .endm
         .text
     .if \export
         .global EXTERN_ASM\name
+ELF     .type   EXTERN_ASM\name, %function
+FUNC    .func   EXTERN_ASM\name
 EXTERN_ASM\name:
-    .endif
+    .else
 ELF     .type   \name, %function
-        .func   \name
+FUNC    .func   \name
 \name:
+    .endif
 .endm
 
 .macro  const   name, align=2

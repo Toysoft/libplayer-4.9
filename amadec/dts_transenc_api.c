@@ -106,7 +106,7 @@ int dts_transenc_process_frame()
         fclose(fp1);
 #endif
 
-        rv = enc_ops.enc_encode(dts_transenc_info, stream, output, &output_size);//encode frame
+        rv = enc_ops.enc_encode(dts_transenc_info, stream, output, (unsigned int)&output_size);//encode frame
 #ifdef DUMP_FILE
         FILE *fp2 = fopen("/mnt/sda4/a.dts", "a+");
         fwrite(output, 1, output_size, fp2);

@@ -352,7 +352,7 @@ static int pcm_init(aml_audio_dec_t *audec)
 
 #ifdef CHECK_BLUERAY_PCM_HEADER
         pPcm_priv_data->frame_size_check_flag = 0;
-        if (!audec->extradata || audec->extradata_size != 4) {
+        if (/*!audec->extradata ||*/ audec->extradata_size != 4) {
             free(pPcm_priv_data->pcm_buffer);
             free(adec_ops->priv_dec_data);
             adec_ops->priv_dec_data = NULL;
@@ -742,7 +742,7 @@ static int pcm_decode_frame(pcm_read_ctl_t *pcm_read_ctl, unsigned char *buf, in
 int audio_dec_init(audio_decoder_operations_t *adec_ops)
 {
     aml_audio_dec_t *audec = (aml_audio_dec_t *)(adec_ops->priv_data);
-    PRINTF("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    //PRINTF("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
     return pcm_init(audec);
 
 }

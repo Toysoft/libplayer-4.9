@@ -15,9 +15,9 @@ ifeq ($(TARGET_ARCH),arm)
 LOCAL_CFLAGS += -mfloat-abi=softfp -mfpu=neon
 endif
 
-LOCAL_ARM_MODE := arm 
+LOCAL_ARM_MODE := arm
 LOCAL_C_INCLUDES := $(LOCAL_PATH)\
-                    $(LOCAL_PATH)/include 
+                    $(LOCAL_PATH)/include
 
 include $(BUILD_STATIC_LIBRARY)
 
@@ -42,10 +42,10 @@ endif
 LOCAL_ARM_MODE := arm
 LOCAL_MODULE_TAGS := optional
 LOCAL_C_INCLUDES := $(LOCAL_PATH)\
-                    $(LOCAL_PATH)/include 
+                    $(LOCAL_PATH)/include
 
 LOCAL_SHARED_LIBRARIES += libutils libmedia libz libbinder libdl libcutils libc
 
-LOCAL_PRELINK_MODULE := false 
+LOCAL_PRELINK_MODULE := false
 
 include $(BUILD_SHARED_LIBRARY)

@@ -193,11 +193,11 @@ static void *dts_enc_loop()
 quit_loop:
     adec_print("====dts_enc thread exit success \n");
     pthread_exit(NULL);
-    return 0;
+    return NULL;
 err:
     adec_print("====dts_enc thread exit success err\n");
     pthread_exit(NULL);
-    return -1;
+    return NULL;
 }
 
 

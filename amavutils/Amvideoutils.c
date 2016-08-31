@@ -343,6 +343,17 @@ int get_device_win(OSD_DISP_MODE dismod, int *x, int *y, int *w, int *h)
     return 0;
 }
 
+void get_axis(const char *path, int *x, int *y, int *w, int *h)
+{
+    int fd = -1;
+    char buf[SYSCMD_BUFSIZE];
+    if (amsysfs_get_sysfs_str(path, buf, sizeof(buf)) == 0) {
+        if (sscanf(buf, "%d %d %d %d", x, y, w, h) == 4) {
+            LOGI("%s axis: %d %d %d %d\n", path, *x, *y, *w, *h);
+        }
+    }
+}
+
 int amvideo_convert_axis(int32_t* x, int32_t* y, int32_t* w, int32_t* h, int *rotation, int osd_rotation)
 {
     int fb0_w, fb0_h;
@@ -423,19 +434,6 @@ void amvideo_setscreenmode()
             ALOGD("set screen mode as 0");
     }*/
 }
-
-
-void get_axis(const char *path, int *x, int *y, int *w, int *h)
-{
-    int fd = -1;
-    char buf[SYSCMD_BUFSIZE];
-    if (amsysfs_get_sysfs_str(path, buf, sizeof(buf)) == 0) {
-        if (sscanf(buf, "%d %d %d %d", x, y, w, h) == 4) {
-            LOGI("%s axis: %d %d %d %d\n", path, *x, *y, *w, *h);
-        }
-    }
-}
-
 
 void set_scale(int x, int y, int w, int h, int *dst_x, int *dst_y, int *dst_w, int *dst_h, int disp_w, int disp_h)
 {

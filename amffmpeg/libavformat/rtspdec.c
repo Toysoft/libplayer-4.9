@@ -883,8 +883,8 @@ static FILE *g_dumpFile=NULL;
 static void *recv_prot_buffer_task( void *_rtspCtx)
 {
     RTSPProtocolContext* rtspCtx = (RTSPProtocolContext*)_rtspCtx;
-    if(NULL == rtspCtx)
-	return AVERROR(ENOMEM);    
+    if (NULL == rtspCtx)
+        return (void *)AVERROR(ENOMEM);
 
     av_log(NULL, AV_LOG_ERROR, "[%s:%d] Thread start!brunning=%d pausing=%d\n", 
     			__FUNCTION__, __LINE__,rtspCtx->brunning,rtspCtx->pausing);
@@ -1151,7 +1151,7 @@ static int64_t rtsp_protocol_exseek (URLContext *h, int64_t pos, int whence)
                     }
 #endif
                     av_log(NULL, AV_LOG_INFO, "[%s:%d]read_seek pos=%lld\n",__FUNCTION__,__LINE__,pos);
-                    if (!iformat->read_seek (rtspCtx->ctx, -1, (pos*AV_TIME_BASE), NULL))
+                    if (!iformat->read_seek (rtspCtx->ctx, -1, (pos*AV_TIME_BASE), 0))
                         ret = pos;
 
 #ifdef RTSP_PROT_DUMP

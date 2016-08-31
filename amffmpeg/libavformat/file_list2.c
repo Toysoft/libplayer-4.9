@@ -551,24 +551,21 @@ reload:
         
         goto error;
     } else {
-       
         if (mgt->item_num == 0 && mgt->n_variants > 0&&NULL== mgt->playing_variant) { //simplely choose server,mabye need sort variants when got it from server.
             if (bio) {
                 url_fclose(bio);
                 bio = NULL;
-                
             }
-            
-            ret = fast_sort_streams(mgt);  
-            if(mgt->playing_variant==NULL||mgt->playing_variant->url==NULL||strlen(mgt->playing_variant->url)<4){
+
+            ret = fast_sort_streams(mgt);
+            if (mgt->playing_variant == NULL || /*mgt->playing_variant->url == NULL || */strlen(mgt->playing_variant->url) < 4) {
                 av_log(NULL,AV_LOG_ERROR,"failed to sort or get streams\n");
                 ret = -1;
                 goto error;
             }
-            url = mgt->playing_variant->url;           
+            url = mgt->playing_variant->url;
             //av_log(NULL, AV_LOG_INFO, "[%d]reload playlist,url:%s\n", __LINE__, url);
-            goto reload;           
-
+            goto reload;
         }
 
     }
@@ -1735,7 +1732,7 @@ int register_list_demux_all(void)
 {
     static int registered_all = 0;
     if (registered_all) {
-        return;
+        return 0;
     }
     registered_all++;
     extern struct list_demux m3u_demux;

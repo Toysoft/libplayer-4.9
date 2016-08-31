@@ -89,7 +89,6 @@ static void find_best_keyframe(AVFormatContext *pFormatCtx, int video_index, int
     } else {
         log_print("[%s]find_best_keyframe failed\n", __FUNCTION__);
     }
-    return r;
 }
 
 static void find_thumbnail_frame(AVFormatContext *pFormatCtx, int video_index, int64_t *thumb_time, int64_t *thumb_offset, int *pmaxframesize)

@@ -15,6 +15,7 @@
 
 #include <audio-out.h>
 #include <audiodsp.h>
+#include <system/audio.h>
 #include <adec-types.h>
 #include <adec-message.h>
 #include <log-print.h>
@@ -128,7 +129,7 @@ struct aml_audio_dec {
     audio_decoder_operations_t *adec_ops;//non audiodsp decoder operations
     int extradata_size;      ///< extra data size
     char extradata[AUDIO_EXTRA_DATA_SIZE];
-    int SessionID;
+    audio_session_t SessionID;
     int format_changed_flag;
     unsigned dspdec_not_supported;//check some profile that audiodsp decoder can not support,we switch to arm decoder
     int droppcm_flag;               // drop pcm flag, if switch audio (1)

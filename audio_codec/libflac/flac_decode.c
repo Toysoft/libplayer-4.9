@@ -888,7 +888,7 @@ int audio_dec_init(audio_decoder_operations_t *adec_ops)
     AVCodecContext *avctx    = &acodec;
     FLACContext *s = &flactext;
     s->avctx = &acodec;
-    audio_codec_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    //audio_codec_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
     avctx->sample_fmt = SAMPLE_FMT_S16;
     avctx->extradata = adec_ops->extradata;
     avctx->extradata_size = adec_ops->extradata_size;

@@ -171,7 +171,7 @@ typedef struct _M3ULiveSession {
     int64_t output_stream_offset;
     int startsegment_index;
     void *urlcontext;
-    int *last_notify_err_seq_num;
+    int last_notify_err_seq_num;
     int no_new_file_can_download;
     char *ext_gd_seek_info;
     char *cookies;

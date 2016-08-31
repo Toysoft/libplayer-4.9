@@ -2359,7 +2359,7 @@ static void check_ac3_dts(AVFormatContext * s)
 					break;
                                 ret = read_packet(s, packet, ts->raw_packet_size);
                                 if (ret != 0)
-                                        return ret;
+                                        return;
                                 if(   (c_pid != (AV_RB16(packet + 1) & 0x1fff)) && (1 != (packet[1] & 0x40)) ) //pid equal and must have pes/es header 
                                         continue;
                                 //seek to the pes header

@@ -77,7 +77,7 @@ volatile unsigned* reg_base = 0;
 #define AIFIFO_READY  (((READ_MPEG_REG(AIU_MEM_AIFIFO_CONTROL)&(1<<9))))
 #define min(x,y) ((x<y)?(x):(y))
 static int fd_uio = -1;
-static volatile unsigned memmap = MAP_FAILED;
+static volatile void *memmap = MAP_FAILED;
 static int phys_size;
 static volatile int exit_flag = 0;
 static unsigned long amsysfs_get_sysfs_ulong(const char *path)
@@ -329,7 +329,7 @@ static int aac_decode_frame(HAACDecoder hAACDecoder, HAACIOBuf hIOBuf)
 }
 int audio_dec_init(audio_decoder_operations_t *adp)
 {
-    printk("\n\n[%s]WFDAAC DEC BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    //printk("\n\n[%s]WFDAAC DEC BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
     char value[PROPERTY_VALUE_MAX];
     if (property_get("media.wfd.debug_dec", value, NULL) > 0) {
         enable_debug_print = atoi(value);
