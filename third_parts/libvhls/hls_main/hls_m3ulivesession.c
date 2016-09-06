@@ -2793,11 +2793,15 @@ REFRESH:
             if (s->err_code < 0) {
                 break;
             }
-            LOGI("Download all segments,worker sleep...\n");
-            s->eof_flag = 1;
-            s->err_code = 0;
-            _thread_wait_timeUs(s, NULL, -1);
-            s->download_monitor_timer = get_clock_monotonic_us();
+	  if ( s->seektimeUs == -1 ) {
+                LOGI("Download all segments,worker sleep...\n");
+                s->eof_flag = 1;
+                s->err_code = 0;
+                _thread_wait_timeUs(s, NULL, -1);
+                s->download_monitor_timer = get_clock_monotonic_us();
+            } else {
+                LOGI("Maybe download all segments, but has seek need to handle\n");
+            }
         }
         while (s->is_closed < 1 && s->interrupt && (*s->interrupt)()) {
             if (s->handling_seek > 0) {
