@@ -71,14 +71,14 @@ int _media_info_dump(media_info_t* minfo)
     if (minfo->stream_info.has_audio && minfo->stream_info.total_audio_num > 0) {
         printf("======||audio counts:%d\n", minfo->stream_info.total_audio_num);
 
-        if (NULL != minfo->audio_info[0]->audio_tag) {
-            printf("======||track title:%s", minfo->audio_info[0]->audio_tag->title != NULL ? minfo->audio_info[0]->audio_tag->title : "unknow");
-            printf("\n======||track album:%s", minfo->audio_info[0]->audio_tag->album != NULL ? minfo->audio_info[0]->audio_tag->album : "unknow");
-            printf("\n======||track author:%s\n", minfo->audio_info[0]->audio_tag->author != NULL ? minfo->audio_info[0]->audio_tag->author : "unknow");
-            printf("\n======||track year:%s\n", minfo->audio_info[0]->audio_tag->year != NULL ? minfo->audio_info[0]->audio_tag->year : "unknow");
-            printf("\n======||track comment:%s\n", minfo->audio_info[0]->audio_tag->comment != NULL ? minfo->audio_info[0]->audio_tag->comment : "unknow");
-            printf("\n======||track genre:%s\n", minfo->audio_info[0]->audio_tag->genre != NULL ? minfo->audio_info[0]->audio_tag->genre : "unknow");
-            printf("\n======||track copyright:%s\n", minfo->audio_info[0]->audio_tag->copyright != NULL ? minfo->audio_info[0]->audio_tag->copyright : "unknow");
+        if (NULL != minfo->audio_info[0] && minfo->audio_info[0]->audio_tag) {
+            printf("======||track title:%s", strlen(minfo->audio_info[0]->audio_tag->title) > 0? minfo->audio_info[0]->audio_tag->title : "unknow");
+            printf("\n======||track album:%s", strlen(minfo->audio_info[0]->audio_tag->album) > 0? minfo->audio_info[0]->audio_tag->album : "unknow");
+            printf("\n======||track author:%s\n", strlen(minfo->audio_info[0]->audio_tag->author) > 0? minfo->audio_info[0]->audio_tag->author : "unknow");
+            printf("\n======||track year:%s\n", strlen(minfo->audio_info[0]->audio_tag->year) > 0? minfo->audio_info[0]->audio_tag->year : "unknow");
+            printf("\n======||track comment:%s\n", strlen(minfo->audio_info[0]->audio_tag->comment) > 0? minfo->audio_info[0]->audio_tag->comment : "unknow");
+            printf("\n======||track genre:%s\n", strlen(minfo->audio_info[0]->audio_tag->genre) > 0? minfo->audio_info[0]->audio_tag->genre : "unknow");
+            printf("\n======||track copyright:%s\n", strlen(minfo->audio_info[0]->audio_tag->copyright) > 0? minfo->audio_info[0]->audio_tag->copyright : "unknow");
             printf("\n======||track track:%d\n", minfo->audio_info[0]->audio_tag->track);
         }
 
@@ -100,7 +100,7 @@ int _media_info_dump(media_info_t* minfo)
             if (0 == minfo->sub_info[i]->internal_external) {
                 printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
                 printf("======||%d 'st internal subtitle pid:%d\n", i, minfo->sub_info[i]->id);
-                printf("======||%d 'st internal subtitle language:%s\n", i, minfo->sub_info[i]->sub_language ? minfo->sub_info[i]->sub_language : "unknow");
+                printf("======||%d 'st internal subtitle language:%s\n", i, strlen(minfo->sub_info[i]->sub_language) > 0 ? minfo->sub_info[i]->sub_language : "unknow");
                 printf("======||%d 'st internal subtitle width:%d\n", i, minfo->sub_info[i]->width);
                 printf("======||%d 'st internal subtitle height:%d\n", i, minfo->sub_info[i]->height);
                 printf("======||%d 'st internal subtitle resolution:%d\n", i, minfo->sub_info[i]->resolution);

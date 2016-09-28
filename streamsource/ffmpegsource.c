@@ -30,7 +30,7 @@ static int ffmpegsource_l_open(source_t *as, const char * url, const char *heade
         return ret;
     }
     as->flags = flags;
-    as->priv[0] = (URLContext *)uio;
+    as->priv[0] = (unsigned long)uio;
     if (url != as->location) {
         as->firstread = 1;
         strcpy(as->location, url);
@@ -58,7 +58,7 @@ static int ffmpegsource_open(source_t *as, const char * url, const char *header,
         return ret;
     }
     buf = &as->priv[2];
-    as->priv[1] = ffurl_read_complete(as->priv[0], buf, strlen(M3UTAG));
+    as->priv[1] = ffurl_read_complete((URLContext *)as->priv[0], buf, strlen(M3UTAG));
     datasize = as->priv[1];
     if (datasize >= strlen(M3UTAG) && memcmp(M3UTAG, buf, strlen(M3UTAG)) == 0) {
         snprintf(as->location, 4096, "list:%s", as->url);
@@ -90,7 +90,7 @@ static int ffmpegsource_read(source_t *as, char *buf, int size)
         psize -= as->priv[1];
         as->priv[1] = 0;
     }
-    uio = as->priv[0];
+    uio = (URLContext *)as->priv[0];
     if (uio != NULL) {
         ret = ffurl_read(uio, pbuf, psize);
     }
@@ -101,7 +101,7 @@ static int ffmpegsource_read(source_t *as, char *buf, int size)
 }
 static int64_t ffmpegsource_seek(source_t *as, int64_t off, int whence)
 {
-    URLContext *uio = as->priv[0];
+    URLContext *uio = (URLContext *)as->priv[0];
     int64_t ret = SOURCE_ERROR_NOT_OPENED;
     if (whence == SOURCE_SEEK_BY_TIME) {
         if (uio->prot->url_exseek) {
@@ -123,7 +123,7 @@ static int64_t ffmpegsource_seek(source_t *as, int64_t off, int whence)
 static int ffmpegsource_close(source_t *as)
 {
     int ret = 0;
-    URLContext *uio = as->priv[0];
+    URLContext *uio = (URLContext *)as->priv[0];
     ret = ffurl_close(uio);
     return ret;
 }
