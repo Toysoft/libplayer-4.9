@@ -43,6 +43,7 @@ extern "C" {
     int hls_simple_cache_grow_space(void* handle, int size);
 
     int hls_simple_cache_move_to_pos(void* handle, int pos);
+    int hls_simple_cache_block_read(void* handle, void* buffer, int size, int wait_us);
 #ifdef __cplusplus
 #if __cplusplus
 }

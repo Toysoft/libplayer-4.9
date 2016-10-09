@@ -10,6 +10,10 @@
 #include <cutils/properties.h>
 #include <amthreadpool.h>
 
+#include "Amsysfsutils.h"
+#include "amconfigutils.h"
+#include "spdif_api.h"
+
 typedef enum {
     IDLE,
     TERMINATED,
@@ -32,6 +36,8 @@ static void *dts_enc_loop();
 
 #define DIGITAL_RAW_PATH             "sys/class/audiodsp/digital_raw"
 #define FORMAT_PATH                        "/sys/class/astream/format"
+
+extern int match_types(const char *filetypestr, const char *typesetting);
 
 static int get_dts_mode(void)
 {

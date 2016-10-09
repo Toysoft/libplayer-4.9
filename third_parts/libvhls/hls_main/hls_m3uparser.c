@@ -38,6 +38,13 @@ typedef struct _M3UParser {
     struct list_head  mediaGroup_head;
 } M3UParser;
 
+extern void av_url_split(char *proto, int proto_size,
+                  char *authorization, int authorization_size,
+                  char *hostname, int hostname_size,
+                  int *port_ptr,
+                  char *path, int path_size,
+                  const char *url);
+
 //====================== media group ==============================
 
 static void codecIsType(const char * codec, MediaType * type) {

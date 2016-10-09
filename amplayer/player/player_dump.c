@@ -1,5 +1,6 @@
 #include "player_priv.h"
 #include "log_print.h"
+#include "player_update.h"
 
 int player_dump_playinfo(int pid, int fd)
 {

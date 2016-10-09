@@ -38,17 +38,19 @@ float PlayerGetSettingfloat(const char* path)
     return ret;
 }
 
-#define FILTER_VFMT_MPEG12	(1 << 0)
-#define FILTER_VFMT_MPEG4	(1 << 1)
-#define FILTER_VFMT_H264	(1 << 2)
-#define FILTER_VFMT_MJPEG	(1 << 3)
-#define FILTER_VFMT_REAL	(1 << 4)
-#define FILTER_VFMT_JPEG	(1 << 5)
-#define FILTER_VFMT_VC1		(1 << 6)
-#define FILTER_VFMT_AVS		(1 << 7)
-#define FILTER_VFMT_SW		(1 << 8)
-#define FILTER_VFMT_HMVC    (1 << 9)
-#define FILTER_VFMT_HEVC	(1 << 10)
+#define FILTER_VFMT_MPEG12  (1 << VFORMAT_MPEG12)
+#define FILTER_VFMT_MPEG4   (1 << VFORMAT_MPEG4)
+#define FILTER_VFMT_H264    (1 << VFORMAT_H264)
+#define FILTER_VFMT_MJPEG   (1 << VFORMAT_MJPEG)
+#define FILTER_VFMT_REAL    (1 << VFORMAT_REAL)
+#define FILTER_VFMT_JPEG    (1 << VFORMAT_JPEG)
+#define FILTER_VFMT_VC1     (1 << VFORMAT_VC1)
+#define FILTER_VFMT_AVS     (1 << VFORMAT_AVS)
+#define FILTER_VFMT_SW      (1 << VFORMAT_SW)
+#define FILTER_VFMT_HMVC    (1 << VFORMAT_H264MVC)
+#define FILTER_VFMT_HEVC    (1 << VFORMAT_HEVC)
+#define FILTER_VFMT_VP9     (1 << VFORMAT_VP9)
+
 
 int PlayerGetVFilterFormat(play_para_t*am_p)
 {
@@ -82,49 +84,52 @@ int PlayerGetVFilterFormat(play_para_t*am_p)
 	
     if (GetSystemSettingString("media.amplayer.disable-vcodecs", value, NULL) > 0) {
 		log_print("[%s:%d]disable_vdec=%s\n", __FUNCTION__, __LINE__, value);
-		if (match_types(value,"MPEG12") != NULL || match_types(value,"mpeg12") != NULL) {
+		if (match_types(value,"MPEG12") || match_types(value,"mpeg12")) {
 			filter_fmt |= FILTER_VFMT_MPEG12;
 		} 
-		if (match_types(value,"MPEG4") != NULL || match_types(value,"mpeg4") != NULL) {
+		if (match_types(value,"MPEG4") || match_types(value,"mpeg4")) {
 			filter_fmt |= FILTER_VFMT_MPEG4;
 		} 
-		if (match_types(value,"H264") != NULL || match_types(value,"h264") != NULL) {
+		if (match_types(value,"H264") || match_types(value,"h264")) {
 			filter_fmt |= FILTER_VFMT_H264;
 		}
-		if (match_types(value,"HEVC") != NULL || match_types(value,"hevc") != NULL) {
+		if (match_types(value,"HEVC") || match_types(value,"hevc")) {
 			filter_fmt |= FILTER_VFMT_HEVC;
 		} 
-		if (match_types(value,"MJPEG") != NULL || match_types(value,"mjpeg") != NULL) {
+		if (match_types(value,"MJPEG") || match_types(value,"mjpeg")) {
 			filter_fmt |= FILTER_VFMT_MJPEG;
 		} 
-		if (match_types(value,"REAL") != NULL || match_types(value,"real") != NULL) {
+		if (match_types(value,"REAL") || match_types(value,"real")) {
 			filter_fmt |= FILTER_VFMT_REAL;
 		} 
-		if (match_types(value,"JPEG") != NULL || match_types(value,"jpeg") != NULL) {
+		if (match_types(value,"JPEG") || match_types(value,"jpeg")) {
 			filter_fmt |= FILTER_VFMT_JPEG;
 		} 
-		if (match_types(value,"VC1") != NULL || match_types(value,"vc1") != NULL) {
+		if (match_types(value,"VC1") || match_types(value,"vc1")) {
 			filter_fmt |= FILTER_VFMT_VC1;
 		} 
-		if (match_types(value,"AVS") != NULL || match_types(value,"avs") != NULL) {
+		if (match_types(value,"AVS") || match_types(value,"avs")) {
 			filter_fmt |= FILTER_VFMT_AVS;
 		} 
-		if (match_types(value,"SW") != NULL || match_types(value,"sw") != NULL) {
+		if (match_types(value,"SW") || match_types(value,"sw")) {
 			filter_fmt |= FILTER_VFMT_SW;
 		}
-		if (match_types(value,"HMVC") != NULL || match_types(value,"hmvc") != NULL){
+		if (match_types(value,"HMVC") || match_types(value,"hmvc")){
 			filter_fmt |= FILTER_VFMT_HMVC;
 		}
+		if (match_types(value,"VP9") || match_types(value,"vp9")){
+			filter_fmt |= FILTER_VFMT_VP9;
+		}
 		/*filter by codec id*/
-		if (match_types(value,"DIVX3") != NULL || match_types(value,"divx3") != NULL){
+		if (match_types(value,"DIVX3") || match_types(value,"divx3")){
 			if (codec_id == CODEC_TAG_DIV3)
 				filter_fmt |= FILTER_VFMT_MPEG4;
 		}
-		if (match_types(value,"DIVX4") != NULL || match_types(value,"divx4") != NULL){
+		if (match_types(value,"DIVX4") || match_types(value,"divx4")){
 			if (codec_id == CODEC_TAG_DIV4)
 				filter_fmt |= FILTER_VFMT_MPEG4;
 		}
-		if (match_types(value,"DIVX5") != NULL || match_types(value,"divx5") != NULL){
+		if (match_types(value,"DIVX5") || match_types(value,"divx5")){
 			if (codec_id == CODEC_TAG_DIV5)
 				filter_fmt |= FILTER_VFMT_MPEG4;
 		}
@@ -188,73 +193,73 @@ int PlayerGetAFilterFormat(const char *prop)
 #endif	
     if (GetSystemSettingString(prop, value, NULL) > 0) {
         log_print("[%s:%d]disable_adec=%s\n", __FUNCTION__, __LINE__, value);
-        if (match_types(value,"mpeg") != NULL || match_types(value,"MPEG") != NULL) {
+        if (match_types(value,"mpeg") || match_types(value,"MPEG")) {
             filter_fmt |= FILTER_AFMT_MPEG;
         }
-        if (match_types(value,"pcms16l") != NULL || match_types(value,"PCMS16L") != NULL) {
+        if (match_types(value,"pcms16l") || match_types(value,"PCMS16L")) {
             filter_fmt |= FILTER_AFMT_PCMS16L;
         }
-        if (match_types(value,"aac") != NULL || match_types(value,"AAC") != NULL) {
+        if (match_types(value,"aac") || match_types(value,"AAC")) {
             filter_fmt |= FILTER_AFMT_AAC;
         }
-        if (match_types(value,"ac3") != NULL || match_types(value,"AC3") != NULL) {
+        if (match_types(value,"ac3") || match_types(value,"AC3")) {
             filter_fmt |= FILTER_AFMT_AC3;
         }
-        if (match_types(value,"alaw") != NULL || match_types(value,"ALAW") != NULL) {
+        if (match_types(value,"alaw") || match_types(value,"ALAW")) {
             filter_fmt |= FILTER_AFMT_ALAW;
         }
-        if (match_types(value,"mulaw") != NULL || match_types(value,"MULAW") != NULL) {
+        if (match_types(value,"mulaw") || match_types(value,"MULAW")) {
             filter_fmt |= FILTER_AFMT_MULAW;
         }
-        if (match_types(value,"dts") != NULL || match_types(value,"DTS") != NULL) {
+        if (match_types(value,"dts") || match_types(value,"DTS")) {
             filter_fmt |= FILTER_AFMT_DTS;
         }
-        if (match_types(value,"pcms16b") != NULL || match_types(value,"PCMS16B") != NULL) {
+        if (match_types(value,"pcms16b") || match_types(value,"PCMS16B")) {
             filter_fmt |= FILTER_AFMT_PCMS16B;
         }
-        if (match_types(value,"flac") != NULL || match_types(value,"FLAC") != NULL) {
+        if (match_types(value,"flac") || match_types(value,"FLAC")) {
             filter_fmt |= FILTER_AFMT_FLAC;
         }
-        if (match_types(value,"cook") != NULL || match_types(value,"COOK") != NULL) {
+        if (match_types(value,"cook") || match_types(value,"COOK")) {
             filter_fmt |= FILTER_AFMT_COOK;
         }
-        if (match_types(value,"pcmu8") != NULL || match_types(value,"PCMU8") != NULL) {
+        if (match_types(value,"pcmu8") || match_types(value,"PCMU8")) {
             filter_fmt |= FILTER_AFMT_PCMU8;
         }
-        if (match_types(value,"adpcm") != NULL || match_types(value,"ADPCM") != NULL) {
+        if (match_types(value,"adpcm") || match_types(value,"ADPCM")) {
             filter_fmt |= FILTER_AFMT_ADPCM;
         }
-        if (match_types(value,"amr") != NULL || match_types(value,"AMR") != NULL) {
+        if (match_types(value,"amr") || match_types(value,"AMR")) {
             filter_fmt |= FILTER_AFMT_AMR;
         }
-        if (match_types(value,"raac") != NULL || match_types(value,"RAAC") != NULL) {
+        if (match_types(value,"raac") || match_types(value,"RAAC")) {
             filter_fmt |= FILTER_AFMT_RAAC;
         }
-        if (match_types(value,"wma") != NULL || match_types(value,"WMA") != NULL) {
+        if (match_types(value,"wma") || match_types(value,"WMA")) {
             filter_fmt |= FILTER_AFMT_WMA;
         }
-        if (match_types(value,"wmapro") != NULL || match_types(value,"WMAPRO") != NULL) {
+        if (match_types(value,"wmapro") || match_types(value,"WMAPRO")) {
             filter_fmt |= FILTER_AFMT_WMAPRO;
         }
-        if (match_types(value,"pcmblueray") != NULL || match_types(value,"PCMBLUERAY") != NULL) {
+        if (match_types(value,"pcmblueray") || match_types(value,"PCMBLUERAY")) {
             filter_fmt |= FILTER_AFMT_PCMBLU;
         }
-        if (match_types(value,"alac") != NULL || match_types(value,"ALAC") != NULL) {
+        if (match_types(value,"alac") || match_types(value,"ALAC")) {
             filter_fmt |= FILTER_AFMT_ALAC;
         }
-        if (match_types(value,"vorbis") != NULL || match_types(value,"VORBIS") != NULL) {
+        if (match_types(value,"vorbis") || match_types(value,"VORBIS")) {
             filter_fmt |= FILTER_AFMT_VORBIS;
         }
-        if (match_types(value,"aac_latm") != NULL || match_types(value,"AAC_LATM") != NULL) {
+        if (match_types(value,"aac_latm") || match_types(value,"AAC_LATM")) {
             filter_fmt |= FILTER_AFMT_AAC_LATM;
         }
-        if (match_types(value,"ape") != NULL || match_types(value,"APE") != NULL) {
+        if (match_types(value,"ape") || match_types(value,"APE")) {
             filter_fmt |= FILTER_AFMT_APE;
         }
-        if (match_types(value,"eac3") != NULL || match_types(value,"EAC3") != NULL) {
+        if (match_types(value,"eac3") || match_types(value,"EAC3")) {
             filter_fmt |= FILTER_AFMT_EAC3;
         }
-        if (match_types(value,"dra") != NULL || match_types(value,"DRA") != NULL) {
+        if (match_types(value,"dra") || match_types(value,"DRA")) {
             filter_fmt |= FILTER_AFMT_DRA;
         }
     }

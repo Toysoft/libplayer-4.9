@@ -71,3 +71,6 @@
 // bit 15:0 level_hold
 #define AIU_MEM_AIFIFO_MEM_CTL                     0x158f
 
+int uio_init(aml_audio_dec_t *audec);
+int uio_deinit(aml_audio_dec_t *audec);
+

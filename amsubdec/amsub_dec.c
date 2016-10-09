@@ -9,7 +9,7 @@
 #include "amsub_log.h"
 #include "amsub_dec_output.h"
 #include <amthreadpool.h>
-
+#include <unistd.h>
 
 
 void *amsub_dec_loop_ctrl(void *args);

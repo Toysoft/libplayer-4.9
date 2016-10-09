@@ -16,6 +16,11 @@
 #include <feeder.h>
 #include <audiodsp.h>
 
+#include "audiodsp.h"
+#include "Amsysfsutils.h"
+#include "amconfigutils.h"
+
+extern int audiodsp_start(aml_audio_dec_t *audec);
 /**
  * \brief get audio format
  * \return audio format on success otherwise ADEC_AUDIO_FORMAT_UNKNOWN

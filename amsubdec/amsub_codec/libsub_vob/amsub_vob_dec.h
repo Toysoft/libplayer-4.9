@@ -5,6 +5,7 @@
 
 int get_vob_spu(char *input_buf, int *buf_size, unsigned length, amsub_para_s *spu);
 void vobsub_init_decoder(void);
+int vob_subtitle_decode(amsub_dec_t *amsub_dec, int read_handle);
 
 typedef enum
 {

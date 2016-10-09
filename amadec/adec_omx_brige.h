@@ -50,6 +50,7 @@ enum OMX_CodecID {
 
 
 void stop_decode_thread_omx(aml_audio_dec_t *audec);
-
+void start_decode_thread_omx(aml_audio_dec_t *audec);
+int find_omx_lib(aml_audio_dec_t *audec);
 #endif
 

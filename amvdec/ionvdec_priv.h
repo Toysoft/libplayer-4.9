@@ -2,6 +2,8 @@
 #define IONVDEC_PRIV_HEADER__
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <stdarg.h>
 #include <string.h>
 #include <videodev2.h>

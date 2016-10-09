@@ -8,7 +8,7 @@
 #include <sys/mman.h>
 #include <android/log.h>
 #include <cutils/properties.h>
-
+#include <unistd.h>
 #include "../../amadec/adec-armdec-mgt.h"
 
 #define  LOG_TAG    "LPCMDEC"

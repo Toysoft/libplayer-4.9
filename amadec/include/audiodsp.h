@@ -13,6 +13,7 @@
 
 #include <adec-macros.h>
 #include <adec-types.h>
+#include "../audio-dec.h"
 
 ADEC_BEGIN_DECLS
 
@@ -129,6 +130,13 @@ int audiodsp_get_first_pts_flag(dsp_operations_t *dsp_ops);
 int audiodsp_automute_on(dsp_operations_t *dsp_ops);
 int audiodsp_automute_off(dsp_operations_t *dsp_ops);
 int audiodsp_set_skip_bytes(dsp_operations_t* dsp_ops, unsigned int bytes);
+int audiodsp_get_pcm_level(dsp_operations_t* dsp_ops);
+
+int audiodsp_init(dsp_operations_t *dsp_ops);
+//int audiodsp_start(aml_audio_dec_t *audec);
+int audiodsp_stop(dsp_operations_t *dsp_ops);
+int audiodsp_release(dsp_operations_t *dsp_ops);
+
 ADEC_END_DECLS
 
 #endif

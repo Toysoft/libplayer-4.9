@@ -3,9 +3,13 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-
+#include <unistd.h>
 #include <utils/Log.h>
 #include <ctype.h>
+#include <strings.h>
+#include <stdlib.h>
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif

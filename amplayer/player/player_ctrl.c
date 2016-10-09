@@ -25,8 +25,12 @@
 #include "player_update.h"
 #include "thread_mgt.h"
 #include "player_ffmpeg_ctrl.h"
-#include "player_cache_mgt.h"
 #include "player_priv.h"
+#include "player_hwdec.h"
+#include "libavformat/tcp_pool.h"
+
+#include "../../amcodec/audio_ctl/audio_ctrl.h"
+
 #include <amthreadpool.h>
 
 #ifndef FBIOPUT_OSD_SRCCOLORKEY
@@ -39,6 +43,7 @@
 
 extern codec_para_t *get_subtitle_codec(play_para_t *player);
 extern void print_version_info();
+
 int auto_refresh_rate_enable = 0;
 
 static pthread_mutex_t player_stop_mutex;
@@ -262,7 +267,7 @@ int player_stop(int pid)
     player_close_pid_data(pid);
     log_print("[player_stop:exit]pid=%d\n", pid);
     pthread_mutex_unlock(&player_stop_mutex);
-    tcppool_refresh_link_and_check();
+    tcppool_refresh_link_and_check(0);
     log_print("[tcppool_refresh_link_and_check]pid=%d\n", pid);
     return r;
 }
@@ -1699,11 +1704,10 @@ int player_list_allpid(pid_info_t *pid)
  * @details
  */
 /* --------------------------------------------------------------------------*/
-
-
 int player_cache_system_init(int enable, const char*dir, int max_size, int block_size)
 {
-    return cache_system_init(enable, dir, max_size, block_size);
+    /*do nothing*/
+    return 0;
 }
 
 /* --------------------------------------------------------------------------*/

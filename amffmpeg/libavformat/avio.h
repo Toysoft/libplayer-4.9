@@ -815,7 +815,7 @@ static inline int url_is_segment_media(AVIOContext *s)
  int64_t url_buffed_pos(ByteIOContext *s);
  int64_t url_fbuffered_time(ByteIOContext *s);
  int64_t url_fseekslicebytime(AVIOContext *s,int64_t timestamp, int flags);
-#define av_read_frame_flush(s) ff_read_frame_flush(s)
+
 int ffio_fdopen_resetlpbuf(AVIOContext *s,int lpsize);
 
 int url_lp_set_seekflags(URLContext *s,int seekflagmask);
@@ -830,8 +830,13 @@ int url_set_more_data_seek(AVIOContext *s);
 int url_clear_more_data_seek(AVIOContext *s);
 int url_setcmd(AVIOContext *s, int cmd,int flag,unsigned long info);
 int avio_getinfo(AVIOContext *s, int cmd,int flag,void*info);
+
+/** @warning must be called before any I/O */
+int ffio_set_buf_size(AVIOContext *s, int buf_size);
+
 #include "libavformat/url.h"
 #include "libavformat/aviolpbuf.h"
+
 
 
 

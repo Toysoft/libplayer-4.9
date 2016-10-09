@@ -45,6 +45,9 @@ typedef struct _HLSHttpContext {
 #define BOX_SERIAL_AUTH "X-BOX-SERIAL:" //box serial number
 
 #define BOX_TEST_SERIAL "0100210755"
+
+extern int av_strstart(const char *str, const char *pfx, const char **ptr);
+
 static void _add_auth_headers(char* headers)
 {
     int ret = -1;

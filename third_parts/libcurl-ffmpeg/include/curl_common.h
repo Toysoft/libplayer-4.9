@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdarg.h>
+#include <string.h>
+#include <unistd.h>
 
 #define MAX_CURL_URI_SIZE 4096
 
@@ -37,5 +39,7 @@ char *c_stristr(const char *haystack, const char *needle);
 size_t c_strlcpy(char *dst, const char *src, size_t size);
 size_t c_strlcat(char *dst, const char *src, size_t size);
 size_t c_strlcatf(char *dst, size_t size, const char *fmt, ...);
+
+char * c_strrstr(const char *s, const char *str);
 
 #endif

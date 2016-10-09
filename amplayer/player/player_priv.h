@@ -254,6 +254,8 @@ int lock_message_pool(play_para_t *para);
 player_cmd_t * peek_message_locked(play_para_t *para);
 player_cmd_t * get_message_locked(play_para_t *para);
 int send_message_update(play_para_t *para, player_cmd_t *cmd);
+player_cmd_t * peek_message(play_para_t *para);
+
 
 player_cmd_t * get_message(play_para_t *para);
 int update_player_states(play_para_t *para, int force);
@@ -272,5 +274,9 @@ int player_force_enter_buffering(play_para_t *player, int nForce);
 int player_pre_switch_audio(play_para_t *para, int aid);
 
 int player_read_streaming_subtitle(play_para_t * player);
+
+int match_types(const char *filetypestr, const char *typesetting);
+
+
 
 #endif

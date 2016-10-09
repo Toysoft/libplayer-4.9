@@ -9,7 +9,10 @@
 #include <linux/fb.h>
 #include <sys/system_properties.h>
 #include <log-print.h>
+#include <cutils/properties.h>
 #include "aml_resample.h"
+#include "Amsysfsutils.h"
+#include "amconfigutils.h"
 
 
 af_resampe_ctl_t af_resampler_ctx = {0};

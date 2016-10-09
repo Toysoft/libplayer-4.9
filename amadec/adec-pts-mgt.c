@@ -13,12 +13,16 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include <adec-pts-mgt.h>
 #include <cutils/properties.h>
 #include <sys/time.h>
 #include <amthreadpool.h>
 #include <sys/ioctl.h>
+
+#include "Amsysfsutils.h"
+#include "amconfigutils.h"
 
 #define DROP_PCM_DURATION_THRESHHOLD 4 //unit:s
 #define DROP_PCM_MAX_TIME 1000 // unit :ms
@@ -31,6 +35,8 @@ static int vdec_pts_pause(void);
 int droppcm_use_size(aml_audio_dec_t *audec, int drop_size);
 void droppcm_prop_ctrl(int *audio_ahead, int *pts_ahead_val);
 int droppcm_get_refpts(aml_audio_dec_t *audec, unsigned long *refpts);
+
+extern int match_types(const char *filetypestr, const char *typesetting);
 
 static int64_t gettime(void)
 {

@@ -36,6 +36,8 @@
 #include "get_bits.h"
 //#include "put_bits.h"
 
+#include <assert.h>
+
 #define INVALID_VLC           0x80000000
 #ifndef __MW__
 extern const uint8_t ff_golomb_vlc_len[512];

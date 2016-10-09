@@ -1,5 +1,6 @@
 #ifndef HLS_BANDWIDTH_MEASURE_H
 #define HLS_BANDWIDTH_MEASURE_H
+#include <stdlib.h>
 
 /******************************************************************************
 

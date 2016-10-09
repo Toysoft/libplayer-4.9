@@ -18,6 +18,10 @@
 #include <cutils/properties.h>
 #include <iconv.h>
 
+#include "amconfigutils.h"
+#include "libavutil/avstring.h"
+#include "libavformat/internal.h"
+
 extern es_sub_t es_sub_buf[SSTREAM_MAX_NUM];
 
 DECLARE_ALIGNED(16, uint8_t, dec_buf[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2]);

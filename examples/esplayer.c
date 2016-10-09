@@ -12,6 +12,7 @@
 #include <codec.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <unistd.h>
 
 #define READ_SIZE (64 * 1024)
 #define EXTERNAL_PTS    (1)

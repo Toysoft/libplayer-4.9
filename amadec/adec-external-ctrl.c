@@ -8,12 +8,18 @@
  * All right reserved
  *
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
+
+#include <math.h>
 #include <unistd.h>
+
 #include <audio-dec.h>
 #include <amthreadpool.h>
+
 
 
 int audio_decode_basic_init(void)
@@ -329,7 +335,7 @@ int audio_decode_set_pre_gain(void *handle, float gain)
         ret = -1;
     } else {
         audec->pre_gain_enable = 1;
-        audec->pre_gain = powf(10, gain/20);
+        //audec->pre_gain = powf(10.0f, gain/20);
         adec_print("[%s] set pre-gain[%f] \n", __FUNCTION__, audec->pre_gain);
     }
     return ret;
@@ -428,7 +434,7 @@ int audio_decode_get_pre_gain(void *handle, float *gain)
         return -1;
     }
 
-    *gain = 20*log10f(audec->pre_gain);
+    //*gain = 20*log10f((float)audec->pre_gain);
 
     return ret;
 }

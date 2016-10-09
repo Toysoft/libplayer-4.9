@@ -26,7 +26,9 @@
 #include "codec_h_ctrl.h"
 #include <adec-external-ctrl.h>
 #include <Amvideoutils.h>
-
+#include "codec_msg.h"
+#include "../audio_ctl/audio_ctrl.h"
+#include "amconfigutils.h"
 
 #define SUBTITLE_EVENT
 #define TS_PACKET_SIZE 188
@@ -2253,7 +2255,7 @@ int codec_set_video_delay_limited_ms(codec_para_t *pcodec, int delay_ms)
 /* --------------------------------------------------------------------------*/
 int codec_get_video_delay_limited_ms(codec_para_t *pcodec, int *delay_ms)
 {
-    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_VIDEO_DELAY_LIMIT_MS, delay_ms);
+    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_VIDEO_DELAY_LIMIT_MS, (unsigned long)delay_ms);
 }
 
 
@@ -2282,7 +2284,7 @@ int codec_set_audio_delay_limited_ms(codec_para_t *pcodec, int delay_ms)
 /* --------------------------------------------------------------------------*/
 int codec_get_audio_delay_limited_ms(codec_para_t *pcodec, int *delay_ms)
 {
-    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_AUDIO_DELAY_LIMIT_MS, delay_ms);
+    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_AUDIO_DELAY_LIMIT_MS, (unsigned long)delay_ms);
 }
 
 /* --------------------------------------------------------------------------*/
@@ -2299,7 +2301,7 @@ int codec_get_audio_cur_delay_ms(codec_para_t *pcodec, int *delay_ms)
     int abuf_delay = 0;
     int adec_delay = 0;
     int ret = 0;
-    ret = codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_AUDIO_CUR_DELAY_MS, &abuf_delay);
+    ret = codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_AUDIO_CUR_DELAY_MS, (unsigned long)&abuf_delay);
     if (ret < 0) {
         CODEC_PRINT("[%s]ioctl failed %d\n", __FUNCTION__, ret);
         return -1;
@@ -2327,7 +2329,7 @@ int codec_get_audio_cur_delay_ms(codec_para_t *pcodec, int *delay_ms)
 /* --------------------------------------------------------------------------*/
 int codec_get_video_cur_delay_ms(codec_para_t *pcodec, int *delay_ms)
 {
-    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_VIDEO_CUR_DELAY_MS, delay_ms);
+    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_VIDEO_CUR_DELAY_MS, (unsigned long)delay_ms);
 }
 
 /* --------------------------------------------------------------------------*/
@@ -2341,7 +2343,7 @@ int codec_get_video_cur_delay_ms(codec_para_t *pcodec, int *delay_ms)
 /* --------------------------------------------------------------------------*/
 int codec_get_video_cur_bitrate(codec_para_t *pcodec, int *bitrate)
 {
-    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_VIDEO_AVG_BITRATE_BPS, bitrate);
+    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_VIDEO_AVG_BITRATE_BPS, (unsigned long)bitrate);
 }
 
 
@@ -2356,7 +2358,7 @@ int codec_get_video_cur_bitrate(codec_para_t *pcodec, int *bitrate)
 /* --------------------------------------------------------------------------*/
 int codec_get_audio_cur_bitrate(codec_para_t *pcodec, int *bitrate)
 {
-    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_AUDIO_AVG_BITRATE_BPS, bitrate);
+    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_AUDIO_AVG_BITRATE_BPS, (unsigned long)bitrate);
 }
 /* --------------------------------------------------------------------------*/
 /**
@@ -2410,12 +2412,12 @@ int codec_set_drmmode(codec_para_t *pcodec, unsigned int setval)
  */
 int codec_get_last_checkout_apts(codec_para_t* pcodec, unsigned long *apts)
 {
-    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_LAST_CHECKOUT_APTS, apts);
+    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_LAST_CHECKOUT_APTS, (unsigned long)apts);
 }
 
 int codec_get_last_checkin_apts(codec_para_t* pcodec, unsigned long* apts)
 {
-    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_LAST_CHECKIN_APTS, apts);
+    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_LAST_CHECKIN_APTS, (unsigned long)apts);
 }
 
 /**
@@ -2433,12 +2435,12 @@ int codec_get_pcm_level(codec_para_t* pcodec, unsigned int* level)
 
 int codec_set_skip_bytes(codec_para_t* pcodec, unsigned int bytes)
 {
-    return audio_set_skip_bytes(pcodec->adec_priv);
+    return audio_set_skip_bytes(pcodec->adec_priv, bytes);
 }
 
 int codec_get_dsp_apts(codec_para_t* pcodec, unsigned int * apts)
 {
-    return audio_get_pts(pcodec->adec_priv, apts);
+    return audio_get_pts(pcodec->adec_priv);
 }
 
 /* --------------------------------------------------------------------------*/

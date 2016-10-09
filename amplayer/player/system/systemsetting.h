@@ -5,6 +5,6 @@ int GetSystemSettingString(const char *path, char *value, char *defaultv);
 float PlayerGetSettingfloat(const char* path);
 int PlayerSettingIsEnable();
 int PlayerGetVFilterFormat();
-
+int PlayerGetAFilterFormat(const char *prop);
 #endif
 

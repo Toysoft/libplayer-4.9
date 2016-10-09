@@ -7,6 +7,9 @@
 #include "stream_decoder.h"
 #include "player_priv.h"
 #include "player_hwdec.h"
+#include "amconfigutils.h"
+
+#include <cutils/properties.h>
 
 static int check_size_in_buffer(unsigned char *p, int len)
 {

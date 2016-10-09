@@ -17,7 +17,7 @@
 
 #include "player.h"
 #include "player_type.h"
-#include "streamsource.h"
+
 typedef enum {
     //EMU_STEP_NONE = 0,
     EMU_STEP_PAUSE = 2,

@@ -13,7 +13,7 @@
 #include <audio-dec.h>
 #include <cutils/properties.h>
 #include <amthreadpool.h>
-
+#include "audiodsp_update_format.h"
 
 typedef struct {
     int codec_id;

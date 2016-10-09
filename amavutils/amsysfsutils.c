@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <strings.h>
+#include <string.h>
 #include <cutils/log.h>
 #include <sys/ioctl.h>
 #include "include/Amsysfsutils.h"

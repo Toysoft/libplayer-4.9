@@ -8,9 +8,11 @@
 
 #include <pthread.h>
 #include "player_priv.h"
-#include  <libavformat/avio.h>
+#include "player_update.h"
+#include <libavformat/avio.h>
 #include <itemlist.h>
 #include <amconfigutils.h>
+#include <ammodule.h>
 
 
 static char format_string[128] = {0};

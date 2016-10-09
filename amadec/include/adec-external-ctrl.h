@@ -47,6 +47,13 @@ extern "C"
     int audio_channel_lrmix_flag_set(void *, int enable);
     int audio_decpara_get(void *handle, int *pfs, int *pch);
     int audio_get_format_supported(int format);
+		int audio_get_pts(void* handle);
+		int audio_set_skip_bytes(void* handle, unsigned int bytes);
+		int audio_get_pcm_level(void* handle);
+		int audio_get_decoded_pcm_delay(void *handle);
+		int audio_decode_basic_init(void);
+		int audio_decoder_set_trackrate(void* handle, void *rate);
+		int audio_decoder_get_enable_status(void* handle);
 #ifdef  __cplusplus
 }
 #endif

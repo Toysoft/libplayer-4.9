@@ -4,6 +4,10 @@
 #define LOG_TAG "amthreadpool"
 #include <utils/Log.h>
 
+#include <string.h>
+#include <stdlib.h>
+#include <fcntl.h>
+
 
 static struct itemlist threadpool_list;
 static struct itemlist threadpool_threadlist;

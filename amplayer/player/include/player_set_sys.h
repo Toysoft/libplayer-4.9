@@ -80,6 +80,9 @@ extern "C" {
     int get_di_detect_3d_enable();
     int set_di_detect_3d_enable(int val);
 
+    int set_subtitle_index(int num);
+    int get_audio_digital_output_mode();
+
 #ifdef  __cplusplus
 }
 #endif

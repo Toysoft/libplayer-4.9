@@ -27,7 +27,10 @@
 **
 ** $Id: mp4.c,v 1.40 2009/02/06 03:39:58 menno Exp $
 **/
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
 #include "common.h"
 #include "structs.h"
 

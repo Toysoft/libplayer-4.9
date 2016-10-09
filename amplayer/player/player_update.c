@@ -13,6 +13,9 @@
 #include "player_update.h"
 #include "player_av.h"
 #include "thread_mgt.h"
+#include "amconfigutils.h"
+#include "player_ffmpeg_ctrl.h"
+
 #define CHAPTER_DISCONTINUE_THRESHOLD          (90000*30)
 
 static int64_t hls_get_estimate_bps(play_para_t *p_para);
@@ -86,7 +89,7 @@ static int set_vstream_info(play_para_t *p_para)
         return -1;
     }
     if (info->has_video) {
-        unsigned int i;
+        int i;
         int vnum = 0;
         AVStream *pStream;
 
@@ -976,7 +979,7 @@ static void update_current_time(play_para_t *p_para)
                 p_para->state.current_ms = p_para->state.current_time * 1000;
             }
         }
-        log_debug("[update_current_time:%d]time=%d last_time=%d time_point=%d\n", __LINE__, p_para->state.current_time, p_para->state.last_time, p_para->playctrl_info.time_point);
+        log_debug("[update_current_time:%d]time=%d last_time=%d time_point=%f\n", __LINE__, p_para->state.current_time, p_para->state.last_time, p_para->playctrl_info.time_point);
 
 #ifdef DEBUG_VARIABLE_DUR
         if (p_para->playctrl_info.info_variable) {
@@ -1611,7 +1614,7 @@ int update_playing_info(play_para_t *p_para)
     struct vdec_status vdec;
     struct adec_status adec;
     player_status sta;
-    unsigned long delay_ms;
+    unsigned int delay_ms;
     int ret;
 
     MEMSET(&vbuf, 0, sizeof(struct buf_status));
@@ -1636,8 +1639,8 @@ int update_playing_info(play_para_t *p_para)
             codec_para_t *avcodec = NULL;
             int resample_enable;
             int pcm_len = 0, pcm_ms = 0;
-            unsigned int last_checkout_apts = 0, apts = 0, last_checkin_apts = 0, dsp_apts = 0;
-            static unsigned l_last_checkout_apts = 0, l_last_checkin_apts = 0, l_dsp_apts = 0, l_delay_ms = 0;
+            unsigned long last_checkout_apts = 0, apts = 0, last_checkin_apts = 0, dsp_apts = 0;
+            static unsigned long l_last_checkout_apts = 0, l_last_checkin_apts = 0, l_dsp_apts = 0, l_delay_ms = 0;
             static int skipped = 0;
             if (p_para->codec) {
                 avcodec = p_para->codec;
@@ -1650,11 +1653,11 @@ int update_playing_info(play_para_t *p_para)
                 last_checkout_apts /= 90;
                 codec_get_last_checkin_apts(avcodec, &last_checkin_apts);
                 last_checkin_apts /= 90;
-                pcm_len = codec_get_pcm_level(avcodec);
+                pcm_len = codec_get_pcm_level(avcodec, NULL);
                 apts = codec_get_apts(avcodec);
                 pcm_ms = last_checkout_apts - apts; // total PCM not playbacked
                 resample_enable = codec_get_audio_resample_ena(avcodec);
-                dsp_apts = codec_get_dsp_apts(avcodec) / 90;
+                dsp_apts = codec_get_dsp_apts(avcodec, NULL) / 90;
 #if 0
                 if (l_delay_ms != delay_ms || l_last_checkout_apts != last_checkout_apts || l_last_checkin_apts != last_checkin_apts || l_dsp_apts != dsp_apts) {
                     log_print("delay_ms = %d, pts %d->%d, dsp pts->%d", delay_ms, last_checkin_apts, last_checkout_apts, dsp_apts);

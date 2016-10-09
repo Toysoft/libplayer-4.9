@@ -1,9 +1,12 @@
 
 #define LOG_TAG "amavutils"
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <string.h>
 #include <strings.h>
 #include <cutils/log.h>
 #include <cutils/properties.h>

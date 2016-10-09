@@ -43,6 +43,7 @@ LOCAL_LDFLAGS := -Wl,--no-warn-shared-textrel
 endif
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/include \
 	$(LOCAL_PATH)/../../amcodec/include \
+	$(LOCAL_PATH)/../../amcodec \
 	$(LOCAL_PATH)/../common\
 	$(LOCAL_PATH)/../../amadec/include \
 	$(LOCAL_PATH)/../../amffmpeg\

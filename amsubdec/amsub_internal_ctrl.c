@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/poll.h>
@@ -11,6 +12,8 @@
 #include "amsub_log.h"
 #include "amsub_dec.h"
 #include "amsub_io_ctrl.h"
+
+#include "amthreadpool.h"
 
 
 /* --------------------------------------------------------------------------*/

@@ -19,6 +19,8 @@
 #include "player_update.h"
 #include <cutils/properties.h>
 #include <amconfigutils.h>
+#include <system/systemsetting.h>
+
 
 #define WRITE_BLOCK_TIMEOUT_MS  1000
 
@@ -2331,7 +2333,7 @@ int write_av_packet(play_para_t *para)
                     return PLAYER_WR_FAILED;
                 } else {
                     /* EAGAIN to see if buffer full or write time out too much */
-                    if (check_avbuffer_enough_for_ape(para, -1)) {
+                    if (check_avbuffer_enough_for_ape(para)) {
                         if (!para->playctrl_info.check_lowlevel_eagain_time) {
                             check_time_interrupt(&para->playctrl_info.check_lowlevel_eagain_time, -1);    //always update
                         }
@@ -3154,9 +3156,9 @@ int set_header_info(play_para_t *para)
                 pkt->hdr->data[2] =     'T';
                 pkt->hdr->data[3] =     'S';
                 pkt->hdr->data[4] = (pkt->data_size - extra_data) & 0xff;
-                pkt->hdr->data[5] = (pkt->data_size - extra_data >> 8) & 0xff;
-                pkt->hdr->data[6] = (pkt->data_size - extra_data >> 16) & 0xff;
-                pkt->hdr->data[7] = (pkt->data_size - extra_data >> 24) & 0xff;
+                pkt->hdr->data[5] = ((pkt->data_size - extra_data) >> 8) & 0xff;
+                pkt->hdr->data[6] = ((pkt->data_size - extra_data) >> 16) & 0xff;
+                pkt->hdr->data[7] = ((pkt->data_size - extra_data) >> 24) & 0xff;
                 pkt->hdr->size = 8;
             }
 

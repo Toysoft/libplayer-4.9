@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <unistd.h>
 //#include "log_print.h"
 
 #include "amsub_idxsub_dec.h"

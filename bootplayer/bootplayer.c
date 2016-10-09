@@ -11,7 +11,6 @@
 
 #include "player.h"
 #include "player_type.h"
-#include "streamsource.h"
 #include "Amsysfsutils.h"
 
 typedef enum {

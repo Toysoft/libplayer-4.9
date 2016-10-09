@@ -11,6 +11,8 @@
 #include <adec_write.h>
 #include "adec_omx_brige.h"
 #include <amthreadpool.h>
+#include "Amsysfsutils.h"
+#include "amconfigutils.h"
 
 #define  LOG_TAG    "Adec_omx_bridge"
 #define adec_print(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)

@@ -35,6 +35,10 @@
 #include <android/log.h>
 
 #define  LOG_TAG    "get_bits"
+
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
 //goes the  A32_BITSTREAM_READER passage
 #if defined(ALT_BITSTREAM_READER_LE) && !defined(ALT_BITSTREAM_READER)
 #define ALT_BITSTREAM_READER

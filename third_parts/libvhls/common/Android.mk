@@ -7,7 +7,7 @@ LOCAL_MODULE_TAGS := optional
 ifeq ($(LIVEPLAY_SEEK), true)
  LOCAL_CFLAGS += -DLIVEPLAY_SEEK
 endif
-
+LOCAL_CFLAGS += -DHAVE_ANDROID_OS
 LOCAL_SRC_FILES := \
 	hls_utils.c \
 	hls_rand.c

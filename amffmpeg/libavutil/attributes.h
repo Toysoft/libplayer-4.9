@@ -82,7 +82,8 @@
 
 #ifndef attribute_deprecated
 #if AV_GCC_VERSION_AT_LEAST(3,1)
-#    define attribute_deprecated __attribute__((deprecated))
+///#    define attribute_deprecated __attribute__((deprecated))
+#    define attribute_deprecated
 #else
 #    define attribute_deprecated
 #endif

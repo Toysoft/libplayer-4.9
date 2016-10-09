@@ -170,8 +170,8 @@ static int dca_parse_params(const uint8_t *buf, int buf_size, int *duration,
         return AVERROR_INVALIDDATA;
     *duration = 256 * (sample_blocks / 8);
     //skip_bits(&gb, 20);
-    fsize = (int *)get_bits(&gb, 14);
-    channels = (int *)get_bits(&gb, 6);
+    *fsize = get_bits(&gb, 14);
+    *channels = get_bits(&gb, 6);
     sr_code = get_bits(&gb, 4);
     br_code = get_bits(&gb, 5);
     skip_bits(&gb, 10);

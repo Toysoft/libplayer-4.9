@@ -235,6 +235,9 @@ extern "C" {
     M3uSubtitleData * m3u_session_media_read_subtitle(void * session, int index);
     MediaType m3u_session_media_get_type_by_index(void * session, int index);
 
+    int m3u_session_get_estimate_bps(void*hSession, int* bps);
+    int m3u_session_get_livemode(void* hSession, int *pnLivemode);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

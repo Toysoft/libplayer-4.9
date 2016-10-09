@@ -21,9 +21,16 @@
 #include <dts_enc.h>
 #include <Amsysfsutils.h>
 #include <amthreadpool.h>
+#include <amconfigutils.h>
+#include <unistd.h>
+#include "audiodsp_update_format.h"
 
 #define MULTICH_SUPPORT_PROPERTY "media.multich.support.info"
 #define PCM_88_96_SUPPORT        "media.libplayer.88_96K"
+
+extern int RegisterDecode(aml_audio_dec_t *audec, int type);
+extern void get_output_func(struct aml_audio_dec* audec);
+
 static int set_tsync_enable(int enable)
 {
 
@@ -70,6 +77,8 @@ audio_type_t audio_type[] = {
     {ACODEC_FMT_NULL, "null"},
 
 };
+
+extern int match_types(const char *filetypestr, const char *typesetting);
 
 static int audio_decoder = AUDIO_ARC_DECODER;
 static int audio_hardware_ctrl(hw_command_t cmd)

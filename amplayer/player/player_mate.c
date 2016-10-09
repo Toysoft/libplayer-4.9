@@ -13,6 +13,8 @@
 #include <player.h>
 
 #include "player_priv.h"
+#include "player_update.h"
+#include "player_ffmpeg_ctrl.h"
 #include "thread_mgt.h"
 #include <semaphore.h>
 

@@ -17,7 +17,9 @@
 #include <openssl/md5.h>
 #endif
 
-
+#include <fcntl.h>
+#include "Amsysfsutils.h"
+#include "amconfigutils.h"
 #include <dlfcn.h>
 
 

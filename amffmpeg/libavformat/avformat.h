@@ -759,7 +759,7 @@ typedef struct AVFormatContext {
     void *priv_data;
     AVIOContext *pb;
     AVProbeData pd;
-    unsigned int nb_streams;
+    int nb_streams;
     AVStream **streams;
     char filename[1024]; /**< input or output filename */
     /* stream info */
@@ -1775,5 +1775,9 @@ int av_buffering_data(AVFormatContext *s, int size);
 
 /* 1: support, 0: not support*/
 int av_bluray_supported(AVFormatContext *ic);
+
+
+void ff_read_frame_flush(AVFormatContext *s);
+#define av_read_frame_flush(s) ff_read_frame_flush(s)
 
 #endif /* AVFORMAT_AVFORMAT_H */

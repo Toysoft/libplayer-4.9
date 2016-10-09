@@ -228,6 +228,6 @@ typedef enum
 #define SUBTITLE_READ_DEVICE    "/dev/amstream_sub_read"
 
 
-
-
+int amsub_decode_init(amsub_dec_t *amsub_dec);
+int amsub_decode_stop(amsub_dec_t *amsub_dec);
 #endif

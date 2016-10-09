@@ -6,10 +6,14 @@
 #include <sys/ioctl.h>
 #include <dlfcn.h>
 
+#include "audiodsp_update_format.h"
+#include "adec_omx_brige.h"
+#include "adec_reg.h"
 #include <adec-pts-mgt.h>
 #include <adec_write.h>
-#include <adec_omx_brige.h>
-#include <Amsysfsutils.h>
+#include "Amsysfsutils.h"
+#include "amconfigutils.h"
+
 #include <audio-dec.h>
 #include <amthreadpool.h>
 #include <cutils/properties.h>

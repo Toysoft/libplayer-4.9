@@ -51,6 +51,7 @@
 
 #include "sbr.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 /**************************************************************************************
  * Function:    InitSBRState

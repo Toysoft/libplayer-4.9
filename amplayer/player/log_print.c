@@ -12,6 +12,8 @@
 #define LEVEL_SETING_PATH "media.amplayer.loglevel"
 #include  <libavutil/log.h>
 
+#include "system/systemsetting.h"
+
 static int global_level = 35;
 
 int log_open(const char *name)

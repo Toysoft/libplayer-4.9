@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <unistd.h>
 #include <string.h>
 #include <linux/videodev2.h>
 #include <android/log.h>

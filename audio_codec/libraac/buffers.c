@@ -42,6 +42,10 @@
  *
  * buffers.c - allocation and deallocation of internal AAC decoder buffers
  **************************************************************************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
 #include "aaccommon.h"
 //#include <core/dsp.h>
 #include "coder.h"

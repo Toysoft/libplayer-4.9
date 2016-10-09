@@ -220,8 +220,8 @@ extern "C" {
 # else
     /* we need these... */
 #ifndef __TCS__
-    typedef unsigned long long uint64_t;
-    typedef signed long long int64_t;
+    //typedef unsigned long long uint64_t;
+    //typedef signed long long int64_t;
 #else
     typedef unsigned long uint64_t;
     typedef signed long int64_t;

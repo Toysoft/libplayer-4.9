@@ -2,13 +2,15 @@
 #include <string.h>  // strcmp
 #include <time.h>    // clock
 #include <fcntl.h>
+#include <unistd.h>
 
 #include <sys/mman.h>
 #include <audio-dec.h>
 #include <adec-pts-mgt.h>
 #include <amthreadpool.h>
 
-
+#include "Amsysfsutils.h"
+#include "amconfigutils.h"
 
 
 #define ASTREAM_DEV "/dev/uio0"
