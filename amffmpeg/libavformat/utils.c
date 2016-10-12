@@ -954,6 +954,8 @@ static int init_input(AVFormatContext *s, const char *orig_filename, const char 
         {
             s->pb->filename = mms_prot;
             av_log(NULL, AV_LOG_INFO, "[%s:%d]Tranfer mms mms_prot=%s\n", __FUNCTION__, __LINE__, mms_prot);
+        } else {
+            return -1;
         }
     }
     else
