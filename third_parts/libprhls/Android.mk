@@ -1,17 +1,20 @@
-LOCAL_PATH:= $(call my-dir)
-
+ifeq ($(BUILD_WITH_PLAYREADY_DRM), true)
+LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
-ifeq ($(BUILD_WITH_PLAYREADY_DRM),true)
+LOCAL_MODULE_CLASS := SHARED_LIBRARIES
+LOCAL_MODULE := libprhls_mod.so
+LOCAL_MODULE_TAGS := optional
+LOCAL_IS_HOST_MODULE := true
 
- LOCAL_MODULE := libprhls_mod
- LOCAL_MODULE_SUFFIX := .so
- LOCAL_MODULE_CLASS := SHARED_LIBRARIES
- LOCAL_SRC_FILES := $(LOCAL_MODULE)$(LOCAL_MODULE_SUFFIX)
- LOCAL_MODULE_PATH:=$(TARGET_OUT_SHARED_LIBRARIES)/amplayer
- LOCAL_PROPRIETARY_MODULE := true
- LOCAL_STRIP_MODULE := false
- LOCAL_MODULE_TAGS := optional
- include $(BUILD_PREBUILT)
+LOCAL_MODULE_VERSION := $(shell expr substr "$(PLATFORM_VERSION)" 1 3)
+ifneq ($(wildcard $(LOCAL_PATH)/libprhls_mod_$(LOCAL_MODULE_VERSION).so),)
+LOCAL_SRC_FILES := libprhls_mod_$(LOCAL_MODULE_VERSION).so
+else
+LOCAL_SRC_FILES := libprhls_mod.so
+endif
 
+LOCAL_MODULE_PATH:=$(TARGET_OUT)/lib/amplayer
+
+include $(BUILD_PREBUILT)
 endif
