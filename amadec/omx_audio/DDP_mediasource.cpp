@@ -272,6 +272,8 @@ DDP_MediaSource::DDP_MediaSource(void *read_buffer)
     bytes_readed_sum=0;
     extractor_cost_bytes = 0;
     extractor_cost_bytes_last = 0;
+    mMeta->setInt32(kKeyChannelCount, 2);
+    mMeta->setInt32(kKeySampleRate, /*audec->samplerate*/48000);
     memset(frame.rawbuf, 0, 6144);
     memset(frame_length_his,0,sizeof(frame_length_his));
     frame.len = 0;

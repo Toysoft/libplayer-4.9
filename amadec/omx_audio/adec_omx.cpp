@@ -130,7 +130,6 @@ status_t AmlOMXCodec::read(unsigned char *buf,unsigned *size,int *exit)
 {
     MediaBuffer *srcBuffer;
     status_t status;
-    
     m_OMXMediaSource->Set_pStop_ReadBuf_Flag(exit);
    
     if(*exit)
@@ -143,15 +142,15 @@ status_t AmlOMXCodec::read(unsigned char *buf,unsigned *size,int *exit)
     status=  m_codec->read(&srcBuffer,NULL);
      
     if(srcBuffer==NULL)
-    {    
+    {
+        if (status == INFO_FORMAT_CHANGED) {
+            ALOGI("format changed \n");
+        }
         *size=0;
         return OK;
     }
-
-    /*
     if(*size>srcBuffer->range_length()) //surpose buf is large enough
          *size=srcBuffer->range_length();
-    
     if(status == OK && (*size!=0) ){
         memcpy(buf, (void*)((unsigned long)srcBuffer->data() + srcBuffer->range_offset()), *size);
         srcBuffer->set_range(srcBuffer->range_offset() + (*size),srcBuffer->range_length() - (*size));
@@ -159,17 +158,9 @@ status_t AmlOMXCodec::read(unsigned char *buf,unsigned *size,int *exit)
     }
     
     if (srcBuffer->range_length() == 0) {
-#ifdef USE_ARM_AUDIO_DEC
-         m_codec->adec_omx_lock_locked();
-#endif
          srcBuffer->release();
          srcBuffer = NULL;
-#ifdef USE_ARM_AUDIO_DEC
-         m_codec->adec_omx_lock_unlocked();
-#endif
     }
-    */
-   
     return OK;
 }
 

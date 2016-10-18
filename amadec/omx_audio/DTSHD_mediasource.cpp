@@ -104,6 +104,8 @@ Dtshd_MediaSource::Dtshd_MediaSource(void *read_buffer)
     FirFraBuf_Len=0;
     FirFraBuf_Offset=0;
     FrameNumReaded=0;
+    mMeta->setInt32(kKeyChannelCount,/* audec->channels > 0?audec->channels:*/2);
+    mMeta->setInt32(kKeySampleRate, /*audec->samplerate> 0?audec->samplerate:*/48000);
 }
 
 
