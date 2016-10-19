@@ -165,7 +165,7 @@ int PlayerGetVFilterFormat(play_para_t*am_p)
 int PlayerGetAFilterFormat(const char *prop)
 {
 	char value[1024];
-	int filter_fmt = 0;	
+	int filter_fmt = FILTER_AFMT_WMA|FILTER_AFMT_WMAPRO;
 #ifndef 	USE_ARM_AUDIO_DEC
     /* check the dts/ac3 firmware status */
     if(access("/system/etc/firmware/audiodsp_codec_ddp_dcv.bin",F_OK)){
