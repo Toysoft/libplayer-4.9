@@ -287,7 +287,7 @@ static int inner_rtp_read1(RTPContext *s, uint8_t *buf, int size)
 
 static int rtp_enqueue_packet(struct itemlist *itemlist, RTPPacket * lpkt){
     RTPPacket *ltailpkt=NULL;	
-    //itemlist_peek_tail_data(itemlist, (unsigned long)&ltailpkt) ;
+    itemlist_peek_tail_data(itemlist, (unsigned long *)&ltailpkt) ;
     if(NULL == ltailpkt || (ltailpkt != NULL &&seq_less(ltailpkt->seq,lpkt->seq)==1)){
     	// append to the tail
 	itemlist_add_tail_data(itemlist, (unsigned long)lpkt) ;  
@@ -295,7 +295,7 @@ static int rtp_enqueue_packet(struct itemlist *itemlist, RTPPacket * lpkt){
     }
 
     RTPPacket *lheadpkt=NULL;	
-    //itemlist_peek_tail_data(itemlist, (unsigned long)&lheadpkt) ;
+    itemlist_peek_tail_data(itemlist, (unsigned long *)&lheadpkt) ;
     ITEM_LOCK(itemlist);
     if(itemlist->item_count>=MIN_CACHE_PACKET_SIZE&&lheadpkt!=NULL&&seq_greater(lheadpkt->seq,lpkt->seq)==1){
     	ITEM_UNLOCK(itemlist);    

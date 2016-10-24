@@ -343,7 +343,7 @@ static int codec_h_ioctl_set_ptr(CODEC_HANDLE h, int subcmd, unsigned long param
         struct am_ioctl_parm_ptr parm;
         memset(&parm, 0, sizeof(parm));
         parm.cmd = subcmd;
-        //parm.pdata_audio_info = (audio_info *)paramter;
+        parm.pdata_audio_info = (struct audio_info *)paramter;
         parm_new = (unsigned long)&parm;
         r = ioctl(h, cmd_new, parm_new);
     }
@@ -438,7 +438,7 @@ static int codec_h_ioctl_get_ptr(CODEC_HANDLE h, int subcmd, unsigned long param
         struct am_ioctl_parm_ptr parm;
         memset(&parm, 0, sizeof(parm));
         parm.cmd = subcmd;
-        //parm.pdata_sub_info = (subtitle_info *)paramter;
+        parm.pdata_sub_info = (struct subtitle_info *)paramter;
         parm_new = (unsigned long)&parm;
         r = ioctl(h, cmd_new, parm_new);
     }
