@@ -1,4 +1,3 @@
-ifeq ($(BUILD_WITH_PLAYREADY_DRM), true)
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
@@ -17,4 +16,3 @@ endif
 LOCAL_MODULE_PATH:=$(TARGET_OUT)/lib/amplayer
 
 include $(BUILD_PREBUILT)
-endif
