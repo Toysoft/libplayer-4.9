@@ -12,7 +12,7 @@ LOCAL_SRC_FILES := libprhls_mod_$(LOCAL_MODULE_VERSION).so
 else
 LOCAL_SRC_FILES := libprhls_mod.so
 endif
-
+LOCAL_32_BIT_ONLY := true
 LOCAL_MODULE_PATH:=$(TARGET_OUT)/lib/amplayer
 
 include $(BUILD_PREBUILT)
