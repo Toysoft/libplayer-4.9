@@ -836,3 +836,63 @@ int audio_decoder_set_trackrate(void* handle, void *rate)
     return 0;
 }
 
+/**
+ * \brief set audio associate decode en/dis-able
+ * \param handle pointer to player private data
+ * \return 0 =success, -1 = error
+ */
+int audio_set_associate_enable(void* handle, unsigned int enable)
+{
+    int ret = 0;
+    //enable it after dual-decoder code merged to android N
+#if 0
+    aml_audio_dec_t *audec = (aml_audio_dec_t *)handle;
+    if (!handle) {
+        adec_print("audio handle is NULL !\n");
+        ret = -1;
+    } else {
+        audec->associate_audio_enable = enable;
+        adec_print("[%s]-[associate_audio_enable:%d]\n", __FUNCTION__, audec->associate_audio_enable);
+    }
+#endif
+    return ret;
+}
+
+/**
+ * \brief send the audio-associate data to destination buffer
+ * \param handle pointer to player private data
+ * \param buf pointer of the destination buffer address
+ * \param size which means that the length of request size
+ * \return [0, size], the length that have writen to destination buffer.
+ * \return -1, handle or other error
+ */
+int audio_send_associate_data(void* handle, uint8_t *buf, size_t size)
+{
+#if 0
+    int ret = 0;
+    aml_audio_dec_t *audec = (aml_audio_dec_t *)handle;
+    if (!handle) {
+        adec_print("audio handle is NULL !\n");
+        ret = -1;
+    } else {
+        if ((audec->associate_dec_supported) && (audec->g_assoc_bst)) {
+            if (audec->associate_audio_enable == 1) {
+                ret = write_es_buffer(buf, audec->g_assoc_bst, size);
+            }
+            else {
+                adec_print("[%s]-[associate_audio_enable:%d]\n", __FUNCTION__, audec->associate_audio_enable);
+                ret = reset_buffer(audec->g_assoc_bst);
+            }
+        }
+        else {
+            adec_print("[%s]-[associate_dec_supported:%d]-[g_assoc_bst:%p]\n",
+                __FUNCTION__, audec->associate_dec_supported, audec->g_assoc_bst);
+            ret = -1;
+        }
+    }
+
+    return ret;
+#else
+    return size;
+#endif
+}

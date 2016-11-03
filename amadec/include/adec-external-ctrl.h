@@ -54,6 +54,8 @@ extern "C"
 		int audio_decode_basic_init(void);
 		int audio_decoder_set_trackrate(void* handle, void *rate);
 		int audio_decoder_get_enable_status(void* handle);
+    int audio_set_associate_enable(void *handle, unsigned int enable);
+    int audio_send_associate_data(void *handle, uint8_t *buf, size_t size);
 #ifdef  __cplusplus
 }
 #endif
