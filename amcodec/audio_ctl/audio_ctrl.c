@@ -359,10 +359,10 @@ int codec_lr_mix_set(codec_para_t *p, int enable)
     return ret;
 }
 
-int codec_pcmpara_Applied_get(codec_para_t *p, int *pfs, int *pch)
+int codec_pcmpara_Applied_get(codec_para_t *p, int *pfs, int *pch,int *lfepresent)
 {
     int ret;
-    ret = audio_decpara_get(p->adec_priv, pfs, pch);
+    ret = audio_decpara_get(p->adec_priv, pfs, pch,lfepresent);
     return ret;
 }
 

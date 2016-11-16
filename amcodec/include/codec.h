@@ -80,7 +80,7 @@ int codec_audio_spectrum_switch(codec_para_t *p, int isStart, int interval);
 int codec_audio_isready(codec_para_t *p);
 int codec_audio_get_nb_frames(codec_para_t *p);
 int codec_audio_set_audioinfo(codec_para_t *p);
-int codec_pcmpara_Applied_get(codec_para_t *p, int *pfs, int *pch);
+int codec_pcmpara_Applied_get(codec_para_t *p, int *pfs, int *pch,int *lfepresent);
 
 int codec_get_apts(codec_para_t *pcodec);
 int codec_get_vpts(codec_para_t *pcodec);

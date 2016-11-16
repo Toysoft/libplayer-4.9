@@ -614,16 +614,17 @@ int audio_channel_lrmix_flag_set(void *handle, int enable)
     return ret;
 }
 
-int audio_decpara_get(void *handle, int *pfs, int *pch)
+int audio_decpara_get(void *handle, int *pfs, int *pch ,int *lfepresent)
 {
     int ret = 0;
     aml_audio_dec_t *audec = (aml_audio_dec_t *)handle;
     if (!handle) {
         adec_print("audio handle is NULL !\n");
         ret = -1;
-    } else if (pfs != NULL && pch != NULL) {
+    } else if (pfs != NULL && pch != NULL && lfepresent != NULL) {
         if (audec->adec_ops != NULL) { //armdecoder case
             *pch = audec->adec_ops->NchOriginal;
+            *lfepresent = audec->adec_ops->lfepresent;
         } else { //DSP case
             *pch = audec->channels;
         }
