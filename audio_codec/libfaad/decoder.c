@@ -1847,9 +1847,12 @@ start_decode:
             if (adts.aac_frame_length > 6 * 768) {
                 audio_codec_print("adts frame len exceed aac spec \n");
                 hInfo->error = 36;//
+                goto error;
 
             }
-            goto error;
+            //here need return to get more input data for decoder
+            faad_endbits(&ld);
+            return NULL;
         }
         if (adts.sf_index >= 12 || adts.channel_configuration > 6) {
             audio_codec_print("adts sf/ch error,sf %d,ch config %d \n", adts.sf_index, adts.channel_configuration);
@@ -2245,10 +2248,7 @@ error:
         }
     }
 #endif
-
-
     faad_endbits(&ld);
-
     /* cleanup */
 #ifdef ANALYSIS
     fflush(stdout);

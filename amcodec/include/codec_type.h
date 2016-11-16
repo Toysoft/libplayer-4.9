@@ -99,6 +99,8 @@ unsigned int noblock:
     int switch_audio_flag;      //<switch audio flag switching(1) else(0)
     int automute_flag;
     char *sub_filename;
+    int associate_dec_supported;//support associate or not
+    int mixing_level;
 } codec_para_t;
 
 typedef struct {
@@ -130,6 +132,8 @@ typedef struct {
     int droppcm_flag;               // drop pcm flag, if switch audio (1)
     int automute;
     unsigned int has_video;
+    int associate_dec_supported;//support associate or not
+    int mixing_level;
 } arm_audio_info;
 
 

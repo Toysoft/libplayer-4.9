@@ -100,6 +100,7 @@ typedef void (*fp_arm_omx_codec_pause)(aml_audio_dec_t*);
 typedef int (*fp_arm_omx_codec_get_declen)(aml_audio_dec_t*);
 typedef int (*fp_arm_omx_codec_get_FS)(aml_audio_dec_t*);
 typedef int (*fp_arm_omx_codec_get_Nch)(aml_audio_dec_t*);
+typedef int (*fp_arm_omx_codex_read_assoc_data)(aml_audio_dec_t *,unsigned char *, int, int *);
 
 struct aml_audio_dec {
     adec_state_t  state;
@@ -201,6 +202,11 @@ struct aml_audio_dec {
     int DTSHDIEC958_PktType;
     int DTSHDPCM_SamsInFrmAtMaxSR;
     unsigned int has_video;
+    int associate_dec_supported;//support associate or not
+    unsigned int associate_audio_enable;//control output associate audio
+    buffer_stream_t *g_assoc_bst;
+    fp_arm_omx_codex_read_assoc_data parm_omx_codec_read_assoc_data;
+    int mixing_level;//def=50, mixing level between main and associate, [0,100]
 };
 
 //from amcodec
@@ -219,6 +225,8 @@ typedef struct {
     int droppcm_flag;               // drop pcm flag, if switch audio (1)
     int automute;
     unsigned int has_video;
+    int associate_dec_supported;//support associate or not
+    int mixing_level;//def=50, mixing level between main and associate, [0,100]
 } arm_audio_info;
 
 typedef struct {
