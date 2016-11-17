@@ -15,7 +15,7 @@
 #include <unistd.h>
 #include <linux/soundcard.h>
 //#include <config.h>
-#include <alsa/asoundlib.h>
+#include <asoundlib.h>
 
 #include <audio-dec.h>
 #include <adec-pts-mgt.h>
