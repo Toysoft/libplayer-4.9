@@ -3842,7 +3842,7 @@ int av_find_stream_info(AVFormatContext *ic)
         else if (ic->pb && ic->pb->local_playback)
         {
             fast_switch = 0;/*disable fast switch for local playing.*/
-            ic->probesize = 8000000; /*enlarge probe size for local playing*/
+            ic->probesize = 10*1024*1024; /*enlarge probe size for local playing*/
         }
         else
         {
