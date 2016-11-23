@@ -1583,7 +1583,7 @@ int audio_lr_mix_set(int pid, int enable)
     return ret;
 }
 
-int audio_cur_pcmpara_Applied_get(int pid, int *pfs, int *pch)
+int audio_cur_pcmpara_Applied_get(int pid, int *pfs, int *pch ,int *lfepresent)
 {
     int ret = -1;
     play_para_t *player_para;
@@ -1595,7 +1595,7 @@ int audio_cur_pcmpara_Applied_get(int pid, int *pfs, int *pch)
     }
     p = get_audio_codec(player_para);
     if (p != NULL) {
-        ret = codec_pcmpara_Applied_get(p, pfs, pch);
+        ret = codec_pcmpara_Applied_get(p, pfs, pch,lfepresent);
     } else {
         log_print("[%s %d] p==NULL,set fail audio_FsNch_get!!", __FUNCTION__, __LINE__);
     }

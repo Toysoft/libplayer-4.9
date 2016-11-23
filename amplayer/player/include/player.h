@@ -58,7 +58,7 @@ int     audio_left_mono(int pid);
 int     audio_right_mono(int pid);
 int     audio_stereo(int pid);
 int     audio_lr_mix_set(int pid, int enable);
-int     audio_cur_pcmpara_Applied_get(int pid, int *pfs, int *pch);
+int     audio_cur_pcmpara_Applied_get(int pid, int *pfs, int *pch,int *lfepresent);
 
 int     audio_set_spectrum_switch(int pid, int isStart, int interval);
 int     player_register_update_callback(callback_t *cb, update_state_fun_t up_fn, int interval_s);
