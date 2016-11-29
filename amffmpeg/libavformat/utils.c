@@ -2611,7 +2611,7 @@ static void av_update_stream_timings(AVFormatContext *ic)
                     end_time = end_time1;
             }
         }
-        if (st->duration != AV_NOPTS_VALUE && st->start_time != AV_NOPTS_VALUE)
+        if (st->duration != AV_NOPTS_VALUE /*&& st->start_time != AV_NOPTS_VALUE*/)// wxl shield for wav get duration 20161129
         {
             duration1 = av_rescale_q(st->duration, st->time_base, AV_TIME_BASE_Q);
             if (duration1 > duration)
