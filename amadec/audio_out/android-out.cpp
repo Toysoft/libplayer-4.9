@@ -1057,11 +1057,21 @@ extern "C" int android_init(struct aml_audio_dec* audec)
                         false,   // threadCanCallJava
                         SessionID);      // sessionId
     }else{
+//here calculate the min framecount and set the audiotrack
+//refered to android_media_AudioTrack_get_min_buff_size
+//return frameCount * channelCount * bytesPerSample;
+       size_t frameCount = 0;
+       status = AudioTrack::getMinFrameCount(&frameCount, AUDIO_STREAM_DEFAULT,audec->samplerate);
+       if (status ==   NO_ERROR) {
+            frameCount = audec->channels*2*frameCount;
+       }
+       else
+            frameCount = 0;
         status = track->set(AUDIO_STREAM_MUSIC,
                         audec->samplerate,
                         AUDIO_FORMAT_PCM_16_BIT,
                         (audec->channels == 1) ? AUDIO_CHANNEL_OUT_MONO : AUDIO_CHANNEL_OUT_STEREO,
-                        0,       // frameCount
+                        frameCount,       // frameCount
                         AUDIO_OUTPUT_FLAG_NONE, // flags
                         audioCallback,
                         audec,    // user when callback
