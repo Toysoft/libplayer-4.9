@@ -1703,7 +1703,7 @@ static int HEVC_getNextNALUnit(
         ++offset;
     }
 
-    if (offset == size) {
+    if (offset >= size) {
         return -1;
     }
 
@@ -1722,7 +1722,7 @@ static int HEVC_getNextNALUnit(
             ++offset;
         }
 
-        if (offset == size) {
+        if (offset >= size) {
             if (startCodeFollows == 1) {
                 offset = size + 2;
                 break;

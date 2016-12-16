@@ -3638,27 +3638,27 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt)
             }
             ptr = buffer;
             tsize = header_len;
-        }
-        ret = HEVC_decode_SPS(ptr, tsize, &info);
-        if (ret)
-        {
-            ptr = avpkt->data;
-            tsize = avpkt->size;
             ret = HEVC_decode_SPS(ptr, tsize, &info);
-        }
-        if (!ret)
-        {
-            st->codec->width = info.mwidth;
-            st->codec->height = info.mheight;
-            st->codec->bit_depth = info.bit_depth;
-            if (info.long_term_ref_pics_present_flag == 1 && info.num_long_term_ref_pics_sps > 0)
+            if (ret)
             {
-                st->codec->long_term_ref_pic = 1;
+                ptr = avpkt->data;
+                tsize = avpkt->size;
+                ret = HEVC_decode_SPS(ptr, tsize, &info);
             }
-        }
-        if (bsize > 0)
-        {
-            av_free(buffer);
+            if (!ret)
+            {
+                st->codec->width = info.mwidth;
+                st->codec->height = info.mheight;
+                st->codec->bit_depth = info.bit_depth;
+                if (info.long_term_ref_pics_present_flag == 1 && info.num_long_term_ref_pics_sps > 0)
+                {
+                    st->codec->long_term_ref_pic = 1;
+                }
+            }
+            if (bsize > 0)
+            {
+                av_free(buffer);
+            }
         }
         return 0;
     }
