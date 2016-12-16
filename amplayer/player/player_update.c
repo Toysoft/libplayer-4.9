@@ -1137,7 +1137,17 @@ static void check_force_end(play_para_t *p_para, struct buf_status *vbuf, struct
                 audio_fmt == AFORMAT_MPEG  ||
                 audio_fmt == AFORMAT_AAC  ||
                 audio_fmt == AFORMAT_FLAC) {
-                if (p_para->state.current_time < p_para->state.full_time && check_audio_output()) {
+                //add by amlogic, for n-android previous exit way does not work
+                codec_para_t *avcodec = NULL;
+                int delay_ms;
+                if (p_para->codec) {
+                    avcodec = p_para->codec;
+                } else if (p_para->acodec) {
+                    avcodec = p_para->acodec;
+                }
+                int ret = codec_get_audio_cur_delay_ms(avcodec, &delay_ms);
+                if (p_para->state.current_time < p_para->state.full_time &&
+                    ret == 0 && delay_ms > 100 ) {
                     p_para->check_end.end_count = CHECK_END_COUNT;
                 }
             }
