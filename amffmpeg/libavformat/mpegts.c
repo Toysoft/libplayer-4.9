@@ -2660,12 +2660,24 @@ static int mpegts_read_close(AVFormatContext *s)
 #define PCR_HIGH_MAX (0x200000000L)
 #define PCR_NEAR_WRAP_CHECK (0x200000000L-0x20000000)//about 1.5h
 
+static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
+                              int64_t *ppos, int64_t pos_limit);
+
 static int64_t mpegts_get_dts(AVFormatContext *s, int stream_index,
         int64_t *ppos, int64_t pos_limit)
 {
     MpegTSContext *ts = s->priv_data;
     int64_t pos;
+    int try_count = 0;
     int pos47 = ts->pos47;
+    int64_t timestamp = AV_NOPTS_VALUE;
+
+    if (av_bluray_supported(s)) {
+        av_log(NULL, AV_LOG_INFO, "[mpegts_get_dts:]bluary use get pcr\n");
+        timestamp = mpegts_get_pcr(s, stream_index, ppos, pos_limit);
+        return timestamp;
+    }
+
     pos = ((*ppos  + ts->raw_packet_size - 1 - pos47) / ts->raw_packet_size) * ts->raw_packet_size + pos47;
     ff_read_frame_flush(s);
     if (avio_seek(s->pb, pos, SEEK_SET) < 0)
@@ -2675,9 +2687,10 @@ static int64_t mpegts_get_dts(AVFormatContext *s, int stream_index,
         AVPacket pkt;
         av_init_packet(&pkt);
         ret = av_read_frame(s, &pkt);
-        if (ret < 0)
-            return AV_NOPTS_VALUE;
-
+        if (ret < 0 ||try_count >5) {
+            av_log(NULL, AV_LOG_ERROR, "mpegts_get_dts av_read_frame error try_count:%d\n",try_count);
+            break;
+        }
         if (pkt.dts != AV_NOPTS_VALUE && pkt.pos >= 0) {
             ff_reduce_index(s, pkt.stream_index);
             av_add_index_entry(s->streams[pkt.stream_index], pkt.pos, pkt.dts, 0, 0, AVINDEX_KEYFRAME /*  FIXME keyframe? */);
@@ -2688,11 +2701,16 @@ static int64_t mpegts_get_dts(AVFormatContext *s, int stream_index,
                 return pkt.dts;
             }
             pos = pkt.pos;
+        } else {
+            try_count ++;
         }
         av_free_packet(&pkt);
     }
     ff_read_frame_flush(s);
-    return AV_NOPTS_VALUE;
+
+    //used for get pcr,if not get dts when seek,use get pcr instead
+    timestamp = mpegts_get_pcr(s, stream_index, ppos, pos_limit);
+    return timestamp;
 }
 
 static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
@@ -2856,13 +2874,13 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t target_ts, in
     int64_t pos;
 	int ret;
 
-	{/*some stream pcrscr start time is not same as pts 
-	  we need del the diffs;otherwise,we don't seek to the need time;
-	*/
-		if(ts->first_pcrscr==AV_NOPTS_VALUE){/*get the first pcrscr*/
-  			int64_t pos1=0;
+    if (0) {
+        // some stream pcrscr start time is not same as ptso
+        // we need del the diffs, otherwise, we don't seek to the need time
+        if (ts->first_pcrscr == AV_NOPTS_VALUE) {/*get the first pcrscr*/
+            int64_t pos1 = 0;
             int64_t temp_pcr1, temp_pcr2, temp_pcr3;
-			pos= avio_tell(s->pb);
+            pos = avio_tell(s->pb);
             temp_pcr1 = mpegts_get_pcr(s,stream_index,&pos1,INT64_MAX);
             av_log(NULL, AV_LOG_INFO, "[%s:%d]pcr1 %lld, pos1 %lld\n", __FUNCTION__, __LINE__, temp_pcr1, pos1);
             pos1 += ts->raw_packet_size;
@@ -2878,29 +2896,27 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t target_ts, in
                     ts->first_pcrscr=temp_pcr3;
                 }
             } else {
-			    ts->first_pcrscr=temp_pcr1;
-			}
+                ts->first_pcrscr=temp_pcr1;
+            }
             avio_seek(s->pb, pos, SEEK_SET);
-		}
-		if(ts->first_pcrscr!=AV_NOPTS_VALUE){
-			int64_t pcr_starttimediff;
-			int64_t firsPTS=av_rescale_q(s->start_time, AV_TIME_BASE_Q,s->streams[stream_index]->time_base);
-			pcr_starttimediff=(ts->first_pcrscr - firsPTS);
-			av_log(NULL,AV_LOG_INFO,"ts->first_pcrscr=%lld firsPTS=%lld\n",ts->first_pcrscr,firsPTS);
-			if(abs(pcr_starttimediff)<90000){/*<1s.we think is the same start time.*/
-				pcr_starttimediff=0;
-			}
-			av_log(NULL,AV_LOG_INFO,"pcr_starttimediff=%lld target_ts=%lld\n",pcr_starttimediff,target_ts);
-			target_ts+=pcr_starttimediff;
-			av_log(NULL,AV_LOG_INFO,"pcr_starttimediff=%lld target_ts=%lld\n",pcr_starttimediff,target_ts);
-
-		}
-		
-	}
+        }
+        if (ts->first_pcrscr != AV_NOPTS_VALUE) {
+            int64_t pcr_starttimediff;
+            int64_t firsPTS=av_rescale_q(s->start_time, AV_TIME_BASE_Q,s->streams[stream_index]->time_base);
+            pcr_starttimediff=(ts->first_pcrscr - firsPTS);
+            av_log(NULL,AV_LOG_INFO,"ts->first_pcrscr=%lld firsPTS=%lld\n",ts->first_pcrscr,firsPTS);
+            if (abs(pcr_starttimediff) < 90000) {/*<1s.we think is the same start time.*/
+                pcr_starttimediff=0;
+            }
+            av_log(NULL,AV_LOG_INFO,"pcr_starttimediff=%lld target_ts=%lld\n",pcr_starttimediff,target_ts);
+            target_ts+=pcr_starttimediff;
+            av_log(NULL,AV_LOG_INFO,"pcr_starttimediff=%lld target_ts=%lld\n",pcr_starttimediff,target_ts);
+        }
+    }
 
 
-	ret = av_seek_frame_binary(s, stream_index, target_ts, flags);
-    if(ret < 0){		
+    ret = av_seek_frame_binary(s, stream_index, target_ts, flags);
+    if (ret < 0) {
         return ret;
     }
 
@@ -2999,7 +3015,7 @@ AVInputFormat ff_mpegts_demuxer = {
     mpegts_read_packet,
     mpegts_read_close,
     .read_seek = mpegts_read_seek,
-    .read_timestamp = mpegts_get_pcr,
+    .read_timestamp = mpegts_get_dts,
     .flags = AVFMT_SHOW_IDS|AVFMT_TS_DISCONT| AVFMT_GENERIC_INDEX,
 //#ifdef USE_SYNCPOINT_SEARCH
 //    .read_seek2 = read_seek2,
@@ -3015,7 +3031,7 @@ AVInputFormat ff_mpegtsraw_demuxer = {
     mpegts_raw_read_packet,
     mpegts_read_close,
     .read_seek =  mpegts_read_seek,
-    .read_timestamp = mpegts_get_pcr,
+    .read_timestamp = mpegts_get_dts,
     .flags = AVFMT_SHOW_IDS|AVFMT_TS_DISCONT| AVFMT_GENERIC_INDEX,
 //#ifdef USE_SYNCPOINT_SEARCH
 //    .read_seek2 = read_seek2,
