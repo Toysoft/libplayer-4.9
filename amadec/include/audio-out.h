@@ -30,6 +30,8 @@ typedef struct {
     int (*set_volume)(struct aml_audio_dec *, float);
     int (*set_lrvolume)(struct aml_audio_dec *, float, float);
     int (*set_track_rate)(struct aml_audio_dec *, void *rate);
+    int (*get_out_position)(struct aml_audio_dec *, int64_t *position,
+         int64_t * time_us);
     int audio_out_raw_enable;
     float track_rate;
 } audio_out_operations_t;

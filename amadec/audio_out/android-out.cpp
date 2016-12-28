@@ -1067,6 +1067,7 @@ extern "C" int android_init(struct aml_audio_dec* audec)
        }
        else
             frameCount = 0;
+
         status = track->set(AUDIO_STREAM_MUSIC,
                         audec->samplerate,
                         AUDIO_FORMAT_PCM_16_BIT,
@@ -1422,13 +1423,72 @@ extern "C" unsigned long android_latency(struct aml_audio_dec* audec)
 #else
     AudioTrack *track = mpAudioTrack.get();
 #endif
-
+    if (audec->use_get_out_posion && audec->aout_ops.get_out_position)
+        return 0;
+    if (track) {
+        status_t s;
+        int ret = -1;
+        int64_t write_samples;
+        int cache_samples;
+        int delay_us, t_us;
+        AudioTimestamp timestamp;
+        s  = track->getTimestamp(timestamp);
+        if (s != NO_ERROR) {
+            return 0;
+        } else {
+            struct timespec timenow;
+            write_samples = audec->pcm_bytes_readed/(audec->channels * 2);
+            cache_samples = write_samples -  timestamp.mPosition;
+            if (cache_samples < 0)
+                cache_samples = 0;
+            delay_us = 1000 * (cache_samples * 1000 / audec->samplerate);
+            clock_gettime(CLOCK_MONOTONIC, &timenow);
+            t_us = (timenow.tv_sec - timestamp.mTime.tv_sec) * 1000000LL +
+            (timenow.tv_nsec- timestamp.mTime.tv_nsec)/1000;
+            delay_us -=t_us;
+            if (delay_us < 0)
+                delay_us =0;
+            return delay_us/1000;
+        }
+    }
     if (track) {
         latency = track->latency();
         return latency;
     }
     return 0;
 }
+
+/**
+ * \brief get output latency in ms
+ * \param audec pointer to audec
+ * \return output latency
+ */
+extern "C" int android_get_position(struct aml_audio_dec* audec,
+    int64_t *position,
+    int64_t *timeus)
+{
+    audio_out_operations_t *out_ops = &audec->aout_ops;
+    AudioTimestamp timestamp;
+    status_t s;
+    int ret = -1 ;
+#if ANDROID_PLATFORM_SDK_VERSION < 19
+    AudioTrack *track = (AudioTrack *)out_ops->private_data;
+#else
+    AudioTrack *track = mpAudioTrack.get();
+#endif
+
+    if (track) {
+        s  = track->getTimestamp(timestamp);
+        if (s == NO_ERROR) {
+            *position = timestamp.mPosition;
+            *timeus = timestamp.mTime.tv_sec * 1000000LL + timestamp.mTime.tv_nsec / 1000;
+            return 0;
+        }
+    }
+    return ret;
+}
+
+
 #ifndef ANDROID_VERSION_JBMR2_UP
 /**
  * \brief mute output
@@ -1586,6 +1646,7 @@ extern "C" void get_output_func(struct aml_audio_dec* audec)
     out_ops->set_volume = android_set_volume;
     out_ops->set_lrvolume = android_set_lrvolume;
     out_ops->set_track_rate = android_set_track_rate;
+    out_ops->get_out_position = android_get_position;
     out_ops->audio_out_raw_enable = 1;
     /* default set a invalid value*/
     out_ops->track_rate = 8.8f;

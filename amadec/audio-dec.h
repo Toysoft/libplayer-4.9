@@ -154,10 +154,14 @@ struct aml_audio_dec {
     int exit_decode_thread;
     int exit_decode_thread_success;
     unsigned long decode_offset;
+	int64_t decode_pcm_offset;
+	int use_get_out_posion;
     int nDecodeErrCount;
     int fd_uio;
     int last_valid_pts;
     int out_len_after_last_valid_pts;
+    int64_t last_out_postion;
+    int64_t last_get_postion_time_us;
     int pcm_cache_size;
     Package_List pack_list;
     StartCode start_code;
