@@ -6,6 +6,7 @@
 #include  "MediaBufferGroup.h"
 #include  "MetaData.h"
 #include  "audio_mediasource.h"
+#include  "../audio-dec.h"
 
 namespace android {
 
@@ -25,6 +26,8 @@ namespace android {
 #define     BS_BITOFFSET      40
 #define     PTR_HEAD_SIZE 7	//20
 #define     FRAME_RECORD_NUM   40
+#define     ASSOC_FRAME_MAX_LENGTH 0X1000
+
 	typedef struct {
 		DDPshort *buf;
 		DDPshort bitptr;
@@ -73,10 +76,11 @@ namespace android {
 	};
 
 	typedef int (*fp_read_buffer) (unsigned char *, int);
+	typedef int (*fp_read_assoc_buffer) (aml_audio_dec_t *,unsigned char *, int);
 
 	class DDP_MediaSource:public AudioMediaSource {
  public:
-		DDP_MediaSource(void *read_buffer);
+		DDP_MediaSource(void *read_buffer, aml_audio_dec_t *audec);
 
 		status_t start(MetaData * params = NULL);
 		status_t stop();
@@ -107,7 +111,11 @@ namespace android {
 		DDPerr ddbs_getbsid(DDP_BSTRM * p_inbstrm, DDPshort * p_bsid);
 		int Get_ChNum_AC3_Frame(void *buf);
                 int get_frame_size(void);
+                int get_assoc_frame_size(void);
                 void store_frame_size(int lastFrameLen);
+                void store_assoc_frame_size(int lastFrameLen);
+                int MediaSourceRead_assoc_buffer(unsigned char *buffer, int size);
+                status_t read_associate_data(unsigned char *frm, int *frm_len);
                 //---------------------------------------
 
 		int sample_rate;
@@ -121,6 +129,18 @@ namespace android {
 		int *pStop_ReadBuf_Flag;
 		int ChNumOriginal;
                 int frame_length_his[FRAME_RECORD_NUM];
+                int assoc_frame_length_his[FRAME_RECORD_NUM];
+                int ddp_strmtyp;
+                int ddp_substreamid;
+                int assoc_dec_supported;//support associate or not
+                int assoc_enable;
+                int assoc_frm_size;
+                BUF_T assoc_frame;
+                fp_read_assoc_buffer fpread_assoc_buffer;
+                unsigned char *dual_packet_buf;
+                int dual_packet_len;
+                aml_audio_dec_t *audec_ddp;
+                int media_udc_dump_flag;
 protected:
 		 virtual ~ DDP_MediaSource();
 

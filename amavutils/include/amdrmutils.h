@@ -1,6 +1,6 @@
 #ifndef AMDRM_UTILS_H
 #define AMDRM_UTILS_H
-
+#include <stdint.h>
 #ifdef  __cplusplus
 extern "C" {
 #endif

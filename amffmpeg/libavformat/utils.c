@@ -53,10 +53,12 @@
 #undef NDEBUG
 #include <assert.h>
 
-
+#ifdef ANDROID
 //added by aml
 #include <cutils/properties.h>
-
+#else
+#define PROPERTY_VALUE_MAX 124
+#endif
 /**
  * @file
  * various utility functions for use within FFmpeg
@@ -954,13 +956,13 @@ static int init_input(AVFormatContext *s, const char *orig_filename, const char 
         {
             s->pb->filename = mms_prot;
             av_log(NULL, AV_LOG_INFO, "[%s:%d]Tranfer mms mms_prot=%s\n", __FUNCTION__, __LINE__, mms_prot);
-        } else {
-            return -1;
         }
     }
     else
     {
-        if (strstr(filename, "shttp") != NULL && strstr(filename, "mpd") != NULL) // dash protocol
+        char *mpd_name = strstr(filename, ".mpd");
+        if (strstr(filename, "shttp") != NULL
+                && (mpd_name != NULL  && ( !strcmp(mpd_name, ".mpd") ||  !strncmp(mpd_name, ".mpd?", 5) ))) // dash protocol
         {
             char *listfile = av_mallocz(MAX_URL_SIZE);
             strcpy(listfile, "dash");
@@ -979,7 +981,7 @@ static int init_input(AVFormatContext *s, const char *orig_filename, const char 
             if (av_strstart(filename, "rtp:", NULL))
                 flags |= AVIO_FLAG_CACHE;
             if (options && *options)
-                ret = avio_open_h2(&s->pb, filename, flags, headers, (unsigned long )options);
+                ret = avio_open_h2(&s->pb, filename, flags, headers, options);
             else
                 ret = avio_open_h(&s->pb, filename, flags, headers);
             if (ret < 0)
@@ -1051,7 +1053,7 @@ static int init_input(AVFormatContext *s, const char *orig_filename, const char 
         s->pb = NULL;
         av_log(NULL, AV_LOG_INFO, "[%s:%d]Use new url=%s to open\n", __FUNCTION__, __LINE__, listfile);
         if (options && *options)
-            err = avio_open_h2(&s->pb, listfile, AVIO_FLAG_READ, headers, (unsigned long)options);
+            err = avio_open_h2(&s->pb, listfile, AVIO_FLAG_READ, headers, options);
         else
             err = avio_open_h(&s->pb, listfile, AVIO_FLAG_READ, headers);
         if (err < 0)
@@ -2611,7 +2613,7 @@ static void av_update_stream_timings(AVFormatContext *ic)
                     end_time = end_time1;
             }
         }
-        if (st->duration != AV_NOPTS_VALUE /*&& st->start_time != AV_NOPTS_VALUE*/)// wxl shield for wav get duration 20161129
+        if (st->duration != AV_NOPTS_VALUE && st->start_time != AV_NOPTS_VALUE)
         {
             duration1 = av_rescale_q(st->duration, st->time_base, AV_TIME_BASE_Q);
             if (duration1 > duration)
@@ -3638,27 +3640,27 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt)
             }
             ptr = buffer;
             tsize = header_len;
+        }
+        ret = HEVC_decode_SPS(ptr, tsize, &info);
+        if (ret)
+        {
+            ptr = avpkt->data;
+            tsize = avpkt->size;
             ret = HEVC_decode_SPS(ptr, tsize, &info);
-            if (ret)
+        }
+        if (!ret)
+        {
+            st->codec->width = info.mwidth;
+            st->codec->height = info.mheight;
+            st->codec->bit_depth = info.bit_depth;
+            if (info.long_term_ref_pics_present_flag == 1 && info.num_long_term_ref_pics_sps > 0)
             {
-                ptr = avpkt->data;
-                tsize = avpkt->size;
-                ret = HEVC_decode_SPS(ptr, tsize, &info);
+                st->codec->long_term_ref_pic = 1;
             }
-            if (!ret)
-            {
-                st->codec->width = info.mwidth;
-                st->codec->height = info.mheight;
-                st->codec->bit_depth = info.bit_depth;
-                if (info.long_term_ref_pics_present_flag == 1 && info.num_long_term_ref_pics_sps > 0)
-                {
-                    st->codec->long_term_ref_pic = 1;
-                }
-            }
-            if (bsize > 0)
-            {
-                av_free(buffer);
-            }
+        }
+        if (bsize > 0)
+        {
+            av_free(buffer);
         }
         return 0;
     }

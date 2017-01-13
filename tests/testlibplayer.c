@@ -7,7 +7,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <amconfigutils.h>
-#include <ammodule.h>
 #include <libavformat/ptslist.h>
 int am_config_test()
 {

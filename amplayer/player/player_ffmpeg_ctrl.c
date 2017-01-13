@@ -8,11 +8,9 @@
 
 #include <pthread.h>
 #include "player_priv.h"
-#include "player_update.h"
-#include <libavformat/avio.h>
+#include  <libavformat/avio.h>
 #include <itemlist.h>
 #include <amconfigutils.h>
-#include <ammodule.h>
 
 
 static char format_string[128] = {0};
@@ -210,7 +208,7 @@ int player_notify_callback(int pid, int msg, unsigned long ext1, unsigned long e
 }
 int ffmpeg_open_file(play_para_t *am_p)
 {
-    AVFormatContext *pFCtx ;
+    AVFormatContext *pFCtx = NULL;
     int ret = -1;
     int byteiosize = FILE_BUFFER_SIZE;
     const char * header = am_p->start_param ? am_p->start_param->headers : NULL;
@@ -395,6 +393,15 @@ int ffmpeg_parse_file_type(play_para_t *am_p, player_file_type_t *type)
                 type->fmt_string = format_string;
                 matroska_flag = 0;
             }
+
+            if ((strstr(type->fmt_string, "matroska") != NULL) && (sttmp->codec->codec_id == CODEC_ID_AC3)) {
+                memset(format_string, 0, sizeof(format_string));
+                sprintf(format_string, "%s", "ac3");
+                log_print("NOTE: change type->fmt_string=%s to ac3\n", type->fmt_string);
+                type->fmt_string = format_string;
+                matroska_flag = 0;
+            }
+
             if ((strstr(type->fmt_string, "asf") != NULL) && (sttmp->codec->codec_id == CODEC_ID_WMALOSSLESS)) {
                 memset(format_string, 0, sizeof(format_string));
                 sprintf(format_string, "%s", "wmalossless");
@@ -441,21 +448,23 @@ int ffmpeg_parse_file(play_para_t *am_p)
 }
 
 #include "amconfigutils.h"
-int ffmpeg_load_external_module()
-{
-    const char *mod_path = "media.libplayer.modules";
+int ffmpeg_load_external_module(){
+    const char *mod_path = "media_libplayer_modules";
     const int mod_item_max = 16;
-    char value[CONFIG_VALUE_MAX];
+    //char value[CONFIG_VALUE_MAX];
+    char * value;
     int ret = -1;
     char mod[mod_item_max][CONFIG_VALUE_MAX];
     //memset(value,0,CONFIG_VALUE_MAX);
 
-
+    value = getenv(mod_path);
+    /*
     ret = am_getconfig(mod_path, value, NULL);
     if (ret <= 1) {
         log_print("Failed to find external module,path:%s\n", mod_path);
         return -1;
     }
+    */
     log_print("Get modules:[%s],mod path:%s\n", value, mod_path);
     int pos = 0;
     const char * psets = value;
@@ -479,7 +488,7 @@ int ffmpeg_load_external_module()
             //log_print("load module:[%s]\n",mod[i]);
             i++;
         }
-
+        
     }
 
     return 0;

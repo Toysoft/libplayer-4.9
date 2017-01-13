@@ -21,12 +21,9 @@
 #include <audio-dec.h>
 #include <audiodsp.h>
 #include <log-print.h>
+#ifdef ANDROID
 #include <cutils/properties.h>
-
-#include "adec-external-ctrl.h"
-#include "Amsysfsutils.h"
-#include "amconfigutils.h"
-
+#endif
 static int reset_track_enable = 0;
 void adec_reset_track_enable(int enable_flag)
 {

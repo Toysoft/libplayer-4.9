@@ -16,10 +16,5 @@ int check_audio_ready_time(int *first_time);
 long player_get_systemtime_ms(void);
 void check_avdiff_status(play_para_t *p_para);
 int check_to_retry(play_para_t *p_para);
-int64_t getstreambuffer_buffedsize(play_para_t *p_para);
-int64_t getlpbuffer_buffedsize(play_para_t *p_para);
-int  audio_digital_mode_change(play_para_t *p_para);
-int force_buffering_enter(play_para_t *p_para);
-
 #endif
 

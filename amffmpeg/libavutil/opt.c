@@ -558,6 +558,7 @@ void av_opt_free(void *obj)
 
 int av_opt_set_dict(void *obj, AVDictionary **options)
 {
+#if 0
     AVDictionaryEntry *t = NULL;
     AVDictionary    *tmp = NULL;
     int ret = 0;
@@ -575,6 +576,8 @@ int av_opt_set_dict(void *obj, AVDictionary **options)
     av_dict_free(options);
     *options = tmp;
     return ret;
+#endif
+	return  0;
 }
 
 const AVOption *av_opt_find(void *obj, const char *name, const char *unit,

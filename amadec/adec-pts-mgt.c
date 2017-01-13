@@ -13,16 +13,14 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <unistd.h>
 
 #include <adec-pts-mgt.h>
+#ifdef ANDROID
 #include <cutils/properties.h>
+#endif
 #include <sys/time.h>
 #include <amthreadpool.h>
 #include <sys/ioctl.h>
-
-#include "Amsysfsutils.h"
-#include "amconfigutils.h"
 
 #define DROP_PCM_DURATION_THRESHHOLD 4 //unit:s
 #define DROP_PCM_MAX_TIME 1000 // unit :ms
@@ -35,8 +33,6 @@ static int vdec_pts_pause(void);
 int droppcm_use_size(aml_audio_dec_t *audec, int drop_size);
 void droppcm_prop_ctrl(int *audio_ahead, int *pts_ahead_val);
 int droppcm_get_refpts(aml_audio_dec_t *audec, unsigned long *refpts);
-
-extern int match_types(const char *filetypestr, const char *typesetting);
 
 static int64_t gettime(void)
 {
@@ -516,8 +512,6 @@ int adec_refresh_pts(aml_audio_dec_t *audec)
     apts_start_flag = audec->apts_start_flag;
     //if the audio start has not been triggered to tsync,calculate the audio  pcm data which writen to audiotrack
     if (!audec->apts_start_flag) {
-        int latency;
-        int wait = pre_filltime;
         if (audec->g_bst) {
             samplerate = audec->g_bst->samplerate;
             channels = audec->g_bst->channels;
@@ -528,10 +522,7 @@ int adec_refresh_pts(aml_audio_dec_t *audec)
             channels = audec->channels;
         }
         // 170 ms  audio hal have  triggered the output hw.
-        latency = audec->aout_ops.latency(audec);
-        if (latency < 200)
-            wait = pre_filltime * 2;
-        if (latency > 0  && (audec->pcm_bytes_readed * 1000 / (samplerate * channels * 2) >= wait)) {
+        if (audec->pcm_bytes_readed * 1000 / (samplerate * channels * 2) >= pre_filltime) {
             audec->apts_start_flag =  1;
             if (!am_getconfig_bool("libplayer.slowsync.disable"))
                 enable_slowsync_repeate();
@@ -697,25 +688,6 @@ int adec_refresh_pts(aml_audio_dec_t *audec)
     /* report apts-system time difference */
     if (!apts_start_flag) {
         return 0;
-    }
-
-    {/*add by zz*/
-        /*
-        reget pts to make sure pts is calc has no errors.
-        because we may have accuracy problem on
-        many thread update the pts related infos.
-        */
-        unsigned long re_getpts = adec_calc_pts(audec);
-        if (abs(pts - re_getpts) > 900) { /*100 ms * 10%*/
-            /*ignore this diff.*/
-            adec_print("## [%s::%d] ixet apts: %d ,%d \n",
-                __FUNCTION__, __LINE__,
-            pts, re_getpts);
-            return 0;
-        } else {
-            /*used new pts.*/
-            pts = re_getpts;
-        }
     }
 #if 0
     if (audec->apts_reset_scr_delay_ms > 0) {

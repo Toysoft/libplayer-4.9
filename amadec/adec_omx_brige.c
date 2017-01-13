@@ -11,8 +11,6 @@
 #include <adec_write.h>
 #include "adec_omx_brige.h"
 #include <amthreadpool.h>
-#include "Amsysfsutils.h"
-#include "amconfigutils.h"
 
 #define  LOG_TAG    "Adec_omx_bridge"
 #define adec_print(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
@@ -62,6 +60,8 @@ int find_omx_lib(aml_audio_dec_t *audec)
         audec->StageFrightCodecEnableType = OMX_ENABLE_CODEC_TRUEHD;
     } else if (audec->format == ACODEC_FMT_WMAVOI) {
         audec->StageFrightCodecEnableType = OMX_ENABLE_CODEC_WMAVOI;
+    }  else if (audec->format == ACODEC_FMT_AMR && audec->codec_id == CODEC_ID_AMR_NB) {
+        audec->StageFrightCodecEnableType = OMX_ENABLE_CODEC_AMR_NB;
     }
 
     adec_print("%s %d audec->format=%d \n", __FUNCTION__, __LINE__, audec->format);

@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/poll.h>
@@ -12,8 +11,6 @@
 #include "amsub_log.h"
 #include "amsub_dec.h"
 #include "amsub_io_ctrl.h"
-
-#include "amthreadpool.h"
 
 
 /* --------------------------------------------------------------------------*/
@@ -50,13 +47,14 @@ void aml_sub_start(void **amsub_handle, amsub_info_t *amsub_info)
     }
     *amsub_handle = (void *)amsub_dec;
     amsub_print("aml_sub_start ok, amsub_dec=%p \n", amsub_dec);
-    return;
+    return NULL;
 error:
     if (amsub_dec)
     {
         free(amsub_dec);
         amsub_dec = NULL;
     }
+    return;
 }
 
 /* --------------------------------------------------------------------------*/

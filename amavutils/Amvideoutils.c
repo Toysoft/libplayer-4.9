@@ -1,15 +1,10 @@
 
 #define LOG_TAG "amavutils"
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <string.h>
 #include <strings.h>
-#include <cutils/log.h>
-#include <cutils/properties.h>
 #include <sys/ioctl.h>
 #include "include/Amvideoutils.h"
 #include "include/Amsysfsutils.h"
@@ -18,6 +13,13 @@
 
 #include "amports/amstream.h"
 #include "ppmgr/ppmgr.h"
+
+#ifdef ANDROID
+#include <cutils/log.h>
+#include <cutils/properties.h>
+#else 
+#define PROPERTY_VALUE_MAX  124
+#endif
 
 #define SYSCMD_BUFSIZE 40
 #define DISP_DEVICE_PATH "/sys/class/video/device_resolution"
@@ -45,7 +47,7 @@
 static int rotation = 0;
 static int disp_width = 1920;
 static int disp_height = 1080;
-
+#ifdef ANDROID
 #ifndef LOGD
 #define LOGV ALOGV
 #define LOGD ALOGD
@@ -53,7 +55,15 @@ static int disp_height = 1080;
 #define LOGW ALOGW
 #define LOGE ALOGE
 #endif
-
+#else  
+#define LOGV printf
+#define LOGD printf
+#define LOGI printf
+#define LOGW printf
+#define LOGE printf
+#define ALOGE printf
+#define ALOGD printf
+#endif
 //#define LOG_FUNCTION_NAME LOGI("%s-%d\n",__FUNCTION__,__LINE__);
 #define LOG_FUNCTION_NAME
 
@@ -346,17 +356,6 @@ int get_device_win(OSD_DISP_MODE dismod, int *x, int *y, int *w, int *h)
     return 0;
 }
 
-void get_axis(const char *path, int *x, int *y, int *w, int *h)
-{
-    int fd = -1;
-    char buf[SYSCMD_BUFSIZE];
-    if (amsysfs_get_sysfs_str(path, buf, sizeof(buf)) == 0) {
-        if (sscanf(buf, "%d %d %d %d", x, y, w, h) == 4) {
-            LOGI("%s axis: %d %d %d %d\n", path, *x, *y, *w, *h);
-        }
-    }
-}
-
 int amvideo_convert_axis(int32_t* x, int32_t* y, int32_t* w, int32_t* h, int *rotation, int osd_rotation)
 {
     int fb0_w, fb0_h;
@@ -437,6 +436,19 @@ void amvideo_setscreenmode()
             ALOGD("set screen mode as 0");
     }*/
 }
+
+
+void get_axis(const char *path, int *x, int *y, int *w, int *h)
+{
+    int fd = -1;
+    char buf[SYSCMD_BUFSIZE];
+    if (amsysfs_get_sysfs_str(path, buf, sizeof(buf)) == 0) {
+        if (sscanf(buf, "%d %d %d %d", x, y, w, h) == 4) {
+            LOGI("%s axis: %d %d %d %d\n", path, *x, *y, *w, *h);
+        }
+    }
+}
+
 
 void set_scale(int x, int y, int w, int h, int *dst_x, int *dst_y, int *dst_w, int *dst_h, int disp_w, int disp_h)
 {

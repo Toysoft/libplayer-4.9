@@ -3,7 +3,6 @@
 #define LOG_TAG "hls_merge_tool"
 
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <pthread.h>
 

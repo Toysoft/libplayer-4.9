@@ -5,12 +5,16 @@
 #include "adpcm.h"
 #include "../../amadec/adec-armdec-mgt.h"
 #include "../../amadec/audio-dec.h"
-#include <android/log.h>
 #include <sys/time.h>
 #include <stdint.h>
 #include <string.h>
+#ifdef ANDROID
+#include <android/log.h>
+#define  LOG_TAG    "AdpcmDecoder"
 #define  PRINTF(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-
+#else 
+#define  PRINTF  printf  
+#endif 
 
 typedef struct {
     int ValidDataLen;
@@ -822,7 +826,7 @@ int audio_dec_decode(audio_decoder_operations_t *adec_ops, char *outbuf, int *ou
 int audio_dec_init(audio_decoder_operations_t *adec_ops)
 {
     aml_audio_dec_t *audec = (aml_audio_dec_t *)(adec_ops->priv_data);
-    //PRINTF("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    PRINTF("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
     adpcm_init(audec);
     return 0;
 }

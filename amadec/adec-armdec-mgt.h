@@ -11,6 +11,7 @@
 //#define AUDIO_FFMPEG_DECODER 2
 
 #define DEFAULT_PCM_BUFFER_SIZE 192000*2//default out buffer size
+#define DEFAULT_ASSOC_AUDIO_BUFFER_SIZE       (1024*768*2)
 
 #define AUDIO_EXTRA_DATA_SIZE   (4096)
 typedef struct _audio_info {
@@ -41,6 +42,7 @@ struct audio_decoder_operations {
     int extradata_size;      ///< extra data size
     char extradata[AUDIO_EXTRA_DATA_SIZE];
     int NchOriginal;
+    int nInAssocBufSize;//associate data size
     int lfepresent;
 };
 

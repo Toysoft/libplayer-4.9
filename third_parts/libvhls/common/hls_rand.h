@@ -16,7 +16,7 @@ extern "C" {
      */
 
     void vlc_rand_bytes(void *buf, size_t len);
-    void hls_rand_bytes(void *buf, size_t len);
+
 #ifdef __cplusplus
 #if __cplusplus
 }

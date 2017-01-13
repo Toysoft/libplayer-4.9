@@ -89,7 +89,7 @@ typedef struct
     int height;
     unsigned short colorcode;
     unsigned short  contrast;
-    unsigned long prtData;
+    unsigned prtData;
     unsigned cls;
 } Vob_subtitle_showdata;
 

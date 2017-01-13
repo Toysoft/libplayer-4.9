@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#ifdef ANDROID
 #include <android/log.h>
 #include <cutils/properties.h>
+#endif
 #include "MP3_mediasource.h"
 
 extern "C" int read_buffer(unsigned char *buffer,int size);

@@ -11,9 +11,11 @@
 #include <adec_omx_brige.h>
 #include <Amsysfsutils.h>
 #include <audio-dec.h>
+#ifdef ANDROID
 #include <cutils/properties.h>
+#endif
 #include <amthreadpool.h>
-#include "audiodsp_update_format.h"
+
 
 typedef struct {
     int codec_id;
@@ -32,7 +34,7 @@ typedef void (*fn_audio_set_exit_flag)();
 static audio_lib_t wfd_audio_lib_list[] = {
     {ACODEC_FMT_WIFIDISPLAY, "libpcm_wfd.so"},
     {ACODEC_FMT_AAC, "libaac_helix.so"},
-    0
+    NULL
 } ;
 static audio_decoder_operations_t WFDAudioDecoder = {
     "WFDDecoder",
@@ -245,7 +247,7 @@ static void start_adec(aml_audio_dec_t *audec)
                 amsysfs_get_sysfs_str(TSYNC_VPTS, buf, sizeof(buf));// read vpts
                 if (sscanf(buf, "0x%lx", &vpts) < 1) {
                     adec_print("unable to get vpts from: %s", buf);
-                    return;
+                    return -1;
                 }
                 // save vpts to apts
                 adec_print("## can't get first apts, save vpts to apts,vpts=%lx, \n", vpts);
@@ -404,13 +406,13 @@ static void start_wfd_decode_thread(aml_audio_dec_t *audec)
     int ret = -1;
     if (audec->state != INITTED) {
         adec_print("decode not inited quit \n");
-        return;
+        return -1;
     }
     pthread_t    tid;
     ret = amthreadpool_pthread_create(&tid, NULL, (void *)audio_wfd_decode_loop, (void *)audec);
     if (ret != 0) {
         adec_print("[%s]Create ffmpeg decode thread failed!\n", __FUNCTION__);
-        return;
+        return ret;
     }
     audec->sn_threadid = tid;
     pthread_setname_np(tid, "AmadecDecodeWFD");

@@ -8,18 +8,12 @@
  * All right reserved
  *
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
-
-#include <math.h>
 #include <unistd.h>
-
 #include <audio-dec.h>
 #include <amthreadpool.h>
-
 
 
 int audio_decode_basic_init(void)
@@ -68,6 +62,10 @@ int audio_decode_init(void **handle, arm_audio_info *a_ainfo)
     audec->codec_id = a_ainfo->codec_id;
     audec->auto_mute = a_ainfo->automute;
     audec->has_video=a_ainfo->has_video;
+    audec->associate_dec_supported = a_ainfo->associate_dec_supported;
+    audec->mixing_level = a_ainfo->mixing_level;
+    adec_print("%s::%d-[audec associate support:%d]-[audec mixing_level:%d]\n",
+        __FUNCTION__, __LINE__, audec->associate_dec_supported, audec->mixing_level);
     if (a_ainfo->droppcm_flag) {
         audec->droppcm_flag = a_ainfo->droppcm_flag;
         a_ainfo->droppcm_flag = 0;
@@ -75,6 +73,7 @@ int audio_decode_init(void **handle, arm_audio_info *a_ainfo)
     if (a_ainfo->extradata_size > 0 && a_ainfo->extradata_size <= AUDIO_EXTRA_DATA_SIZE) {
         memcpy((char*)audec->extradata, (char*)a_ainfo->extradata, a_ainfo->extradata_size);
     }
+
     audec->adsp_ops.audec = audec;
     //  adec_print("audio_decode_init  pcodec = %d, pcodec->ctxCodec = %d!\n", pcodec, pcodec->ctxCodec);
     ret = audiodec_init(audec);
@@ -335,7 +334,7 @@ int audio_decode_set_pre_gain(void *handle, float gain)
         ret = -1;
     } else {
         audec->pre_gain_enable = 1;
-        //audec->pre_gain = powf(10.0f, gain/20);
+        audec->pre_gain = powf(10, gain/20);
         adec_print("[%s] set pre-gain[%f] \n", __FUNCTION__, audec->pre_gain);
     }
     return ret;
@@ -434,7 +433,7 @@ int audio_decode_get_pre_gain(void *handle, float *gain)
         return -1;
     }
 
-    //*gain = 20*log10f((float)audec->pre_gain);
+    *gain = 20*log10f(audec->pre_gain);
 
     return ret;
 }
@@ -845,8 +844,6 @@ int audio_decoder_set_trackrate(void* handle, void *rate)
 int audio_set_associate_enable(void* handle, unsigned int enable)
 {
     int ret = 0;
-    //enable it after dual-decoder code merged to android N
-#if 0
     aml_audio_dec_t *audec = (aml_audio_dec_t *)handle;
     if (!handle) {
         adec_print("audio handle is NULL !\n");
@@ -855,7 +852,6 @@ int audio_set_associate_enable(void* handle, unsigned int enable)
         audec->associate_audio_enable = enable;
         adec_print("[%s]-[associate_audio_enable:%d]\n", __FUNCTION__, audec->associate_audio_enable);
     }
-#endif
     return ret;
 }
 
@@ -869,7 +865,6 @@ int audio_set_associate_enable(void* handle, unsigned int enable)
  */
 int audio_send_associate_data(void* handle, uint8_t *buf, size_t size)
 {
-#if 0
     int ret = 0;
     aml_audio_dec_t *audec = (aml_audio_dec_t *)handle;
     if (!handle) {
@@ -893,7 +888,5 @@ int audio_send_associate_data(void* handle, uint8_t *buf, size_t size)
     }
 
     return ret;
-#else
-    return size;
-#endif
 }
+

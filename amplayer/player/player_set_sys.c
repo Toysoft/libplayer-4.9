@@ -12,10 +12,12 @@
 #include <player_type.h>
 #include <player_set_sys.h>
 #include <linux/fb.h>
+#ifdef ANDROID
 #include <sys/system_properties.h>
+#endif
 #include <Amsysfsutils.h>
 #include <amthreadpool.h>
-#include <cutils/properties.h>
+
 
 static freescale_setting_t freescale_setting[] = {
     {
@@ -215,7 +217,7 @@ int set_subtitle_subtype(int subtype)
 
 int av_get_subtitle_curr()
 {
-    return get_sysfs_int("/sys/class/subtitle/curr");
+    return amsysfs_get_sysfs_int("/sys/class/subtitle/curr");
 }
 
 int set_subtitle_startpts(int pts)
@@ -917,7 +919,7 @@ int disable_freescale(int cfg)
     log_print("ENABLE_FREE_SCALE not define!\n");
     return 0;
 #endif
-    char prop2[PROPERTY_VALUE_MAX];
+    char prop2[16];
     int vpp2_freescale = 0;
     if (property_get("ro.vout.dualdisplay4", prop2, "false")
         && strcmp(prop2, "true") == 0) {
@@ -929,7 +931,7 @@ int disable_freescale(int cfg)
         return 0;
     }
 
-    char mode[PROPERTY_VALUE_MAX];
+    char mode[16];
     display_mode disp_mode;
 
     if (vpp2_freescale) {
@@ -943,7 +945,7 @@ int disable_freescale(int cfg)
             DisableFreeScale(disp_mode, vpp2_freescale);
         }
     }
-    char prop[PROPERTY_VALUE_MAX];
+    char prop[16];
     if (property_get("ro.vout.dualdisplay2", prop, "false")
         && strcmp(prop, "true") == 0) {
         property_set("rw.vout.scale", "off");
@@ -957,7 +959,7 @@ int enable_freescale(int cfg)
     log_print("ENABLE_FREE_SCALE not define!\n");
     return 0;
 #endif
-    char prop2[PROPERTY_VALUE_MAX];
+    char prop2[16];
     int vpp2_freescale = 0;
     if (property_get("ro.vout.dualdisplay4", prop2, "false")
         && strcmp(prop2, "true") == 0) {
@@ -968,7 +970,7 @@ int enable_freescale(int cfg)
         return 0;
     }
 
-    char mode[PROPERTY_VALUE_MAX];
+    char mode[16];
     display_mode disp_mode;
 
     if (vpp2_freescale) {
@@ -982,7 +984,7 @@ int enable_freescale(int cfg)
             EnableFreeScale(disp_mode, vpp2_freescale);
         }
     }
-    char prop[PROPERTY_VALUE_MAX];
+    char prop[16];
     if (property_get("ro.vout.dualdisplay2", prop, "false")
         && strcmp(prop, "true") == 0) {
         property_set("rw.vout.scale", "on");
@@ -993,8 +995,8 @@ int enable_freescale(int cfg)
 
 int disable_freescale_MBX()
 {
-    char mode[PROPERTY_VALUE_MAX];
-    char m1080scale[PROPERTY_VALUE_MAX];
+    char mode[16];
+    char m1080scale[8];
 
     property_get("ro.platform.has.1080scale", m1080scale, "fail");
     if (!strncmp(m1080scale, "fail", 4)) {
@@ -1019,19 +1021,19 @@ int disable_freescale_MBX()
 
 int enable_freescale_MBX()
 {
-    char mode[PROPERTY_VALUE_MAX];
-    char m1080scale[PROPERTY_VALUE_MAX];
-    char vaxis_x_str[PROPERTY_VALUE_MAX];
-    char vaxis_y_str[PROPERTY_VALUE_MAX];
-    char vaxis_width_str[PROPERTY_VALUE_MAX];
-    char vaxis_height_str[PROPERTY_VALUE_MAX];
+    char mode[16];
+    char m1080scale[8];
+    char vaxis_x_str[8];
+    char vaxis_y_str[8];
+    char vaxis_width_str[8];
+    char vaxis_height_str[8];
     display_mode disp_mode;
-    char vaxis_str[PROPERTY_VALUE_MAX];
-    char ppmgr_rect_str[PROPERTY_VALUE_MAX];
+    char vaxis_str[32];
+    char ppmgr_rect_str[32];
     int vaxis_x, vaxis_y, vaxis_width, vaxis_height, vaxis_right, vaxis_bottom;
 
     int ret;
-    char buf[PROPERTY_VALUE_MAX] = {0};
+    char buf[32] = {0};
     property_get("ro.platform.has.1080scale", m1080scale, "fail");
     if (!strncmp(m1080scale, "fail", 4)) {
         return 0;
@@ -1158,7 +1160,7 @@ int wait_video_unreg()
 {
     int ret = 0;
     int waitcount = 0;
-    char buf[PROPERTY_VALUE_MAX] = {0};
+    char buf[32] = {0};
     ret = amsysfs_get_sysfs_str("/sys/module/amvideo/parameters/new_frame_count", buf, 32);
     log_print("[wait_di_bypass] ret %d buf %s\n", ret, buf);
     while ((ret >= 0) && (strcmp(buf, "0") != 0)) {
@@ -1178,7 +1180,7 @@ int wait_video_unreg()
 
 int freescale_is_enable()
 {
-    char buf[PROPERTY_VALUE_MAX] = {0};
+    char buf[32] = {0};
     int ret = 0;
     ret = amsysfs_get_sysfs_str("/sys/class/graphics/fb0/free_scale", buf, 32);
     log_print("[wait_di_bypass] ret %d buf %s\n", ret, buf);
@@ -1190,8 +1192,8 @@ int freescale_is_enable()
 
 int disable_2X_2XYscale()
 {
-    char mode[PROPERTY_VALUE_MAX];
-    char m1080scale[PROPERTY_VALUE_MAX];
+    char mode[16];
+    char m1080scale[8];
 
     property_get("ro.platform.has.1080scale", m1080scale, "fail");
     if (!strncmp(m1080scale, "fail", 4)) {
@@ -1213,9 +1215,9 @@ int disable_2X_2XYscale()
 
 int enable_2Xscale()
 {
-    char mode[PROPERTY_VALUE_MAX];
-    char m1080scale[PROPERTY_VALUE_MAX];
-    char saxis_str[PROPERTY_VALUE_MAX];
+    char mode[16];
+    char m1080scale[8];
+    char saxis_str[32];
     display_mode disp_mode;
 
     property_get("ro.platform.has.1080scale", m1080scale, "fail");
@@ -1246,8 +1248,8 @@ int enable_2Xscale()
 
 int enable_2XYscale()
 {
-    char mode[PROPERTY_VALUE_MAX];
-    char m1080scale[PROPERTY_VALUE_MAX];
+    char mode[16];
+    char m1080scale[8];
     int scaleFile = -1, scaleaxisFile = -1, scaleOsd1File = -1, scaleaxisOsd1File = -1;
 
     property_get("ro.platform.has.1080scale", m1080scale, "fail");
@@ -1276,17 +1278,17 @@ int enable_2XYscale()
 
 int GL_2X_scale(int mSwitch)
 {
-    char mode[PROPERTY_VALUE_MAX];
-    char m1080scale[PROPERTY_VALUE_MAX];
-    char raxis_str[PROPERTY_VALUE_MAX], saxis_str[PROPERTY_VALUE_MAX];
-    char writedata[PROPERTY_VALUE_MAX] = {0};
-    char vaxis_newx_str[PROPERTY_VALUE_MAX] = {0};
-    char vaxis_newy_str[PROPERTY_VALUE_MAX] = {0};
-    char vaxis_width_str[PROPERTY_VALUE_MAX] = {0};
-    char vaxis_height_str[PROPERTY_VALUE_MAX] = {0};
+    char mode[16];
+    char m1080scale[8];
+    char raxis_str[32], saxis_str[32];
+    char writedata[40] = {0};
+    char vaxis_newx_str[10] = {0};
+    char vaxis_newy_str[10] = {0};
+    char vaxis_width_str[10] = {0};
+    char vaxis_height_str[10] = {0};
     int vaxis_newx = -1, vaxis_newy = -1, vaxis_width = -1, vaxis_height = -1;
     int ret = 0;
-    char buf[PROPERTY_VALUE_MAX];
+    char buf[32];
 
     property_get("ro.platform.has.1080scale", m1080scale, "fail");
     if (!strncmp(m1080scale, "fail", 4)) {

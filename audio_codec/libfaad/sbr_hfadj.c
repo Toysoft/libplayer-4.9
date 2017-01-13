@@ -30,11 +30,6 @@
 
 /* High Frequency adjustment */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-
 #include "common.h"
 #include "structs.h"
 

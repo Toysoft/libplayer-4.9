@@ -39,13 +39,14 @@
 //#include "includes.h"
 #include "../include/rm_error.h"
 #include "../include/rm_error_default.h"
-
+#ifdef ANDROID
 #include <android/log.h>
 
 #define  LOG_TAG    "codec_raac"
 #define raac_print(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-
-
+#else
+#define raac_print printf
+#endif 
 void rm_error_default(void* pUserError, HX_RESULT err, const char* msg)
 {
     if (msg) {

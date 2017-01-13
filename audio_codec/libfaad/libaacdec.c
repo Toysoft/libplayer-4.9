@@ -42,7 +42,9 @@
 #include <string.h>
 #include <sys/time.h>
 #ifndef WIN32
+#ifdef ANDROID
 #include <android/log.h>
+#endif
 #endif
 
 #define min(a,b) ( (a) < (b) ? (a) : (b) )
@@ -277,7 +279,7 @@ int audio_dec_init(
 #endif
 )
 {
-    //audio_codec_print("[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    audio_codec_print("[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
     FaadContext *gFaadCxt = NULL;
     adec_ops->pdecoder = calloc(1, sizeof(FaadContext));
     if (!adec_ops->pdecoder) {

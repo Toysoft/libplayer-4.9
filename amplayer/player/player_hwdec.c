@@ -7,9 +7,6 @@
 #include "stream_decoder.h"
 #include "player_priv.h"
 #include "player_hwdec.h"
-#include "amconfigutils.h"
-
-#include <cutils/properties.h>
 
 static int check_size_in_buffer(unsigned char *p, int len)
 {
@@ -1002,7 +999,7 @@ static void vorbis_insert_syncheader(char **hdrdata, int *size, char**vorbis_hea
     if (pdata == NULL) {
         log_print("malloc %d mem failed,at func %s,line %d\n", \
                   (vorbis_header_sizes[0] + vorbis_header_sizes[1] + vorbis_header_sizes[2]), __FUNCTION__, __LINE__);
-        return;//PLAYER_NOMEM;
+        return PLAYER_NOMEM;
     }
     *hdrdata = pdata;
     *size = vorbis_header_sizes[0] + vorbis_header_sizes[1] + vorbis_header_sizes[2] + 24;

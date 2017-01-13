@@ -1,14 +1,15 @@
 
 #include "sp_dec.h"
-
-#include "../../amadec/adec-armdec-mgt.h"
-#include <android/log.h>
 #include "interf_dec.h"
 #include "dec_if.h"
-
+#include "../../amadec/adec-armdec-mgt.h"
+#ifdef ANDROID
+#include <android/log.h>
 #define  LOG_TAG    "AmrDecoder"
 #define amr_print(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-
+#else
+#define amr_print  printf
+#endif 
 #define DefaultReadSize  2*1024
 #define DefaultOutBufSize 16*1024
 
@@ -123,7 +124,7 @@ int audio_dec_init(audio_decoder_operations_t *adec_ops)
 {
     //struct audio_info *real_data;
     //real_data = (struct audio_info *)fmt->private_data;
-    //amr_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    amr_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
     if (adec_ops->samplerate == 16000) {
         SampleRateOut = 16000;
     } else {

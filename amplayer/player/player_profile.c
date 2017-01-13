@@ -264,7 +264,7 @@ static int player_update_vdec_profile(void)
         return ret;
     }
 
-    log_print("[%s]str=%s\n", __FUNCTION__, valstr);
+  //  log_print("[%s]str=%s\n", __FUNCTION__, valstr);
     if (parse_sysparam_str(&m_vdec_profiles, valstr) == 0) {
         memcpy(&get_profile_mgt()->vdec_profiles, &m_vdec_profiles, sizeof(vdec_profile_t));
     }

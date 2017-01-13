@@ -160,11 +160,4 @@ typedef struct {
 #define AUDIO_ARM_DECODER 1
 #define AUDIO_FFMPEG_DECODER 2
 #define AUDIO_ARMWFD_DECODER  3
-
-int codec_set_drmmode(codec_para_t *pcodec, unsigned int setval);
-int codec_get_video_checkin_bitrate(codec_para_t *pcodec, int *bitrate);
-int codec_get_audio_checkin_bitrate(codec_para_t *pcodec, int *bitrate);
-int codec_set_skip_bytes(codec_para_t* pcodec, unsigned int bytes);
-int codec_get_dsp_apts(codec_para_t* pcodec, unsigned int * apts);
-int codec_get_pcm_level(codec_para_t* pcodec, unsigned int* level);
 #endif

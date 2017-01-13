@@ -32,9 +32,7 @@
 #include "structs.h"
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
+//#include <string.h>
 
 #include "mp4.h"
 #include "syntax.h"
@@ -1034,7 +1032,7 @@ exit_check:
         }
         memset(l, 0, sizeof(latm_header));
         if (st && st->i_extra || is_latm_external) {
-            int32_t x;
+            signed int  x;
 
             hDecoder->latm_header_present = 1;
             if (st && st->i_extra) {
@@ -1073,7 +1071,7 @@ exit_check:
         l->frameLength = 0;
         faad_rewindbits(&ld);
         if (is_latm && l->ASCbits > 0) {
-            int32_t x;
+            INT32_T x;
             hDecoder->latm_header_present = 1;
             x = NeAACDecInit2(hDecoder, l->ASC, (l->ASCbits + 7) / 8, samplerate, channels);
             if (x != 0) {
@@ -1847,12 +1845,9 @@ start_decode:
             if (adts.aac_frame_length > 6 * 768) {
                 audio_codec_print("adts frame len exceed aac spec \n");
                 hInfo->error = 36;//
-                goto error;
 
             }
-            //here need return to get more input data for decoder
-            faad_endbits(&ld);
-            return NULL;
+            goto error;
         }
         if (adts.sf_index >= 12 || adts.channel_configuration > 6) {
             audio_codec_print("adts sf/ch error,sf %d,ch config %d \n", adts.sf_index, adts.channel_configuration);
@@ -2006,7 +2001,7 @@ start_decode:
     /* allocate the buffer for the final samples */
     if ((hDecoder->sample_buffer == NULL) ||
         (hDecoder->alloced_channels != output_channels)) {
-        static const uint8_t str[] = { sizeof(int16_t), sizeof(int32_t), sizeof(int32_t),
+        static const uint8_t str[] = { sizeof(int16_t), sizeof(INT32_T), sizeof(INT32_T),
                                        sizeof(float32_t), sizeof(double), sizeof(int16_t), sizeof(int16_t),
                                        sizeof(int16_t), sizeof(int16_t), 0, 0, 0
                                      };
@@ -2248,7 +2243,10 @@ error:
         }
     }
 #endif
+
+
     faad_endbits(&ld);
+
     /* cleanup */
 #ifdef ANALYSIS
     fflush(stdout);

@@ -47,7 +47,9 @@
 #define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
 #define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
 #endif
-
+#ifndef ANDROID
+#define closesocket close
+#endif
 typedef struct {
     int udp_fd;
     int ttl;

@@ -18,12 +18,5 @@ void audio_stop_async(void **priv);
 void audio_pause(void *priv);
 void audio_resume(void *priv);
 void audio_basic_init(void);
-int codec_set_track_rate(codec_para_t *p,void *rate);
-int codec_get_decoder_enable(codec_para_t *p);
-int codec_get_pre_mute(codec_para_t *p, uint *mute);
-int codec_set_pre_mute(codec_para_t *p, uint mute);
-int codec_get_pre_gain(codec_para_t *p, float *gain);
-int codec_set_pre_gain(codec_para_t *p, float gain);
-int audio_set_avsync_threshold(void *priv, int threshold);
 #endif
 

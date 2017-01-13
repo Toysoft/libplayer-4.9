@@ -5,9 +5,6 @@ changed to HASH and list for fast get,set...
 */
 #include "include/amconfigutils.h"
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <fcntl.h>
 #include <pthread.h>
 static char *amconfigs[MAX_CONFIG] = {0};
 static int    amconfig_inited = 0;
@@ -18,8 +15,9 @@ static int    amconfig_inited = 0;
 #define lp_trylock(x)   pthread_mutex_trylock(x)
 #ifdef ANDROID
 #include <cutils/properties.h>
-
 #include <sys/system_properties.h>
+#else
+#include <stdlib.h>
 #endif
 //#define CONFIG_DEBUG
 #ifdef CONFIG_DEBUG
@@ -83,7 +81,7 @@ int am_getconfig(const char * path, char *val, const char * def)
     if (!amconfig_inited) {
         am_config_init();
     }
-    val[0] = 0x0;//"\0";
+    val[0] = 0;
     lp_lock(&config_lock);
     i = get_matched_index(path);
     if (i >= 0) {
@@ -100,6 +98,37 @@ int am_getconfig(const char * path, char *val, const char * def)
             i = 1;
         }
     }
+#else
+	{
+	#if 1
+		/*linux settings*/
+		char *tmpchar = malloc(strlen(path) + 1);
+		char *tmpval = NULL;
+		int j = 0;	
+		
+		if (tmpchar)
+		      memset(tmpchar, 0,(strlen(path) + 1));
+            else
+		     return 0;
+
+		memcpy(tmpchar,path,strlen(path));
+		for(j=0;j<strlen(tmpchar);j++)
+			if(tmpchar[j]=='.') {
+				tmpchar[j]='_';
+		}
+	//	printf("tmpchar: %s,path=%s\n", tmpchar,path);
+		
+		tmpval=getenv(tmpchar);
+		free(tmpchar);
+		if(tmpval != NULL) {
+			memcpy(val, tmpval,strlen(tmpval));
+			return atoi(tmpval);
+		}else {
+			return strlen(val);
+		} 
+		#endif
+		return strlen(val);
+	}
 #endif
     return strlen(val) ;
 }
@@ -260,4 +289,15 @@ int am_getconfig_bool_def(const char * path, int def)
     }
     return def;
 }
-
+#ifndef ANDROID
+int property_get(const char *key, char *value, const char *default_value)
+{
+   // printf("player system property_get [%s] %s\n", __FILE__, __FUNCTION__);
+    return am_getconfig(key, value, default_value);
+}
+int property_set(const char *key, const char *value)
+{
+   // printf("player system property_get [%s] %s\n", __FILE__, __FUNCTION__);
+    return am_setconfig(key, value);
+}
+#endif  

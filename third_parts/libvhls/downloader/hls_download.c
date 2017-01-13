@@ -45,9 +45,6 @@ typedef struct _HLSHttpContext {
 #define BOX_SERIAL_AUTH "X-BOX-SERIAL:" //box serial number
 
 #define BOX_TEST_SERIAL "0100210755"
-
-extern int av_strstart(const char *str, const char *pfx, const char **ptr);
-
 static void _add_auth_headers(char* headers)
 {
     int ret = -1;
@@ -127,7 +124,7 @@ int hls_http_open(const char* url, const char* _headers, void* key, void** handl
         if (is_ignore_range_req > 0) {
             flag |= URL_SEGMENT_MEDIA;
         }
-        if (headers[0] && strlen(headers) > 0) {
+        if (headers != NULL && strlen(headers) > 0) {
             ret = ffurl_open_h(&h, fileUrl, AVIO_FLAG_READ | AVIO_FLAG_NONBLOCK | flag, headers, &reason_code);
         } else {
             ret = ffurl_open_h(&h, fileUrl, AVIO_FLAG_READ | AVIO_FLAG_NONBLOCK | flag, NULL, &reason_code);
@@ -157,7 +154,7 @@ int hls_http_open(const char* url, const char* _headers, void* key, void** handl
             ret = ffurl_alloc(&h, fileUrl, AVIO_FLAG_READ | AVIO_FLAG_NONBLOCK);
         }
         if (ret >= 0) {
-            if (headers[0] && strlen(headers) > 0) {
+            if (headers != NULL && strlen(headers) > 0) {
                 h->headers = strndup(headers, MAX_URL_SIZE);
             }
 

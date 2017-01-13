@@ -11,6 +11,7 @@
 #ifndef ADEC_MACROS_H
 #define ADEC_MACROS_H
 
+#include <stdint.h>
 
 #ifdef  __cplusplus
 #define ADEC_BEGIN_DECLS    extern "C" {
@@ -28,6 +29,7 @@
 #ifndef FALSE
 #define FALSE   0
 #endif
+#define PROPERTY_VALUE_MAX 124
 
 typedef unsigned int    adec_bool_t;
 

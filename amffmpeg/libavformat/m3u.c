@@ -368,8 +368,36 @@ static int m3u_parser_line(struct list_mgt *mgt,unsigned char *line,struct list_
 	}
 	return enditem;
 }
+#ifndef ANDROID
+static void *ff_memrchr(const void *s, int c, size_t n)
 
+{
 
+  const unsigned char *p = s;
+  const unsigned char *q = s;
+  p += n - 1;
+  while (p >= q) {
+    if (*p == (unsigned char)c)
+      return (void *)p;
+    p--;
+  }
+  return NULL;
+}
+
+static int ff_strcasecmp(char *s, char *r)
+{
+	int i = 0;
+	for(i; '\0' != s[i]; i++){  
+		if(s[i] >= 'A' && s[i] <= 'Z') 
+			s[i] += 32; 
+	}
+    for(i; '\0' != r[i]; i++){ 
+		if(r[i] >= 'A' && r[i] <= 'Z') 
+			r[i] += 32; 
+	}
+	return strcmp(s, r);
+}
+#endif
 static int m3u_format_parser(struct list_mgt *mgt,ByteIOContext *s)
 { 
 	unsigned  char line[1024];
@@ -396,13 +424,21 @@ static int m3u_format_parser(struct list_mgt *mgt,ByteIOContext *s)
 			if(!extoptions)// no ?
 				tailex=strrchr(oprefix+10,'/');/*skip Http:// and shttp:,start to  last '/'*/
 			else
+#ifdef ANDROID			
 				tailex=memrchr(oprefix+10,'/',extoptions-oprefix-10);/*skip Http:// and shttp:,start to  last '/',between http-->? */
+#else
+				tailex=ff_memrchr(oprefix+10,'/',extoptions-oprefix-10);/*skip Http:// and shttp:,start to  last '/',between http-->? */
+#endif
 		}else{
 			tail=strchr(oprefix,'/'); /*first '/'*/
 			if(!extoptions)//no ?
 				tailex=strrchr(oprefix,'/'); /*to last '/' */
 			else
+#ifdef ANDROID			
 				tailex=memrchr(oprefix+10,'/',extoptions-oprefix-10);/*skip Http:// and shttp:,start to  last '/',between http-->? */
+#else
+				tailex=ff_memrchr(oprefix+10,'/',extoptions-oprefix-10);/*skip Http:// and shttp:,start to  last '/',between http-->? */
+#endif
 		}
 		
 		if(tail!=NULL){
@@ -621,7 +657,11 @@ static int match_ext(const char *filename, const char *extensions)//get file typ
             while (*p != '\0' && *p != ',' && q-ext1<sizeof(ext1)-1)
                 *q++ = *p++;
             *q = '\0';
+#ifdef ANDROID			
             if (!strcasecmp(ext1, ext))
+#else
+            if (!ff_strcasecmp(ext1, ext))
+#endif			
                 return 1;
             if (*p == '\0')
                 break;

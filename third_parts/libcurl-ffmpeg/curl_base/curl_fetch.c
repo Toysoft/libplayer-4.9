@@ -37,7 +37,7 @@ static int curl_fetch_url_process(CFContext * h)
             int len2 = ip_ptr - ip;
             memcpy(t_uri + len1, ip, len2);
             len1 += len2;
-            char * ip_rptr = (char *)c_strrstr(ip, ":");
+            char * ip_rptr = c_strrstr(ip, ":");
             if (ip_ptr) {
                 int len3 = strlen(ip) - (ip_rptr - ip);
                 memcpy(t_uri + len1, ip_rptr, len3);

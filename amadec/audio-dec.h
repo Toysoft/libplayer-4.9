@@ -15,12 +15,14 @@
 
 #include <audio-out.h>
 #include <audiodsp.h>
-#include <system/audio.h>
 #include <adec-types.h>
 #include <adec-message.h>
 #include <log-print.h>
 #include <adec-armdec-mgt.h>
 #include <adec_write.h>
+#ifndef ANDROID
+#include <adec-macros.h>
+#endif
 ADEC_BEGIN_DECLS
 
 #define  AUDIO_CTRL_DEVICE    "/dev/amaudio_ctl"
@@ -32,20 +34,20 @@ ADEC_BEGIN_DECLS
 #define AMAUDIO_IOC_SET_CHANNEL_SWAP            _IOW(AMAUDIO_IOC_MAGIC, 0x11, int)
 
 //should in accordance with ../amcodec/include/amports/amstream.h
-#define AMAUDIO_IOC_SET_RESAMPLE_DELTA        _IOW(AMAUDIO_IOC_MAGIC, 0x1d, unsigned long)
+#define AMAUDIO_IOC_SET_RESAMPLE_DELTA        _IOW(AMAUDIO_IOC_MAGIC, 0x1d, unsigned int)
 
 //for ffmpeg audio decode
 #define AMSTREAM_IOC_MAGIC  'S'
-#define AMSTREAM_IOC_APTS_LOOKUP    _IOR(AMSTREAM_IOC_MAGIC, 0x81, int)
-#define GET_FIRST_APTS_FLAG         _IOR(AMSTREAM_IOC_MAGIC, 0x82, long)
+#define AMSTREAM_IOC_APTS_LOOKUP    _IOR(AMSTREAM_IOC_MAGIC, 0x81,unsigned int)
+#define GET_FIRST_APTS_FLAG         _IOR(AMSTREAM_IOC_MAGIC, 0x82, int)
 
 //-----------------------------------------------
 //copy from file: "../amcodec/include/amports/amstream.h"
 #ifndef AMSTREAM_IOC_PCRSCR
-#define AMSTREAM_IOC_PCRSCR           _IOR(AMSTREAM_IOC_MAGIC, 0x42, int)
+#define AMSTREAM_IOC_PCRSCR           _IOR(AMSTREAM_IOC_MAGIC, 0x42, unsigned int)
 #endif
 #ifndef AMSTREAM_IOC_SET_APTS
-#define AMSTREAM_IOC_SET_APTS         _IOW(AMSTREAM_IOC_MAGIC, 0xa8, int)
+#define AMSTREAM_IOC_SET_APTS         _IOW(AMSTREAM_IOC_MAGIC, 0xa8, unsigned int)
 #endif
 
 //-----------------------------------------------
@@ -102,6 +104,7 @@ typedef int (*fp_arm_omx_codec_get_FS)(aml_audio_dec_t*);
 typedef int (*fp_arm_omx_codec_get_Nch)(aml_audio_dec_t*);
 typedef int (*fp_arm_omx_codex_read_assoc_data)(aml_audio_dec_t *,unsigned char *, int, int *);
 
+
 struct aml_audio_dec {
     adec_state_t  state;
     pthread_t       thread_pid;
@@ -130,7 +133,7 @@ struct aml_audio_dec {
     audio_decoder_operations_t *adec_ops;//non audiodsp decoder operations
     int extradata_size;      ///< extra data size
     char extradata[AUDIO_EXTRA_DATA_SIZE];
-    audio_session_t SessionID;
+    int SessionID;
     int format_changed_flag;
     unsigned dspdec_not_supported;//check some profile that audiodsp decoder can not support,we switch to arm decoder
     int droppcm_flag;               // drop pcm flag, if switch audio (1)
@@ -149,19 +152,15 @@ struct aml_audio_dec {
 
     buffer_stream_t *g_bst;
     buffer_stream_t *g_bst_raw;
-    int sn_threadid;
-    int sn_getpackage_threadid;
+    pthread_t sn_threadid;
+    pthread_t sn_getpackage_threadid;
     int exit_decode_thread;
     int exit_decode_thread_success;
     unsigned long decode_offset;
-	int64_t decode_pcm_offset;
-	int use_get_out_posion;
     int nDecodeErrCount;
     int fd_uio;
     int last_valid_pts;
     int out_len_after_last_valid_pts;
-    int64_t last_out_postion;
-    int64_t last_get_postion_time_us;
     int pcm_cache_size;
     Package_List pack_list;
     StartCode start_code;

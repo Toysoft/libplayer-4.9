@@ -15,12 +15,10 @@
 #include "player_update.h"
 #include "player_ffmpeg_ctrl.h"
 #include "system/systemsetting.h"
+#ifdef ANDROID
 #include <cutils/properties.h>
+#endif
 #include <iconv.h>
-
-#include "amconfigutils.h"
-#include "libavutil/avstring.h"
-#include "libavformat/internal.h"
 
 extern es_sub_t es_sub_buf[SSTREAM_MAX_NUM];
 
@@ -1707,7 +1705,7 @@ static void subtitle_para_init(play_para_t *player)
     int frame_rate_num, frame_rate_den;
     float video_fps;
     char out[20];
-    char *default_sub = "firstindex";
+    char default_sub = "firstindex";
 
 
     if (player->vstream_info.has_video) {
@@ -1724,7 +1722,7 @@ static void subtitle_para_init(play_para_t *player)
     set_subtitle_index(0);
 
     //FFT: get proerty from build.prop
-    GetSystemSettingString("media.amplayer.divx.certified", out, default_sub);
+    GetSystemSettingString("media.amplayer.divx.certified", out, &default_sub);
     log_print("[%s:%d]out = %s !\n", __FUNCTION__, __LINE__, out);
 
     //FFT: set default subtitle index for divx certified

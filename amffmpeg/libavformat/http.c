@@ -916,7 +916,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
     }
 
     /* now add in custom headers */
-    //if (s->headers)
+    if (s->headers)
         av_strlcpy(headers + len, s->headers, sizeof(headers) - len);
 
     snprintf(s->buffer, sizeof(s->buffer),

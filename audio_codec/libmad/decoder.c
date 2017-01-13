@@ -58,9 +58,14 @@
 
 #ifndef _WIN32
 #include "../../amadec/adec-armdec-mgt.h"
+#include "../../amadec/audio-dec.h"
+
+#define audio_codec_print printf
+#ifdef ANDROID
 #include <android/log.h>
 #define  LOG_TAG    "MadDecoder"
 #define audio_codec_print(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
+#endif 
 #else
 #define audio_codec_print printf
 #endif
@@ -948,7 +953,7 @@ int audio_dec_init(
 #endif
 )
 {
-    //audio_codec_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    audio_codec_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
     memset(&decoder, 0, sizeof(struct mad_decoder));
 
     mad_decoder_init(&decoder, 0/*&buffer*/,

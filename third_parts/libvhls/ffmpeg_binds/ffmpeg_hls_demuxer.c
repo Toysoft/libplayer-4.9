@@ -16,8 +16,6 @@ AVRational HLS_Rational = {1, AV_TIME_BASE};
 #define HLS_DEMUXER_TAG "mhls"
 #define HLOG(...) av_tag_log(HLS_DEMUXER_TAG, __VA_ARGS__)
 
-extern int av_strstart(const char *str, const char *pfx, const char **ptr);
-
 static int hls_interrupt_call_cb(void) {
     if (url_interrupt_cb()) {
         HLOG("[%s] : url_interrupt_cb !", __FUNCTION__);

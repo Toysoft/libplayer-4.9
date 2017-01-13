@@ -5,13 +5,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
-#include <unistd.h>
 
 #include "amstream.h"
 
 #include "amsub_log.h"
 #include "amsub_dec.h"
-#include "amsub_dec_output.h"
+
 
 
 int subtitle_poll_sub_fd(int sub_fd, int timeout)

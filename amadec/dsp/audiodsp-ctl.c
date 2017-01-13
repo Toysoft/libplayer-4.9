@@ -21,10 +21,10 @@
 #include <audio-dec.h>
 #include <audiodsp.h>
 #include <log-print.h>
+#ifdef ANDROID
 #include <cutils/properties.h>
+#endif
 #include <amthreadpool.h>
-#include "Amsysfsutils.h"
-#include "amconfigutils.h"
 
 firmware_s_t firmware_list[] = {
     {0, MCODEC_FMT_MPEG123, "audiodsp_codec_mad.bin"},

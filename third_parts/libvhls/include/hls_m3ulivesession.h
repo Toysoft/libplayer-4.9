@@ -171,7 +171,7 @@ typedef struct _M3ULiveSession {
     int64_t output_stream_offset;
     int startsegment_index;
     void *urlcontext;
-    int last_notify_err_seq_num;
+    int *last_notify_err_seq_num;
     int no_new_file_can_download;
     char *ext_gd_seek_info;
     char *cookies;
@@ -234,9 +234,6 @@ extern "C" {
     int m3u_session_media_get_selected_track(void * session, MediaTrackType type);
     M3uSubtitleData * m3u_session_media_read_subtitle(void * session, int index);
     MediaType m3u_session_media_get_type_by_index(void * session, int index);
-
-    int m3u_session_get_estimate_bps(void*hSession, int* bps);
-    int m3u_session_get_livemode(void* hSession, int *pnLivemode);
 
 #ifdef __cplusplus
 }

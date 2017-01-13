@@ -9,7 +9,7 @@
 #include "amsub_log.h"
 #include "amsub_dec_output.h"
 #include <amthreadpool.h>
-#include <unistd.h>
+
 
 
 void *amsub_dec_loop_ctrl(void *args);
@@ -39,7 +39,7 @@ amsub_lib_t amsub_lib_list[] =
     {CODEC_ID_MICRODVD, "libsub_xsub.so"},          // case 0x17009:XSUB+ (XSUA HD) image;
     {CODEC_ID_IDX_SUB, "libsub_idxsub.so"},         // case 0x17010: idx + sub;
 
-    //NULL
+    NULL
 } ;
 
 int find_amsub_lib(amsub_dec_t *amsub_dec)
@@ -47,7 +47,7 @@ int find_amsub_lib(amsub_dec_t *amsub_dec)
     int i;
     int num;
     amsub_lib_t *f;
-    void *fd = NULL;
+    int fd = 0;
     num = ARRAY_SIZE(amsub_lib_list);
     amsub_dec_opt_t *amsubdec_ops = amsub_dec->amsub_ops;
     for (i = 0; i < num; i++)
@@ -321,4 +321,5 @@ void amsub_decode_loop(amsub_dec_t *amsub_dec)
 #endif
     amsub_dec->need_stop = 1;
     amsub_print("exit amsub_decode_loop finished!");
+    return NULL;
 }

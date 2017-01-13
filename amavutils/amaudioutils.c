@@ -4,7 +4,9 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <strings.h>
+#ifdef ANDROID
 #include <cutils/log.h>
+#endif
 #include <sys/ioctl.h>
 
 #include <Amsysfsutils.h>
@@ -20,7 +22,7 @@ typedef enum {
 #define AUDIODSP_CODEC_MIPS_IN  "/sys/class/audiodsp/codec_mips"
 #define AUDIODSP_CODEC_MIPS_OUT "/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq"
 #define AUDIODSP_CLK81_FRQ_LEVEL "/sys/class/aml_clk81/clk81_freq_level"
-
+#ifdef ANDROID
 #ifndef LOGD
 #define LOGV ALOGV
 #define LOGD ALOGD
@@ -28,7 +30,13 @@ typedef enum {
 #define LOGW ALOGW
 #define LOGE ALOGE
 #endif
-
+#else
+#define LOGV printf
+#define LOGD printf
+#define LOGI printf
+#define LOGW printf
+#define LOGE printf
+#endif
 #define LOG_FUNCTION_NAME LOGI("%s-%d\n",__FUNCTION__,__LINE__);
 ///#define LOG_FUNCTION_NAME
 

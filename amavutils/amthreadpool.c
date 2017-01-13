@@ -1,13 +1,15 @@
 #include <amthreadpool.h>
 #include <itemlist.h>
-
-#define LOG_TAG "amthreadpool"
-#include <utils/Log.h>
-
-#include <string.h>
+#include <sys/time.h>
 #include <stdlib.h>
-#include <fcntl.h>
-
+#define LOG_TAG "amthreadpool"
+#ifdef ANDROID
+#include <utils/Log.h>
+#else
+#define     ALOGE printf
+#define 	ALOGI printf
+#define 	ALOGD printf
+#endif
 
 static struct itemlist threadpool_list;
 static struct itemlist threadpool_threadlist;

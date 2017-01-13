@@ -26,9 +26,7 @@
 #include "codec_h_ctrl.h"
 #include <adec-external-ctrl.h>
 #include <Amvideoutils.h>
-#include "codec_msg.h"
-#include "../audio_ctl/audio_ctrl.h"
-#include "amconfigutils.h"
+
 
 #define SUBTITLE_EVENT
 #define TS_PACKET_SIZE 188
@@ -272,7 +270,7 @@ static inline void codec_check_new_cmd(CODEC_HANDLE handle)
     if (!codec_h_is_support_new_cmd()) {
         int r;
         int version = 0;
-        r = codec_h_control(handle, AMSTREAM_IOC_GET_VERSION, (unsigned long)&version);
+        r = codec_h_control(handle, AMSTREAM_IOC_GET_VERSION, &version);
         if ((r == 0) && (version >= 0x20000)) {
             CODEC_PRINT("codec_init amstream version : %d.%d\n", (version & 0xffff0000) >> 16, version & 0xffff);
             codec_h_set_support_new_cmd(1);
@@ -747,6 +745,9 @@ int codec_init(codec_para_t *pcodec)
         a_ainfo.codec_id   = pcodec->audio_info.codec_id;
         a_ainfo.automute   = pcodec->automute_flag;
         a_ainfo.has_video  = pcodec->has_video;
+        a_ainfo.associate_dec_supported  = pcodec->associate_dec_supported;
+
+        CODEC_PRINT("[%s]-[associate_dec_supported:%d]\n", __FUNCTION__, a_ainfo.associate_dec_supported);
         if (IS_AUIDO_NEED_EXT_INFO(pcodec->audio_type)) {
             if (pcodec->audio_type != AFORMAT_WMA && pcodec->audio_type != AFORMAT_WMAPRO && pcodec->audio_type != AFORMAT_WMAVOI) {
                 a_ainfo.extradata_size = pcodec->audio_info.extradata_size;
@@ -776,7 +777,7 @@ int codec_init(codec_para_t *pcodec)
             audio_set_avsync_threshold(pcodec->adec_priv, pcodec->avsync_threshold);
         }
     }
-
+#ifdef ANDROID
     int untimed_text = am_getconfig_bool_def("sys.timedtext.disable", 1);
     CODEC_PRINT("%s,untimed_text=%d\n", __FUNCTION__, untimed_text);
 
@@ -795,6 +796,7 @@ int codec_init(codec_para_t *pcodec)
         CODEC_PRINT("[%s] amsub start ok-\n", __FUNCTION__);
         //CODEC_PRINT("--pcodec=%p-pcodec->amsub_priv=%p---\n", pcodec, pcodec->amsub_priv);
     }
+#endif	
     return ret;
 }
 
@@ -856,7 +858,7 @@ int codec_close(codec_para_t *pcodec)
         res |= codec_close_sub_fd(pcodec->sub_handle);
     }
 #endif
-
+#ifdef ANDROID
     int untimed_text = am_getconfig_bool_def("sys.timedtext.disable", 1);
     CODEC_PRINT("%s,untimed_text=%d\n", __FUNCTION__, untimed_text);
 
@@ -869,6 +871,7 @@ int codec_close(codec_para_t *pcodec)
             CODEC_PRINT("codec_close,subtitle not crate ok,no need close-\n");
         }
     }
+#endif	
     res |= codec_close_cntl(pcodec);
     res |= codec_h_close(pcodec->handle);
     return res;
@@ -2209,7 +2212,7 @@ int codec_get_audio_resample_ena(codec_para_t *pcodec)
 {
     unsigned long audio_resample_ena;
     int ret;
-    ret = codec_h_control(pcodec->audio_utils_handle, AMAUDIO_IOC_GET_RESAMPLE_ENA, (unsigned long)&audio_resample_ena);
+    ret = codec_h_control(pcodec->audio_utils_handle, AMAUDIO_IOC_GET_RESAMPLE_ENA, &audio_resample_ena);
     if (ret < 0) {
         return system_error_to_codec_error(ret);
     } else {
@@ -2255,7 +2258,7 @@ int codec_set_video_delay_limited_ms(codec_para_t *pcodec, int delay_ms)
 /* --------------------------------------------------------------------------*/
 int codec_get_video_delay_limited_ms(codec_para_t *pcodec, int *delay_ms)
 {
-    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_VIDEO_DELAY_LIMIT_MS, (unsigned long)delay_ms);
+    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_VIDEO_DELAY_LIMIT_MS, delay_ms);
 }
 
 
@@ -2284,7 +2287,7 @@ int codec_set_audio_delay_limited_ms(codec_para_t *pcodec, int delay_ms)
 /* --------------------------------------------------------------------------*/
 int codec_get_audio_delay_limited_ms(codec_para_t *pcodec, int *delay_ms)
 {
-    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_AUDIO_DELAY_LIMIT_MS, (unsigned long)delay_ms);
+    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_AUDIO_DELAY_LIMIT_MS, delay_ms);
 }
 
 /* --------------------------------------------------------------------------*/
@@ -2301,7 +2304,7 @@ int codec_get_audio_cur_delay_ms(codec_para_t *pcodec, int *delay_ms)
     int abuf_delay = 0;
     int adec_delay = 0;
     int ret = 0;
-    ret = codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_AUDIO_CUR_DELAY_MS, (unsigned long)&abuf_delay);
+    ret = codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_AUDIO_CUR_DELAY_MS, &abuf_delay);
     if (ret < 0) {
         CODEC_PRINT("[%s]ioctl failed %d\n", __FUNCTION__, ret);
         return -1;
@@ -2329,7 +2332,7 @@ int codec_get_audio_cur_delay_ms(codec_para_t *pcodec, int *delay_ms)
 /* --------------------------------------------------------------------------*/
 int codec_get_video_cur_delay_ms(codec_para_t *pcodec, int *delay_ms)
 {
-    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_VIDEO_CUR_DELAY_MS, (unsigned long)delay_ms);
+    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_VIDEO_CUR_DELAY_MS, delay_ms);
 }
 
 /* --------------------------------------------------------------------------*/
@@ -2343,7 +2346,7 @@ int codec_get_video_cur_delay_ms(codec_para_t *pcodec, int *delay_ms)
 /* --------------------------------------------------------------------------*/
 int codec_get_video_cur_bitrate(codec_para_t *pcodec, int *bitrate)
 {
-    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_VIDEO_AVG_BITRATE_BPS, (unsigned long)bitrate);
+    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_VIDEO_AVG_BITRATE_BPS, bitrate);
 }
 
 
@@ -2358,7 +2361,7 @@ int codec_get_video_cur_bitrate(codec_para_t *pcodec, int *bitrate)
 /* --------------------------------------------------------------------------*/
 int codec_get_audio_cur_bitrate(codec_para_t *pcodec, int *bitrate)
 {
-    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_AUDIO_AVG_BITRATE_BPS, (unsigned long)bitrate);
+    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_AUDIO_AVG_BITRATE_BPS, bitrate);
 }
 /* --------------------------------------------------------------------------*/
 /**
@@ -2371,7 +2374,7 @@ int codec_get_audio_cur_bitrate(codec_para_t *pcodec, int *bitrate)
 /* --------------------------------------------------------------------------*/
 int codec_get_video_checkin_bitrate(codec_para_t *pcodec, int *bitrate)
 {
-    return codec_h_control(pcodec->handle, AMSTREAM_IOC_GET_VIDEO_CHECKIN_BITRATE_BPS, (unsigned long)bitrate);
+    return codec_h_control(pcodec->handle, AMSTREAM_IOC_GET_VIDEO_CHECKIN_BITRATE_BPS, bitrate);
 }
 /* --------------------------------------------------------------------------*/
 /**
@@ -2384,7 +2387,7 @@ int codec_get_video_checkin_bitrate(codec_para_t *pcodec, int *bitrate)
 /* --------------------------------------------------------------------------*/
 int codec_get_audio_checkin_bitrate(codec_para_t *pcodec, int *bitrate)
 {
-    return codec_h_control(pcodec->handle, AMSTREAM_IOC_GET_AUDIO_CHECKIN_BITRATE_BPS, (unsigned long)bitrate);
+    return codec_h_control(pcodec->handle, AMSTREAM_IOC_GET_AUDIO_CHECKIN_BITRATE_BPS, bitrate);
 }
 
 /* --------------------------------------------------------------------------*/
@@ -2412,12 +2415,12 @@ int codec_set_drmmode(codec_para_t *pcodec, unsigned int setval)
  */
 int codec_get_last_checkout_apts(codec_para_t* pcodec, unsigned long *apts)
 {
-    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_LAST_CHECKOUT_APTS, (unsigned long)apts);
+    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_LAST_CHECKOUT_APTS, apts);
 }
 
 int codec_get_last_checkin_apts(codec_para_t* pcodec, unsigned long* apts)
 {
-    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_LAST_CHECKIN_APTS, (unsigned long)apts);
+    return codec_h_ioctl(pcodec->handle, AMSTREAM_IOC_GET, AMSTREAM_GET_LAST_CHECKIN_APTS, apts);
 }
 
 /**
@@ -2435,12 +2438,12 @@ int codec_get_pcm_level(codec_para_t* pcodec, unsigned int* level)
 
 int codec_set_skip_bytes(codec_para_t* pcodec, unsigned int bytes)
 {
-    return audio_set_skip_bytes(pcodec->adec_priv, bytes);
+    return audio_set_skip_bytes(pcodec->adec_priv);
 }
 
 int codec_get_dsp_apts(codec_para_t* pcodec, unsigned int * apts)
 {
-    return audio_get_pts(pcodec->adec_priv);
+    return audio_get_pts(pcodec->adec_priv, apts);
 }
 
 /* --------------------------------------------------------------------------*/
@@ -2526,6 +2529,7 @@ int codec_utils_set_video_position(int x, int y, int w, int h, int rotation)
 
 int codec_amsub_read_outdata(codec_para_t *pcodec, amsub_info_t *amsub_info)
 {
+#ifdef ANDROID
     //CODEC_PRINT("---pcodec->amsub_priv=%p---\n",pcodec->amsub_priv);
     if (pcodec->amsub_priv) {
         return amsub_outdata_read(&pcodec->amsub_priv, amsub_info);
@@ -2533,6 +2537,7 @@ int codec_amsub_read_outdata(codec_para_t *pcodec, amsub_info_t *amsub_info)
         CODEC_PRINT("codec_amsub_read_outdata,can not get amsub_handle\n");
         return -1;
     }
+#endif
     return 0;
 }
 
@@ -2547,6 +2552,7 @@ int codec_amsub_read_outdata(codec_para_t *pcodec, amsub_info_t *amsub_info)
 
 void codec_close_subtitle(codec_para_t *pcodec)
 {
+#ifdef ANDROID
     if (pcodec) {
         pcodec->has_sub = 0;
     }
@@ -2557,6 +2563,7 @@ void codec_close_subtitle(codec_para_t *pcodec)
     } else {
         CODEC_PRINT("codec_close,subtitle not crate ok,no need close !\n");
     }
+#endif	
     return;
 }
 
@@ -2571,6 +2578,7 @@ void codec_close_subtitle(codec_para_t *pcodec)
 
 void codec_resume_subtitle(codec_para_t *pcodec, unsigned int has_sub)
 {
+#ifdef ANDROID
     pcodec->has_sub = has_sub;
     CODEC_PRINT("codec_resume_subtitle, has_sub=%d !\n", has_sub);
     if (pcodec->has_sub) {
@@ -2586,6 +2594,7 @@ void codec_resume_subtitle(codec_para_t *pcodec, unsigned int has_sub)
         amsub_start(&pcodec->amsub_priv, &amsub_info);
         CODEC_PRINT("[%s]: amsub start ok !\n", __FUNCTION__);
     }
+#endif	
     return;
 }
 

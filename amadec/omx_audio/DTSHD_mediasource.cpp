@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#ifdef ANDROID
 #include <android/log.h>
 #include <cutils/properties.h>
+#endif
 #include "DTSHD_mediasource.h"
 
 extern "C" int read_buffer(unsigned char *buffer,int size);
@@ -104,8 +106,6 @@ Dtshd_MediaSource::Dtshd_MediaSource(void *read_buffer)
     FirFraBuf_Len=0;
     FirFraBuf_Offset=0;
     FrameNumReaded=0;
-    mMeta->setInt32(kKeyChannelCount,/* audec->channels > 0?audec->channels:*/2);
-    mMeta->setInt32(kKeySampleRate, /*audec->samplerate> 0?audec->samplerate:*/48000);
 }
 
 

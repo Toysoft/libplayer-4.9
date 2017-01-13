@@ -38,7 +38,7 @@ static int stream_ts_init(play_para_t *p_para)
             if (p_para->pFormatCtx->pb && p_para->pFormatCtx->pb->is_slowmedia) {
                 /* ts slow media, use idr framerate */
                 log_print("[%s:%d]Slow media detected for ts\n", __FUNCTION__, __LINE__);
-                codec->am_sysinfo.param = (void *)USE_IDR_FRAMERATE;
+                codec->am_sysinfo.param = USE_IDR_FRAMERATE;
             }
             if ((codec->video_type == VFORMAT_H264) && p_para->playctrl_info.iponly_flag) {
                 codec->am_sysinfo.param = (void *)(IPONLY_MODE | (unsigned long) codec->am_sysinfo.param);
@@ -90,7 +90,7 @@ static int stream_ts_init(play_para_t *p_para)
             log_print("main profile aac not supported by dsp decoder,so set dspdec_not_supported flag\n");
         }
         codec->avsync_threshold = p_para->start_param->avsync_threshold;
-        log_print("[%s:%d]audio bitrate=%d sample_rate=%d channels=%d codec_id=%x block_align=%d,extra size %d\n",
+        log_print("[%s:%d]audio bitrate=%d sample_rate=%d channels=%d codec_id=%x block_align=%d,extra size\n",
                   __FUNCTION__, __LINE__, codec->audio_info.bitrate, codec->audio_info.sample_rate, codec->audio_info.channels,
                   codec->audio_info.codec_id, codec->audio_info.block_align, codec->audio_info.extradata_size);
     }

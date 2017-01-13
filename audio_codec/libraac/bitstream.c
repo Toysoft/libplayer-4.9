@@ -48,12 +48,15 @@
 
 #include "bitstream.h"
 #include "raac_decode.h"
+#ifdef ANDROID
 #include <android/log.h>
 
 #define  LOG_TAG    "codec_raac"
 #define raac_print(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
 
-
+#else
+#define raac_print printf
+#endif 
 static unsigned int iCache0 = 0;
 static unsigned int iCache1 = 0;
 static int cacheBit0 = 0;

@@ -551,21 +551,24 @@ reload:
         
         goto error;
     } else {
+       
         if (mgt->item_num == 0 && mgt->n_variants > 0&&NULL== mgt->playing_variant) { //simplely choose server,mabye need sort variants when got it from server.
             if (bio) {
                 url_fclose(bio);
                 bio = NULL;
+                
             }
-
-            ret = fast_sort_streams(mgt);
-            if (mgt->playing_variant == NULL || /*mgt->playing_variant->url == NULL || */strlen(mgt->playing_variant->url) < 4) {
+            
+            ret = fast_sort_streams(mgt);  
+            if(mgt->playing_variant==NULL||mgt->playing_variant->url==NULL||strlen(mgt->playing_variant->url)<4){
                 av_log(NULL,AV_LOG_ERROR,"failed to sort or get streams\n");
                 ret = -1;
                 goto error;
             }
-            url = mgt->playing_variant->url;
+            url = mgt->playing_variant->url;           
             //av_log(NULL, AV_LOG_INFO, "[%d]reload playlist,url:%s\n", __LINE__, url);
-            goto reload;
+            goto reload;           
+
         }
 
     }
@@ -593,9 +596,19 @@ error:
     }
     return ret;
 }
+#ifndef ANDROID
+static char* ffstrndup(const char *s, size_t n)
+{
+    size_t len = n > strlen(s) ? n : strlen(s);
+    char* new = av_malloc(len + 1);
+    if(new){
+        new[len] = '\0';
+        memcpy(new, s, len);
+    }
+    return new;
+}
 
-
-
+#endif
 static int list_open(URLContext *h, const char *filename, int flags)
 {
     struct list_mgt *mgt;
@@ -644,10 +657,17 @@ static int list_open(URLContext *h, const char *filename, int flags)
 		             "X-Playback-Session-Id: %s\r\n%s", sess_id,h!=NULL&&h->headers!=NULL?h->headers:"");
     }
     //av_log(NULL, AV_LOG_INFO, "Generate ipad http request headers,\r\n%s\n", headers);
+#ifdef ANDROID
     mgt->ipad_ex_headers = strndup(headers, 2048);    
-   
+#else
+    mgt->ipad_ex_headers = ffstrndup(headers, 2048); 
+#endif
     if(h->headers!=NULL){
+#ifdef ANDROID	
         mgt->ipad_req_media_headers = strndup(h->headers, 2048);
+#else
+        mgt->ipad_req_media_headers = ffstrndup(h->headers, 2048);
+#endif
     }else{
         mgt->ipad_req_media_headers = NULL;
     }
@@ -1732,7 +1752,7 @@ int register_list_demux_all(void)
 {
     static int registered_all = 0;
     if (registered_all) {
-        return 0;
+        return;
     }
     registered_all++;
     extern struct list_demux m3u_demux;

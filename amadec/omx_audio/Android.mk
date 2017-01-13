@@ -22,8 +22,7 @@ LOCAL_MODULE := libamadec_omx_api
 LOCAL_ARM_MODE := arm
 
 LOCAL_SHARED_LIBRARIES += libutils libmedia libz libbinder libdl libcutils libc libstagefright \
-                          libstagefright_omx  libstagefright_yuv libmedia_native liblog \
-                          libstagefright_foundation
+                          libstagefright_omx  libstagefright_yuv libmedia_native liblog 
 
 LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE_TAGS := optional

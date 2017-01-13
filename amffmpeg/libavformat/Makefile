@@ -1,4 +1,4 @@
-###include $(SUBDIR)../config.mak
+include $(SUBDIR)../config.mak
 
 NAME = avformat
 FFLIBS = avcodec avutil
@@ -358,4 +358,4 @@ OBJS                += file_list2.o m3u.o CacheHttp.o
 
 OBJS                += aviolpbuf.o aviolpcache.o
 
-###include $(SUBDIR)../subdir.mak
+include $(SUBDIR)../subdir.mak

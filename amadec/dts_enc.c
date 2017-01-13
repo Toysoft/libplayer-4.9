@@ -7,12 +7,10 @@
 #include <pthread.h>
 #include "dts_enc.h"
 #include "dts_transenc_api.h"
+#ifdef ANDROID
 #include <cutils/properties.h>
+#endif
 #include <amthreadpool.h>
-
-#include "Amsysfsutils.h"
-#include "amconfigutils.h"
-#include "spdif_api.h"
 
 typedef enum {
     IDLE,
@@ -36,8 +34,6 @@ static void *dts_enc_loop();
 
 #define DIGITAL_RAW_PATH             "sys/class/audiodsp/digital_raw"
 #define FORMAT_PATH                        "/sys/class/astream/format"
-
-extern int match_types(const char *filetypestr, const char *typesetting);
 
 static int get_dts_mode(void)
 {
@@ -199,11 +195,11 @@ static void *dts_enc_loop()
 quit_loop:
     adec_print("====dts_enc thread exit success \n");
     pthread_exit(NULL);
-    return NULL;
+    return 0;
 err:
     adec_print("====dts_enc thread exit success err\n");
     pthread_exit(NULL);
-    return NULL;
+    return -1;
 }
 
 

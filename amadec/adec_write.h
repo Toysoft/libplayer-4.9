@@ -8,7 +8,11 @@
 #include <string.h>
 
 #define DEFAULT_BUFFER_SIZE 1024*1024
+#ifdef ANDROID
 #define MIN(a,b) (a>b)?b:a
+#else
+#include <adec-macros.h>
+#endif
 
 typedef struct buffer_stream_st {
     int buf_length;
@@ -35,7 +39,12 @@ int is_buffer_empty(buffer_stream_t *bs);
 int is_buffer_full(buffer_stream_t *bs);
 int get_buffer_length(buffer_stream_t *bs);
 int read_pcm_buffer(char * out, buffer_stream_t *bs, int size);
+int read_es_buffer(char * out, buffer_stream_t *bs, int size);
+
+
 int write_pcm_buffer(char * in, buffer_stream_t *bs, int size);
+int write_es_buffer(char * in, buffer_stream_t *bs, int size);
+
 int get_pcmbuf_level();
 
 

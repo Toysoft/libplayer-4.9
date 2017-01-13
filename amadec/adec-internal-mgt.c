@@ -17,20 +17,15 @@
 
 #include <audio-dec.h>
 #include <adec-pts-mgt.h>
+#ifdef ANDROID
 #include <cutils/properties.h>
+#endif
 #include <dts_enc.h>
 #include <Amsysfsutils.h>
 #include <amthreadpool.h>
-#include <amconfigutils.h>
-#include <unistd.h>
-#include "audiodsp_update_format.h"
 
 #define MULTICH_SUPPORT_PROPERTY "media.multich.support.info"
 #define PCM_88_96_SUPPORT        "media.libplayer.88_96K"
-
-extern int RegisterDecode(aml_audio_dec_t *audec, int type);
-extern void get_output_func(struct aml_audio_dec* audec);
-
 static int set_tsync_enable(int enable)
 {
 
@@ -77,8 +72,6 @@ audio_type_t audio_type[] = {
     {ACODEC_FMT_NULL, "null"},
 
 };
-
-extern int match_types(const char *filetypestr, const char *typesetting);
 
 static int audio_decoder = AUDIO_ARC_DECODER;
 static int audio_hardware_ctrl(hw_command_t cmd)
@@ -153,7 +146,7 @@ static void start_adec(aml_audio_dec_t *audec)
                 amsysfs_get_sysfs_str(TSYNC_VPTS, buf, sizeof(buf));
                 if (sscanf(buf, "0x%lx", &vpts) < 1) {
                     adec_print("unable to get vpts from: %s", buf);
-                    return;
+                    return -1;
                 }
 
                 // save vpts to apts
@@ -673,6 +666,76 @@ exit:
     return 0;
 }
 
+static int set_linux_audio_decoder(aml_audio_dec_t *audec)
+{
+    int audio_id;
+    int i;	
+    int num;
+    int ret;
+    audio_type_t *t;
+    char *value;
+    audio_id = audec->format;
+
+    num = ARRAY_SIZE(audio_type);
+    for (i = 0; i < num; i++) {
+        t = &audio_type[i];
+        if (t->audio_id == audio_id) {
+            break;
+        }
+    }	
+    value = getenv("media_arm_audio_decoder");
+    adec_print("media.armdecode.audiocodec = %s, t->type = %s\n", value, t->type);
+    if (value!=NULL && match_types(t->type,value))
+    {	
+        char type_value[] = "ac3,eac3";
+        if(match_types(t->type,type_value))
+        {   
+        #ifdef DOLBY_USE_ARMDEC
+            adec_print("DOLBY_USE_ARMDEC=%d",DOLBY_USE_ARMDEC);
+            audio_decoder = AUDIO_ARM_DECODER;					  
+        #else
+            #if 0
+            audio_decoder = AUDIO_ARC_DECODER;
+            adec_print("<DOLBY_USE_ARMDEC> is not DEFINED,use ARC_Decoder\n!");
+            #else
+            audio_decoder = AUDIO_ARM_DECODER;
+            adec_print("<DOLBY_USE_ARMDEC> is DEFINED,use ARM_DECODER\n!");
+            #endif
+        #endif
+        }else{
+            audio_decoder = AUDIO_ARM_DECODER;
+        }		 
+        return 0;
+    } 
+	
+   value= getenv("media_arc_audio_decoder");
+    adec_print("media.arcdecode.audiocodec = %s, t->type = %s\n", value, t->type);
+    if (value!=NULL && match_types(t->type,value))
+    {	
+        if(audec->dspdec_not_supported == 0)
+            audio_decoder = AUDIO_ARC_DECODER;
+        else{
+            audio_decoder = AUDIO_ARM_DECODER;	
+            adec_print("[%s:%d]arc decoder not support this audio yet,switch to ARM decoder \n",__FUNCTION__, __LINE__);
+        }
+        return 0;
+    } 
+	
+    value = getenv("media.ffmpeg.audio.decoder");
+    adec_print("media.amplayer.audiocodec = %s, t->type = %s\n", value, t->type);
+    if (value!=NULL && match_types(t->type,value))
+    {	
+        audio_decoder = AUDIO_FFMPEG_DECODER;
+        return 0;
+    } 
+	
+    audio_decoder = AUDIO_ARC_DECODER; //set arc decoder as default
+    if(audec->dspdec_not_supported == 1){
+        audio_decoder = AUDIO_ARM_DECODER;	
+    }
+    return 0;
+}
+
 int get_audio_decoder(void)
 {
     //adec_print("audio_decoder = %d\n", audio_decoder);
@@ -721,7 +784,11 @@ int audiodec_init(aml_audio_dec_t *audec)
     adec_message_pool_init(audec);
     get_output_func(audec);
     int nCodecType = audec->format;
+#ifdef ANDROID
     set_audio_decoder(audec);
+#else
+    set_linux_audio_decoder(audec);
+#endif
     audec->format_changed_flag = 0;
     audec->audio_decoder_enabled  = -1;//default set a invalid value
     audec->mix_lr_channel_enable  = -1;

@@ -30,7 +30,9 @@
 #include <poll.h>
 #endif
 #include <sys/time.h>
-
+#ifndef ANDROID
+#define closesocket close
+#endif
 typedef struct TCPContext {
     int fd;
 } TCPContext;

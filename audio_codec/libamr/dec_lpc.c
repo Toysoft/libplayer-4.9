@@ -3,10 +3,6 @@
  *  3GPP AMR Wideband Floating-point Speech Codec
  *===================================================================
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
 #include <math.h>
 //#include <stdlib.h>
 #include "typedef.h"

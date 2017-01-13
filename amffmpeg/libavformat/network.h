@@ -26,7 +26,7 @@
 #include "config.h"
 #include "libavutil/error.h"
 #include "os_support.h"
-
+#include <sys/time.h>
 #if HAVE_WINSOCK2_H
 #include <winsock2.h>
 #include <ws2tcpip.h>

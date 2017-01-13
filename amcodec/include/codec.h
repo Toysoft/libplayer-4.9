@@ -68,7 +68,7 @@ int codec_get_volume(codec_para_t *, float *val);
 int codec_set_lrvolume(codec_para_t *, float lvol, float rvol);
 int codec_get_lrvolume(codec_para_t *, float *lvol, float* rvol);
 int codec_get_mutesta(codec_para_t *);
-int codec_set_volume_balance(codec_para_t *, int); /*left£¨0-100)right*/
+int codec_set_volume_balance(codec_para_t *, int); /*leftï¿½ï¿½0-100)right*/
 int codec_swap_left_right(codec_para_t *);
 int codec_left_mono(codec_para_t *p);
 int codec_right_mono(codec_para_t *p);

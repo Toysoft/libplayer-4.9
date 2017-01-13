@@ -2,15 +2,13 @@
 #include <string.h>  // strcmp
 #include <time.h>    // clock
 #include <fcntl.h>
-#include <unistd.h>
 
 #include <sys/mman.h>
 #include <audio-dec.h>
 #include <adec-pts-mgt.h>
 #include <amthreadpool.h>
 
-#include "Amsysfsutils.h"
-#include "amconfigutils.h"
+
 
 
 #define ASTREAM_DEV "/dev/uio0"
@@ -43,7 +41,7 @@ volatile unsigned* reg_base = 0;
 #define AIFIFO_READY  (((READ_MPEG_REG(AIU_MEM_AIFIFO_CONTROL)&(1<<9))))
 #define min(x,y) ((x<y)?(x):(y))
 
-static volatile void *memmap = MAP_FAILED;
+static volatile void* memmap = MAP_FAILED;
 static int phys_size = 0;
 
 static unsigned long  get_num_infile(char *file)
@@ -80,8 +78,9 @@ int uio_init(aml_audio_dec_t *audec)
         adec_print("map /dev/uio0 failed\n");
         return -1;
     }
-    if (phys_offset == 0)
-        phys_offset = (AIU_AIFIFO_CTRL*4)&(pagesize-1);
+    if (phys_offset == 0) {
+        phys_offset = (AIU_AIFIFO_CTRL * 4) & (pagesize - 1);
+    }
     reg_base = memmap + phys_offset;
     return 0;
 }
@@ -101,17 +100,25 @@ int uio_deinit(aml_audio_dec_t *audec)
 }
 
 
-static inline void waiting_bits(int bits)
+static inline void waiting_bits(int bits, int *status)
 {
     int bytes;
+    int retry = 0;
+    *status = 0;
     bytes = READ_MPEG_REG(AIU_MEM_AIFIFO_BYTES_AVAIL);
     while (bytes * 8 < bits) {
+        if (retry > 100) {
+            *status = -1;
+            break;
+        }
         if (amthreadpool_on_requare_exit(0)) {
             break;
         }
         amthreadpool_thread_usleep(1000);
         bytes = READ_MPEG_REG(AIU_MEM_AIFIFO_BYTES_AVAIL);
+        retry++;
     }
+
 }
 
 
@@ -127,7 +134,7 @@ int read_buffer(unsigned char *buffer, int size)
     int wait_times = 0, fifo_ready_wait = 0;
 
     int iii;
-
+    int status = 0;
     iii = READ_MPEG_REG(AIU_MEM_AIFIFO_LEVEL) - EXTRA_DATA_SIZE;
     //  adec_print("read_buffer start iii = %d!!\n", iii);
 
@@ -157,7 +164,11 @@ int read_buffer(unsigned char *buffer, int size)
         //adec_print("read_buffer start AIU_MEM_AIFIFO_BYTES_AVAIL bytes= %d!!\n", bytes);
         wait_times = 0;
         while (bytes == 0) {
-            waiting_bits((space > 128) ? 128 * 8 : (space * 8)); /*wait 32 bytes,if the space is less than 32 bytes,wait the space bits*/
+            waiting_bits((space > 128) ? 128 * 8 : (space * 8), &status); /*wait 32 bytes,if the space is less than 32 bytes,wait the space bits*/
+            if (status) {
+                adec_print("waiting_bits timeout \n");
+                goto out;
+            }
             bytes = READ_MPEG_REG(AIU_MEM_AIFIFO_BYTES_AVAIL);
 
             adec_print("read_buffer while AIU_MEM_AIFIFO_BYTES_AVAIL = %d!!\n", bytes);

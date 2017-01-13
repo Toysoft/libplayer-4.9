@@ -1,13 +1,14 @@
 
 #define LOG_TAG "amdrmutils"
 
-#include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <strings.h>
+#ifdef ANDROID
 #include <cutils/log.h>
 #include <cutils/properties.h>
+#endif
 #include <sys/ioctl.h>
 #include "include/Amsyswrite.h"
 #include "include/amdrmutils.h"
@@ -19,13 +20,21 @@
 #define VFM_DEF_MAP_PATH    "/sys/class/vfm/map"
 #define DI_TVP_REGION_PATH  "/sys/class/deinterlace/di0/tvp_region"
 #define DISABLE_VIDEO_PATH  "/sys/class/video/disable_video"
-
+#ifdef ANDROID
 #ifndef LOGD
 #define LOGV ALOGV
 #define LOGD ALOGD
 #define LOGI ALOGI
 #define LOGW ALOGW
 #define LOGE ALOGE
+#endif
+#else 
+#define LOGV printf
+#define LOGD printf
+#define LOGI printf
+#define LOGW printf
+#define LOGE printf
+#define ALOGE printf
 #endif
 
 //#define LOG_FUNCTION_NAME LOGI("%s-%d\n",__FUNCTION__,__LINE__);

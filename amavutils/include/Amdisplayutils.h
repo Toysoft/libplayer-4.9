@@ -10,7 +10,7 @@ extern "C" {
 
     /*scale osd mode ,only support x1 x2*/
     int amdisplay_utils_set_scale_mode(int scale_wx, int scale_hx);
-    int amdisplay_utils_get_osd_rotation();
+
 #ifdef  __cplusplus
 }
 #endif

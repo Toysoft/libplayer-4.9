@@ -17,12 +17,15 @@
 #include "aacdec.h"
 
 #include "../../amadec/adec-armdec-mgt.h"
-
+#include "../../amadec/audio-dec.h"
+#ifdef ANDROID
 #include <android/log.h>
 
 #define  LOG_TAG    "RaacDecoder"
 #define raac_print(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-
+#else 
+#define raac_print printf
+#endif 
 #define DefaultReadSize  32*1024
 #define DefaultOutBufSize 370*1024
 
@@ -366,7 +369,7 @@ int audio_dec_decode(audio_decoder_operations_t *adec_ops, char *outbuf, int *ou
         int read_len;
         read_len = (inlen > cook_input.buf_max) ? cook_input.buf_max : inlen;
         if (len > 0) {
-            memcpy(cook_input.buf + cook_input.buf_len,
+            int temp = memcpy(cook_input.buf + cook_input.buf_len,
                               inbuf + cook_input.buf_len, read_len - cook_input.buf_len);
             cook_input.buf_len += read_len - cook_input.buf_len;
         }
@@ -544,7 +547,7 @@ HX_RESULT _raac_block_available(void* pAvail, UINT32 ulSubStream, ra_block* pBlo
 //static int raac_decode_init(struct frame_fmt * fmt)
 int audio_dec_init(audio_decoder_operations_t *adec_ops)
 {
-    //raac_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    raac_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
     raac_print("enter into %s:%d\n", __FUNCTION__, __LINE__);
     HX_RESULT retVal = HXR_OK;
     unsigned ulNumStreams = 0;

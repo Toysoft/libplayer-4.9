@@ -1,15 +1,17 @@
 #include <stdio.h>
-#include <intreadwrite.h>
+#include "intreadwrite.h"
 #include "../../amadec/adec-armdec-mgt.h"
 #include "../../amadec/audio-dec.h"
 #include "../../amcodec/include/amports/aformat.h"
-#include <android/log.h>
 #include <sys/time.h>
 #include <stdint.h>
-
+#ifdef ANDROID
+#include <android/log.h>
 #define  LOG_TAG    "PcmDecoder"
 #define  PRINTF(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-
+#else
+#define  PRINTF printf
+#endif
 /* Audio channel masks */
 #define CH_FRONT_LEFT             0x00000001
 #define CH_FRONT_RIGHT            0x00000002
@@ -352,7 +354,7 @@ static int pcm_init(aml_audio_dec_t *audec)
 
 #ifdef CHECK_BLUERAY_PCM_HEADER
         pPcm_priv_data->frame_size_check_flag = 0;
-        if (/*!audec->extradata ||*/ audec->extradata_size != 4) {
+        if (!audec->extradata || audec->extradata_size != 4) {
             free(pPcm_priv_data->pcm_buffer);
             free(adec_ops->priv_dec_data);
             adec_ops->priv_dec_data = NULL;
@@ -742,7 +744,7 @@ static int pcm_decode_frame(pcm_read_ctl_t *pcm_read_ctl, unsigned char *buf, in
 int audio_dec_init(audio_decoder_operations_t *adec_ops)
 {
     aml_audio_dec_t *audec = (aml_audio_dec_t *)(adec_ops->priv_data);
-    //PRINTF("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    PRINTF("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
     return pcm_init(audec);
 
 }

@@ -3006,9 +3006,10 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     /* dspfunc(avg_no_rnd_qpel, 1, 8); */
 
 #undef dspfunc
-
+#ifdef ANDROID
 #if CONFIG_MLP_DECODER || CONFIG_TRUEHD_DECODER
     ff_mlp_init(c, avctx);
+#endif
 #endif
 #if CONFIG_WMV2_DECODER || CONFIG_VC1_DECODER
     ff_intrax8dsp_init(c,avctx);
@@ -3095,8 +3096,10 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 #if CONFIG_VORBIS_DECODER
     c->vorbis_inverse_coupling = vorbis_inverse_coupling;
 #endif
+#ifdef ANDROID
 #if CONFIG_AC3_DECODER
     c->ac3_downmix = ff_ac3_downmix_c;
+#endif
 #endif
     c->vector_fmul = vector_fmul_c;
     c->vector_fmul_reverse = vector_fmul_reverse_c;

@@ -47,10 +47,10 @@ typedef enum {
 #define REFRESH_PTS_TIME_MS                 (1000/10)
 #define VIDEO_DISCONTINUE   0x02
 
-//#define abs(x) ({                               \
-//                long __x = (x);                 \
-//                (__x < 0) ? -__x : __x;         \
-//                })
+#define abs(x) ({                               \
+                long __x = (x);                 \
+                (__x < 0) ? -__x : __x;         \
+                })
 
 
 /**********************************************************************/

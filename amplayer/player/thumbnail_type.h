@@ -1,5 +1,5 @@
 #ifndef THUMBNAIL_TYPE_H
-#define THUMBNAIL_TYPE_H
+#define THUMBNAIL_H
 
 #include <libavutil/avstring.h>
 #include <libavcodec/avcodec.h>

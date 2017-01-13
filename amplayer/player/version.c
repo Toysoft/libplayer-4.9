@@ -1,9 +1,8 @@
 #include <log_print.h>
-#include <inttypes.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include "version.h"
 #include <string.h>
+#include <stdint.h>
 
 
 static char versioninfo[256] = "N/A";
@@ -61,7 +60,7 @@ const char *player_get_version_info(void)
     player_version_info_init();
     return versioninfo;
 }
-uint64_t player_get_version_serail(void)
+int64_t player_get_version_serail(void)
 {
     player_version_info_init();
     return version_serial;
@@ -114,7 +113,7 @@ void print_version_info()
     player_version_info_init();
     log_print("LibPlayer version:%s\n", player_get_version_info());
     log_print("LibPlayer git version:%s\n", player_get_git_version_info());
-    log_print("LibPlayer version serial:%" PRIx64 "\n", player_get_version_serail());
+    log_print("LibPlayer version serial:%llx\n", player_get_version_serail());
     log_print("LibPlayer Last Changed:%s\n", player_get_last_chaned_time_info());
     log_print("LibPlayer Last Build:%s\n", player_get_build_time_info());
     log_print("LibPlayer Builer Name:%s\n", player_get_build_name_info());

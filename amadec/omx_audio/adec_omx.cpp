@@ -2,8 +2,7 @@
 interface to call OMX codec 
 */
 
-#include <media/stagefright/MediaBuffer.h>
-#include <media/stagefright/SimpleDecodingSource.h>
+#include "OMXCodec.h"
 #include "../adec_omx_brige.h"
 #include "adec_omx.h"
 #include "audio_mediasource.h"
@@ -14,11 +13,14 @@ interface to call OMX codec
 #include "DTSHD_mediasource.h"
 #include "Vorbis_mediasource.h"
 #include "THD_mediasource.h"
+#include "AMR_mediasource.h"
 #include <android/log.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#ifdef ANDROID
 #include <cutils/properties.h>
+#endif
 #include <Amsysfsutils.h>
 #define LOG_TAG "Adec_OMX"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
@@ -28,7 +30,7 @@ namespace android {
 
 //#####################################################
 
-AmlOMXCodec::AmlOMXCodec(int codec_type,void *read_buffer,int *exit,aml_audio_dec_t *audec) 
+AmlOMXCodec::AmlOMXCodec(int codec_type,void *read_buffer,int *exit,aml_audio_dec_t *audec)
 {
     m_codec=NULL;
     status_t m_OMXClientConnectStatus=m_OMXClient.connect();
@@ -47,23 +49,23 @@ AmlOMXCodec::AmlOMXCodec(int codec_type,void *read_buffer,int *exit,aml_audio_de
              audec->adec_ops->channels=audec->channels;
         }else
              audec->adec_ops->channels=audec->channels=2;
-        
+
         if(audec->samplerate>0)
              audec->adec_ops->samplerate=audec->samplerate;
         else
              audec->adec_ops->samplerate=audec->samplerate=48000;
-        
+
         LOGI("Data_width:%d Samplerate:%d Channel:%d \n",audec->data_width,audec->samplerate,audec->channels);
-        
+
         if(codec_type==OMX_ENABLE_CODEC_AC3)
         {
             mine_type=MEDIA_MIMETYPE_AUDIO_AC3;
-            m_OMXMediaSource = new DDP_MediaSource(read_buffer);
+            m_OMXMediaSource = new DDP_MediaSource(read_buffer, audec);
         }
         else if(codec_type==OMX_ENABLE_CODEC_EAC3)
         {
             mine_type=MEDIA_MIMETYPE_AUDIO_EC3;
-            m_OMXMediaSource = new DDP_MediaSource(read_buffer);
+            m_OMXMediaSource = new DDP_MediaSource(read_buffer, audec);
         }
         else if(codec_type==OMX_ENABLE_CODEC_ALAC)
         {
@@ -93,6 +95,9 @@ AmlOMXCodec::AmlOMXCodec(int codec_type,void *read_buffer,int *exit,aml_audio_de
         }else if(codec_type==OMX_ENABLE_CODEC_WMAVOI){
             mine_type=MEDIA_MIMETYPE_AUDIO_FFMPEG;
             m_OMXMediaSource = new Asf_MediaSource(read_buffer,audec);
+        }else if(codec_type==OMX_ENABLE_CODEC_AMR_NB){
+            mine_type=MEDIA_MIMETYPE_AUDIO_AMR_NB;
+            m_OMXMediaSource = new AMR_mediasource(read_buffer,audec);
         }
         omx_codec_type=codec_type;
         LOGI("mine_type=%s %s %d \n",mine_type,__FUNCTION__,__LINE__);
@@ -102,7 +107,10 @@ AmlOMXCodec::AmlOMXCodec(int codec_type,void *read_buffer,int *exit,aml_audio_de
         sp<MetaData> metadata = m_OMXMediaSource->getFormat();
         metadata->setCString(kKeyMIMEType,mine_type);
         
-        m_codec = SimpleDecodingSource::Create(
+        m_codec = OMXCodec::Create(
+                        m_OMXClient.interface(),
+                        metadata,
+                        false, // createEncoder
                         m_OMXMediaSource,
                         0,
                         0); 
@@ -130,6 +138,7 @@ status_t AmlOMXCodec::read(unsigned char *buf,unsigned *size,int *exit)
 {
     MediaBuffer *srcBuffer;
     status_t status;
+    
     m_OMXMediaSource->Set_pStop_ReadBuf_Flag(exit);
    
     if(*exit)
@@ -142,25 +151,31 @@ status_t AmlOMXCodec::read(unsigned char *buf,unsigned *size,int *exit)
     status=  m_codec->read(&srcBuffer,NULL);
      
     if(srcBuffer==NULL)
-    {
-        if (status == INFO_FORMAT_CHANGED) {
-            ALOGI("format changed \n");
-        }
+    {    
         *size=0;
         return OK;
     }
+        
     if(*size>srcBuffer->range_length()) //surpose buf is large enough
          *size=srcBuffer->range_length();
+    
     if(status == OK && (*size!=0) ){
-        memcpy(buf, (void*)((unsigned long)srcBuffer->data() + srcBuffer->range_offset()), *size);
+        memcpy( buf,srcBuffer->data() + srcBuffer->range_offset(),*size);
         srcBuffer->set_range(srcBuffer->range_offset() + (*size),srcBuffer->range_length() - (*size));
         srcBuffer->meta_data()->findInt64(kKeyTime, &buf_decode_offset);
     }
     
     if (srcBuffer->range_length() == 0) {
+#ifdef USE_ARM_AUDIO_DEC
+         m_codec->adec_omx_lock_locked();
+#endif
          srcBuffer->release();
          srcBuffer = NULL;
+#ifdef USE_ARM_AUDIO_DEC
+         m_codec->adec_omx_lock_unlocked();
+#endif
     }
+   
     return OK;
 }
 
@@ -358,7 +373,7 @@ int arm_omx_codec_get_declen(aml_audio_dec_t *audec)
 #define DTSETC_DECODE_VERSION_CORE  350
 #define DTSETC_DECODE_VERSION_M6_M8 380
 int arm_omx_codec_get_FS(aml_audio_dec_t *audec)
-{  
+{
     android::AmlOMXCodec *arm_omx_codec=(android::AmlOMXCodec *)(audec->arm_omx_codec);
     if(arm_omx_codec!=NULL){
       arm_omx_codec->locked();
@@ -387,11 +402,13 @@ int arm_omx_codec_get_FS(aml_audio_dec_t *audec)
 }
 
 int arm_omx_codec_get_Nch(aml_audio_dec_t *audec)
-{  
+{
     android::AmlOMXCodec *arm_omx_codec=(android::AmlOMXCodec *)(audec->arm_omx_codec);
     if(arm_omx_codec!=NULL){
         arm_omx_codec->locked();
-        if(arm_omx_codec->omx_codec_type==OMX_ENABLE_CODEC_DTSHD){
+        if ((arm_omx_codec->omx_codec_type == OMX_ENABLE_CODEC_DTSHD) ||\
+         (arm_omx_codec->omx_codec_type == OMX_ENABLE_CODEC_AC3) || \
+         (arm_omx_codec->omx_codec_type == OMX_ENABLE_CODEC_EAC3)) {
             int numChannels=0;
             android::sp<android::MetaData> output_format=arm_omx_codec->m_codec->getFormat();
             output_format->findInt32(android::kKeyChannelCount, &numChannels);

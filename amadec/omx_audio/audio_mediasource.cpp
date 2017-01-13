@@ -8,9 +8,10 @@ author: jian.xu@amlogic.com
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#ifdef ANDROID
 #include <android/log.h>
 #include <cutils/properties.h>
-
+#endif
 #include "audio_mediasource.h"
 
 extern "C" int read_buffer(unsigned char *buffer,int size);

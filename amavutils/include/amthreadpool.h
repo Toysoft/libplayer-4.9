@@ -1,6 +1,8 @@
 #ifndef AM_LIBPLAYER_THREAD_POOL
 #define  AM_LIBPLAYER_THREAD_POOL
 #include <pthread.h>
+#include <stdio.h>
+#include <stdint.h>
 
 #define AMTHREADPOOL_SLEEP_US_MONOTONIC
 ///#define AMTHREADPOOL_DEBUG

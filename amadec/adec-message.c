@@ -10,9 +10,8 @@
  */
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
+
 #include <audio-dec.h>
-#include <amthreadpool.h>
 
 /**
  * \brief message is empty or not

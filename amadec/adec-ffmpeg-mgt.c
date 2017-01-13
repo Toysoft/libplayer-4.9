@@ -6,17 +6,19 @@
 #include <sys/ioctl.h>
 #include <dlfcn.h>
 
-#include "audiodsp_update_format.h"
-#include "adec_omx_brige.h"
-#include "adec_reg.h"
 #include <adec-pts-mgt.h>
 #include <adec_write.h>
-#include "Amsysfsutils.h"
-#include "amconfigutils.h"
-
+#include <adec_omx_brige.h>
+#include <Amsysfsutils.h>
 #include <audio-dec.h>
 #include <amthreadpool.h>
+#ifdef ANDROID
 #include <cutils/properties.h>
+#endif
+#include <adec_assoc_audio.h>
+
+
+static char UDCInOutMix[] = "media.udc.inoutmix";
 
 extern int read_buffer(unsigned char *buffer, int size);
 void *audio_decode_loop(void *args);
@@ -53,28 +55,31 @@ audio_lib_t audio_lib_list[] = {
     {ACODEC_FMT_MULAW, "libpcm.so"},
     {ACODEC_FMT_ADPCM, "libadpcm.so"},
     {ACODEC_FMT_DRA, "libdra.so"},
-    0
+    NULL
 } ;
+
 
 int find_audio_lib(aml_audio_dec_t *audec)
 {
     int i;
     int num;
     audio_lib_t *f;
-
+    void *fd = NULL;
     adec_print("[%s %d]audec->format/%d audec->codec_id/0x%x\n", __FUNCTION__, __LINE__, audec->format, audec->codec_id);
     num = ARRAY_SIZE(audio_lib_list);
     audio_decoder_operations_t *adec_ops = audec->adec_ops;
     //-------------------------
+	#ifdef ANDROID
     if (find_omx_lib(audec)) {
         return 0;
     }
+	#endif
     //-----------------------
     for (i = 0; i < num; i++) {
         f = &audio_lib_list[i];
         if (f->codec_id == audec->format) {
-            void *fd = dlopen(audio_lib_list[i].name, RTLD_NOW);
-            if (fd != 0) {
+            fd = dlopen(audio_lib_list[i].name, RTLD_NOW);
+            if (fd != NULL) {
                 adec_ops->init    = dlsym(fd, "audio_dec_init");
                 adec_ops->decode  = dlsym(fd, "audio_dec_decode");
                 adec_ops->release = dlsym(fd, "audio_dec_release");
@@ -280,72 +285,22 @@ unsigned long  armdec_get_pts(dsp_operations_t *dsp_ops)
         audec->first_apts_lookup_over = 1;
         return pts;
     }
-
-    if (audec->use_get_out_posion && audec->aout_ops.get_out_position) {
-        /*add by zz*/
-        int64_t postion, time_us;
-        struct timespec timenow;
-        int ret;
-        ret = audec->aout_ops.get_out_position(audec, &postion, &time_us);
-        if (!ret) {
-            int decodered_samples;
-            int cache_samples;
-            int delay_us, t_us;
-            decodered_samples = audec->decode_pcm_offset * 8 /(channels * data_width);
-            cache_samples = decodered_samples - postion;
-            if (cache_samples < 0)
-                cache_samples = 0;
-            delay_us = 1000 * (cache_samples * 1000 / samplerate);
-            clock_gettime(CLOCK_MONOTONIC, &timenow);
-            t_us = timenow.tv_sec * 1000000LL + timenow.tv_nsec/1000 - time_us;
-            if (t_us > 0)
-                delay_us -= t_us;
-            if (delay_us < 0)
-                delay_us = 0;
-            delay_pts = delay_us * 90/1000;
-            if (pts == 0) {
-                int outsamples = postion - audec->last_out_postion ;
-                /*delay_us out samples after last refresh pts*/
-                delay_us = 1000 * (outsamples * 1000 / samplerate);
-                delay_us = delay_us * track_speed;
-                if (delay_us < 0)
-                    delay_us = 0;
-                pts = audec->last_valid_pts + delay_us * 90 /1000;
-                audec->last_valid_pts = pts;
-                pts += 90000 / 1000 * pts_delta;
-                audec->last_out_postion = postion;
-                audec->last_get_postion_time_us = time_us;
-                return pts;
-            }
-            audec->last_out_postion = postion;
-            audec->last_get_postion_time_us = time_us;
-        } else {
-            delay_pts = 0;/*audio track not ready? used buf_level add for pts*/
+    if (pts == 0) {
+        if (audec->last_valid_pts) {
+            pts = audec->last_valid_pts;
         }
-    } else {
-        delay_pts = 0;
+        frame_nums = (audec->out_len_after_last_valid_pts * 8 / (data_width * channels));
+        pts += (frame_nums * 90000 / samplerate);
+        pts += 90000 / 1000 * pts_delta;
+        if (pts < 0)
+            pts = 0;
+        //adec_print("decode_offset:%d out_pcm:%d   pts:%d \n",decode_offset,out_len_after_last_valid_pts,pts);
+        return pts;
     }
-    if (delay_pts == 0)
-    {
-        if (pts == 0) {
-            if (audec->last_valid_pts) {
-                pts = audec->last_valid_pts;
-            }
-            frame_nums = (audec->out_len_after_last_valid_pts * 8 / (data_width * channels));
-            pts += (frame_nums * 90000 / samplerate);
-            pts += 90000 / 1000 * pts_delta;
-            if (pts < 0)
-                pts = 0;
-            //adec_print("decode_offset:%d out_pcm:%d   pts:%d \n",decode_offset,out_len_after_last_valid_pts,pts);
-            return pts;
-        }
-        {
-            int len = audec->g_bst->buf_level + audec->pcm_cache_size;
-            frame_nums = (len * 8 / (data_width * channels));
-            delay_pts = (frame_nums * 90000 / samplerate);
-        }
-    }
-    delay_pts = delay_pts * track_speed;
+    int len = audec->g_bst->buf_level + audec->pcm_cache_size;
+    frame_nums = (len * 8 / (data_width * channels));
+    delay_pts = (frame_nums * 90000 / samplerate);
+    delay_pts = delay_pts*track_speed;
     if (pts > delay_pts) {
         pts -= delay_pts;
     } else {
@@ -447,7 +402,6 @@ static int InBufferRelease(aml_audio_dec_t *audec)
     return 0;
 }
 
-
 static int OutBufferInit(aml_audio_dec_t *audec)
 {
     audec->g_bst = malloc(sizeof(buffer_stream_t));
@@ -477,6 +431,7 @@ static int OutBufferInit(aml_audio_dec_t *audec)
     if (audec->channels > 0) {
         audec->g_bst->channels = audec->channels;
     }
+
     if (audec->samplerate > 0) {
         audec->g_bst->samplerate = audec->samplerate;
     }
@@ -555,13 +510,13 @@ static int enable_raw_output(aml_audio_dec_t *audec)
     }
     return 0;
 }
+
 static int audio_codec_init(aml_audio_dec_t *audec)
 {
     //reset static&global
     audec->exit_decode_thread = 0;
     audec->exit_decode_thread_success = 0;
     audec->decode_offset = 0;
-    audec->decode_pcm_offset = 0;
     audec->nDecodeErrCount = 0;
     audec->g_bst = NULL;
     audec->g_bst_raw = NULL;
@@ -572,7 +527,6 @@ static int audio_codec_init(aml_audio_dec_t *audec)
     audec->sn_threadid = -1;
     audec->sn_getpackage_threadid = -1;
     audec->OmxFirstFrameDecoded = 0;
-    audec->use_get_out_posion = am_getconfig_bool_def("media.audio.pts.use_get_posion", 0);
     package_list_init(audec);
     while (0 != set_sysfs_int(DECODE_ERR_PATH, DECODE_NONE_ERR)) {
         adec_print("[%s %d]set codec fatal failed ! \n", __FUNCTION__, __LINE__);
@@ -652,6 +606,33 @@ static int audio_codec_init(aml_audio_dec_t *audec)
         goto err3;
     }
 
+/*if the stream contains the main and associate data, we will init the associate buffer
+  *assoc_bst_ptr to store the point of associate bst
+  *assoc_enable to store  the en/dis-able of associate
+  *associate_dec_supported
+        *as 1>media.udc.inoutmix as "input:2,output:1,mix:1,"
+            set the media.udc.mixinglevel as the (mixing_level*64/100-32)
+        *as 0>media.udc.inoutmix as "input:1,output:1,mix:1,"
+  */
+    adec_print("%s::%d-[associate_dec_supported:%d]\n", __FUNCTION__, __LINE__, audec->associate_dec_supported);
+    if (audec->associate_dec_supported == 1) {
+        ret = InAssocBufferInit(audec);
+        if (ret == -1) {
+            adec_print("====in buffer  init err \n");
+            goto err3;
+        }
+        if ((audec->format == ACODEC_FMT_AC3) || (audec->format == ACODEC_FMT_EAC3)) {
+            amsysfs_write_prop(UDCInOutMix,"input:2,output:1,mix:1,");
+        }
+        //set the mixing level between main and assoc
+        audio_set_mixing_level_between_main_assoc(audec->mixing_level);
+    }
+    else {
+        if ((audec->format == ACODEC_FMT_AC3) || (audec->format == ACODEC_FMT_EAC3)) {
+            amsysfs_write_prop(UDCInOutMix,"input:1,output:1,mix:1,");
+        }
+    }
+
     //4-other init
     audec->adsp_ops.dsp_on = 1;
     audec->adsp_ops.dsp_read = armdec_stream_read;
@@ -667,6 +648,9 @@ static int audio_codec_init(aml_audio_dec_t *audec)
     audec->i2s_iec958_sync_flag = 1;
     audec->i2s_iec958_sync_gate = 0;
     audec->codec_type = 0;
+#ifdef ANDROID	
+    audec->parm_omx_codec_read_assoc_data = read_assoc_data;
+#endif
     return 0;
 
 err1:
@@ -681,6 +665,7 @@ err3:
     OutBufferRelease(audec);
     InBufferRelease(audec);
     OutBufferRelease_raw(audec);
+    InAssocBufferRelease(audec);
     return -1;
 }
 int audio_codec_release(aml_audio_dec_t *audec)
@@ -690,16 +675,25 @@ int audio_codec_release(aml_audio_dec_t *audec)
         stop_decode_thread(audec);//1-decode thread quit
         audec->adec_ops->release(audec->adec_ops);//2-decoder release
     } else {
+    #ifdef ANDROID
         stop_decode_thread_omx(audec);
+	#endif
+    }
+    if (audec->associate_dec_supported == 1) {
+        if ((audec->format == ACODEC_FMT_AC3) || (audec->format == ACODEC_FMT_EAC3)) {
+            amsysfs_write_prop(UDCInOutMix,"input:1,output:1,mix:1,");
+        }
     }
 
     InBufferRelease(audec);//3-uio uninit
     OutBufferRelease(audec);//4-outbufferrelease
     OutBufferRelease_raw(audec);
+    InAssocBufferRelease(audec);
     audec->adsp_ops.dsp_on = -1;//5-other release
     audec->adsp_ops.dsp_read = NULL;
     audec->adsp_ops.get_cur_pts = NULL;
     audec->adsp_ops.dsp_file_fd = -1;
+    audec->parm_omx_codec_read_assoc_data = NULL;
 
     return 0;
 }
@@ -955,7 +949,7 @@ static void start_decode_thread(aml_audio_dec_t *audec)
 {
     if (audec->state != INITTED) {
         adec_print("decode not inited quit \n");
-        return;
+        return -1;
     }
 
     pthread_t    tid;
@@ -966,7 +960,7 @@ static void start_decode_thread(aml_audio_dec_t *audec)
     ret = amthreadpool_pthread_create_name(&tid, NULL, (void *)audio_decode_loop, (void *)audec, "decodeloop");
     if (ret != 0) {
         adec_print("[%s]Create ffmpeg decode thread failed!\n", __FUNCTION__);
-        return;
+        return ret;
     }
     audec->sn_threadid = tid;
     audec->audio_decoder_enabled = 0x1;
@@ -1329,7 +1323,7 @@ exit_decode_loop:
                 } else {
                     audec->decode_offset += dlen;
                 }
-                audec->decode_pcm_offset += outlen;
+
                 audec->pcm_cache_size = outlen;
                 if (g_bst) {
                     int wlen = 0;
@@ -1389,7 +1383,9 @@ void *adec_armdec_loop(void *args)
             goto MSG_LOOP;
         }
         if (audec->StageFrightCodecEnableType) {
+#ifdef ANDROID			
             start_decode_thread_omx(audec);
+#endif
             if (audec->OmxFirstFrameDecoded != 1) { // just one case, need_stop == 1
                 //usleep(10000); // no need
                 continue;
@@ -1538,5 +1534,4 @@ MSG_LOOP:
     pthread_exit(NULL);
     return NULL;
 }
-
 

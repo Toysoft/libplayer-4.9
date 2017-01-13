@@ -50,7 +50,6 @@ int codec_h_read(CODEC_HANDLE, void *, int);
 int codec_h_control(CODEC_HANDLE h, int cmd, unsigned long paramter);
 void codec_h_set_support_new_cmd(int value);
 int codec_h_is_support_new_cmd();
-CODEC_HANDLE codec_h_open_rd(const char *port_addr);
-int codec_h_ioctl(CODEC_HANDLE h, int cmd, int subcmd, unsigned long paramter);
+
 
 #endif

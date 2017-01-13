@@ -17,10 +17,10 @@
 #include "h263vld.h"
 #include "thread_mgt.h"
 #include "player_update.h"
+#ifdef ANDROID
 #include <cutils/properties.h>
+#endif
 #include <amconfigutils.h>
-#include <system/systemsetting.h>
-
 
 #define WRITE_BLOCK_TIMEOUT_MS  1000
 
@@ -41,7 +41,7 @@ int update_dump_dir_path(void)
     char path[CONFIG_VALUE_MAX];
 
     if (am_getconfig("media.libplayer.dumppath", path, NULL) > 0) {
-        if (/*path != NULL && */strlen(path) > 0 && strlen(path) < 63) {
+        if (path != NULL && strlen(path) > 0 && strlen(path) < 63) {
             memcpy(dump_dir, path, strlen(path) + 1);
             log_info("changed dump dir to %s\n", dump_dir);
         }
@@ -2333,7 +2333,7 @@ int write_av_packet(play_para_t *para)
                     return PLAYER_WR_FAILED;
                 } else {
                     /* EAGAIN to see if buffer full or write time out too much */
-                    if (check_avbuffer_enough_for_ape(para)) {
+                    if (check_avbuffer_enough_for_ape(para, -1)) {
                         if (!para->playctrl_info.check_lowlevel_eagain_time) {
                             check_time_interrupt(&para->playctrl_info.check_lowlevel_eagain_time, -1);    //always update
                         }
@@ -3156,9 +3156,9 @@ int set_header_info(play_para_t *para)
                 pkt->hdr->data[2] =     'T';
                 pkt->hdr->data[3] =     'S';
                 pkt->hdr->data[4] = (pkt->data_size - extra_data) & 0xff;
-                pkt->hdr->data[5] = ((pkt->data_size - extra_data) >> 8) & 0xff;
-                pkt->hdr->data[6] = ((pkt->data_size - extra_data) >> 16) & 0xff;
-                pkt->hdr->data[7] = ((pkt->data_size - extra_data) >> 24) & 0xff;
+                pkt->hdr->data[5] = (pkt->data_size - extra_data >> 8) & 0xff;
+                pkt->hdr->data[6] = (pkt->data_size - extra_data >> 16) & 0xff;
+                pkt->hdr->data[7] = (pkt->data_size - extra_data >> 24) & 0xff;
                 pkt->hdr->size = 8;
             }
 

@@ -15,15 +15,16 @@
 #include <unistd.h>
 #include <linux/soundcard.h>
 //#include <config.h>
-#include <asoundlib.h>
+#include <alsa/asoundlib.h>
 
 #include <audio-dec.h>
 #include <adec-pts-mgt.h>
 #include <log-print.h>
 #include <alsa-out.h>
 #include <amthreadpool.h>
+#ifdef ANDROID
 #include <cutils/properties.h>
-
+#endif
 
 #define USE_INTERPOLATION
 

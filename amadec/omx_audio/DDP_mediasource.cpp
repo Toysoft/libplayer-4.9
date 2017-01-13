@@ -1,18 +1,32 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#ifdef ANDROID
 #include <android/log.h>
 #include <cutils/properties.h>
+#endif
 #include "DDP_mediasource.h"
 
 extern "C" int read_buffer(unsigned char *buffer,int size);
 
-#define LOG_TAG "DDP_Medissource"
+#define LOG_TAG "DDP_Mediasource"
+#define LOG_NDEBUG 0
 #define ALOGI(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
 #define ALOGE(...) __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
-
 namespace android {
 
+static int getprop_bool(const char * path)
+{
+    char buf[PROPERTY_VALUE_MAX];
+    int ret = -1;
+
+    ret = property_get(path, buf, NULL);
+    if (ret > 0) {
+        if (strcasecmp(buf,"true") == 0 || strcmp(buf,"1") == 0)
+            return 1;
+    }
+    return 0;
+}
 
 DDPerr DDP_MediaSource::ddbs_init(DDPshort * buf, DDPshort bitptr,DDP_BSTRM *p_bstrm)
 {
@@ -125,7 +139,7 @@ int DDP_MediaSource::Get_ChNum_DDP(void *buf)//at least need:40bit(=5 bytes)
     int numch=0;
     DDP_BSTRM bstrm={0};
     DDP_BSTRM *p_bstrm=&bstrm;
-    short tmp=0,acmod,lfeon,strmtyp;
+    short tmp=0,acmod,lfeon,strmtyp, substreamid;
 
     ddbs_init((short*)buf,0,p_bstrm);
 
@@ -137,9 +151,11 @@ int DDP_MediaSource::Get_ChNum_DDP(void *buf)//at least need:40bit(=5 bytes)
     }
 
     ddbs_unprj(p_bstrm, &strmtyp, 2);
-    ddbs_unprj(p_bstrm, &tmp, 3);
+    ddbs_unprj(p_bstrm, &substreamid, 3);
+    ALOGV("%s::%d--[strmtyp:%d]--[substreamid:%d]\n", __FUNCTION__, __LINE__, strmtyp, substreamid);
     ddbs_unprj(p_bstrm, &tmp, 11);
     frame_size=tmp+1;
+    //ALOGI("%s::%d-[frame_size:%d]\n", __FUNCTION__, __LINE__, frame_size);
     //---------------------------
     if (strmtyp != 0 && strmtyp != 2)
     {
@@ -177,6 +193,8 @@ int DDP_MediaSource::Get_ChNum_DDP(void *buf)//at least need:40bit(=5 bytes)
         numch = 2;
     }
     ChNum=numch;
+    ddp_strmtyp = strmtyp;
+    ddp_substreamid = substreamid;
     //ALOGI("DEBUG:numch=%d sample_rate=%d %p [%s %d]",ChNum,sample_rate,this,__FUNCTION__,__LINE__);
     return numch;
 
@@ -225,7 +243,7 @@ int DDP_MediaSource::Get_ChNum_AC3_Frame(void *buf)
 
 
     //ALOGI("LZG->ptr_head:0x%x 0x%x 0x%x 0x%x 0x%x 0x%x \n",
-    //       ptr8[0],ptr8[1],ptr8[2], ptr8[3],ptr8[4],ptr8[5] );
+          //ptr8[0],ptr8[1],ptr8[2], ptr8[3],ptr8[4],ptr8[5] );
     if ((ptr8[0] == 0x0b) && (ptr8[1] == 0x77))
     {
        int i;
@@ -248,13 +266,12 @@ int DDP_MediaSource::Get_ChNum_AC3_Frame(void *buf)
     }else if (ISDD(bsid)){
         Get_ChNum_DD(ptr8);
     }
-
     return chnum;
 }
 
 //#####################################################
 
-DDP_MediaSource::DDP_MediaSource(void *read_buffer)
+DDP_MediaSource::DDP_MediaSource(void *read_buffer, aml_audio_dec_t *audec)
 {
     ALOGI("%s %d \n",__FUNCTION__,__LINE__);
     mStarted=false;
@@ -272,15 +289,22 @@ DDP_MediaSource::DDP_MediaSource(void *read_buffer)
     bytes_readed_sum=0;
     extractor_cost_bytes = 0;
     extractor_cost_bytes_last = 0;
-    mMeta->setInt32(kKeyChannelCount, 2);
-    mMeta->setInt32(kKeySampleRate, /*audec->samplerate*/48000);
     memset(frame.rawbuf, 0, 6144);
     memset(frame_length_his,0,sizeof(frame_length_his));
     frame.len = 0;
     ChNumOriginal=0;
+    fpread_assoc_buffer = (fp_read_assoc_buffer)(audec->parm_omx_codec_read_assoc_data);
+    assoc_dec_supported = audec->associate_dec_supported;
+    audec_ddp = audec;
+    ALOGI("%s %d-[fpread_assoc_buffer:%p]-[assoc_dec_supported:%d]\n",
+        __FUNCTION__,__LINE__, fpread_assoc_buffer, assoc_dec_supported);
+    dual_packet_len = 2*ASSOC_FRAME_MAX_LENGTH;
+    dual_packet_buf = NULL;
+
+    media_udc_dump_flag = getprop_bool("media.ddp.inputdump");
 }
 
-DDP_MediaSource::~DDP_MediaSource() 
+DDP_MediaSource::~DDP_MediaSource()
 {
     ALOGI("%s %d \n",__FUNCTION__,__LINE__);
     if (mStarted) {
@@ -349,6 +373,7 @@ status_t DDP_MediaSource::start(MetaData *params)
     mGroup = new MediaBufferGroup;
     mGroup->add_buffer(new MediaBuffer(4096));
     mStarted = true;
+
     return OK;
 }
 
@@ -358,6 +383,7 @@ status_t DDP_MediaSource::stop()
     delete mGroup;
     mGroup = NULL;
     mStarted = false;
+
     return OK;
 }
 
@@ -403,6 +429,73 @@ void DDP_MediaSource::store_frame_size(int lastFrameLen)
     }
     frame_length_his[FRAME_RECORD_NUM - 1] = lastFrameLen;
 }
+int DDP_MediaSource::get_assoc_frame_size(void)
+{
+    int i;
+    unsigned sum = 0;
+    unsigned valid_his_num = 0;
+    for (i = 0; i < FRAME_RECORD_NUM; i++) {
+        if (assoc_frame_length_his[i] > 0) {
+            valid_his_num ++;
+            sum += assoc_frame_length_his[i];
+        }
+    }
+
+    if (valid_his_num == 0) {
+        return 768;
+    }
+    return sum / valid_his_num;
+}
+void DDP_MediaSource::store_assoc_frame_size(int lastFrameLen)
+{
+    /* record the frame length into the history buffer */
+    int i = 0;
+    for (i = 0; i < FRAME_RECORD_NUM - 1; i++) {
+        assoc_frame_length_his[i] = assoc_frame_length_his[i + 1];
+    }
+    assoc_frame_length_his[FRAME_RECORD_NUM - 1] = lastFrameLen;
+}
+
+int DDP_MediaSource::MediaSourceRead_assoc_buffer(unsigned char *buffer,int size)
+{
+   int readcnt=0;
+   int readsum=0;
+
+   if (fpread_assoc_buffer != NULL)
+   {
+       int sleep_time=0;
+       while ((readsum < size) && (*pStop_ReadBuf_Flag == 0) && (assoc_dec_supported == 1))
+       {
+          readcnt=fpread_assoc_buffer(audec_ddp, buffer+readsum,size-readsum);
+          //ALOGE("[%s]-[readcnt:%d]\n ", __FUNCTION__, readcnt);
+
+          if (readcnt < (size - readsum))
+          {
+               sleep_time++;
+               usleep(10000);
+          }
+          readsum+=readcnt;
+          if ((sleep_time > 0) && (sleep_time == 10))
+          { //wait for max 10s to get audio data
+              ALOGE("[%s] Can't get data from audiobuffer,wait for %d ms\n ", __FUNCTION__,sleep_time*10);
+              break;
+          }
+
+       }
+       bytes_readed_sum +=readsum;
+       if (*pStop_ReadBuf_Flag == 1)
+       {
+            ALOGI("[%s] End of Stream: *pStop_ReadBuf_Flag==1\n ", __FUNCTION__);
+       }
+       return readsum;
+   }
+   else{
+        ALOGE("[%s]ERR: fpread_buffer=NULL\n ", __FUNCTION__);
+        return 0;
+   }
+}
+
+
 int DDP_MediaSource::MediaSourceRead_buffer(unsigned char *buffer,int size)
 {
    int readcnt=0;
@@ -436,19 +529,102 @@ int DDP_MediaSource::MediaSourceRead_buffer(unsigned char *buffer,int size)
    }
 }
 
+status_t DDP_MediaSource::read_associate_data(unsigned char *frm, int *frm_len)
+{
+    int read_delta = 0;
+    int read_size =0;
+    int assoc_enble = 0;
+
+    assoc_enble = audec_ddp->associate_audio_enable;
+    if (assoc_enble == 0) {
+        assoc_frm_size = 0;
+        return OK;
+    }
+
+    while (assoc_enble) {
+        assoc_frm_size = 0;
+
+        read_size = get_assoc_frame_size() + read_delta;
+        if (read_size > assoc_frame.len)
+            read_size -= assoc_frame.len;
+        /*check if the read_size exceed buffer size*/
+        if ((assoc_frame.len+read_size) > 6144) {
+            read_size = 6144 - assoc_frame.len;
+        }
+        assoc_frame.len += MediaSourceRead_assoc_buffer(assoc_frame.rawbuf + assoc_frame.len, read_size);
+        ALOGV("[%s:%d]-[assoc_frame.len:%d]\n",__FUNCTION__,__LINE__, assoc_frame.len);
+        if (assoc_frame.len < PTR_HEAD_SIZE) {
+            ALOGI("WARNING: fpread_buffer read failed [%s %d], just forget it\n",__FUNCTION__,__LINE__);
+            break;
+        }
+
+        if (*pStop_ReadBuf_Flag == 1) {
+            ALOGI("Stop_ReadBuf_Flag==1 stop read_buf [%s %d]",__FUNCTION__,__LINE__);
+            return ERROR_END_OF_STREAM;
+        }
+
+        unsigned short head;
+        head = assoc_frame.rawbuf[0] << 8 | assoc_frame.rawbuf[1];
+
+        if (head == 0x0b77 || head == 0x770b) {
+            Get_ChNum_AC3_Frame(assoc_frame.rawbuf);
+            frame_size = frame_size*2;
+            assoc_frm_size=frame_size;
+            ALOGV("[%s:%d]-[assoc_frame.len:%d]-[assoc_frm_size:%d]\n",__FUNCTION__,__LINE__, assoc_frame.len, assoc_frm_size);
+
+            if ((assoc_frm_size == 0) || (assoc_frm_size < PTR_HEAD_SIZE) || (assoc_frm_size > 4096) || (assoc_frm_size > assoc_frame.len))
+            {
+                ALOGI("assoc_frm_size %d error\n",assoc_frm_size);
+                memcpy((char*)(assoc_frame.rawbuf),(char *)(assoc_frame.rawbuf+1), assoc_frame.len-1);
+                assoc_frame.len -= 1;
+                continue;
+            }
+            if (assoc_frame.len >= assoc_frm_size) {
+                ALOGI("one whole frame is ok,frame size %d\n",assoc_frm_size);
+                break;
+            }
+        }else{
+            memcpy((char*)(assoc_frame.rawbuf),(char *)(assoc_frame.rawbuf+1), assoc_frame.len-1);
+            assoc_frame.len -= 1;
+        }
+    }
+    read_delta = 0;
+
+    if (assoc_frm_size >= assoc_frame.len) {
+        memcpy((unsigned char*)frm, (unsigned char*)assoc_frame.rawbuf, assoc_frm_size);
+        *frm_len = assoc_frm_size;
+        memcpy((unsigned char*)assoc_frame.rawbuf, (unsigned char*)(assoc_frame.rawbuf+assoc_frm_size), assoc_frame.len - assoc_frm_size);
+        assoc_frame.len -= assoc_frm_size;
+    }
+
+    //ALOGV("%s::%d-assoc input-[set range frame_size:%d]",__FUNCTION__, __LINE__, assoc_frm_size);
+    //ALOGV("##########################################################################");
+    store_assoc_frame_size(assoc_frm_size);
+
+    return OK;
+}
+
+
+
+
 status_t DDP_MediaSource::read(MediaBuffer **out, const ReadOptions *options)
 {
     *out = NULL;
     int readdiff = 0;
     int read_delta = 0;
     int read_size =0;
+    int first_substreamid = 0;
+    int second_substreamid = 0;
+    int first_frm_size = 0;
+    int second_frm_size = 0;
+    int dual_input = assoc_dec_supported;
     while(1){
         frame_size = 0;
-        read_size = 	get_frame_size()+PTR_HEAD_SIZE+read_delta;
-	if (read_size > frame.len)
+        read_size = get_frame_size() + PTR_HEAD_SIZE + read_delta;
+        if (read_size > frame.len)
             read_size -= frame.len;
         /*check if the read_size exceed buffer size*/
-	if ((frame.len+read_size) > 6144) {
+        if ((frame.len+read_size) > 6144) {
             read_size = 6144 - frame.len;
         }
         frame.len += MediaSourceRead_buffer(frame.rawbuf + frame.len, read_size/* - frame.len*/);
@@ -468,6 +644,9 @@ status_t DDP_MediaSource::read(MediaBuffer **out, const ReadOptions *options)
         if(head == 0x0b77 || head == 0x770b){
             Get_ChNum_AC3_Frame(frame.rawbuf);
             frame_size=frame_size*2;
+            first_frm_size = frame_size;
+            first_substreamid = ddp_substreamid;
+            //ALOGI("%d frame_size %d--[first_substreamid:%d]\n",__LINE__, frame_size, first_substreamid);
 
             if ((frame_size == 0) || (frame_size < PTR_HEAD_SIZE) || (frame_size > 4096))
             {
@@ -479,7 +658,7 @@ status_t DDP_MediaSource::read(MediaBuffer **out, const ReadOptions *options)
             }
             /* if framesize bigger than current frame size + syncword size.read more */
             if (frame_size > (frame.len - 2)) {
-                ALOGI("frame size %d exceed cached size %d,read more\n",frame_size,frame.len);
+                ALOGI("frame size %d exceed cached size %d,read more:%d\n",frame_size,frame.len, read_delta);
                 read_delta = frame_size - (frame.len -2);
                 continue;
             }
@@ -508,19 +687,77 @@ status_t DDP_MediaSource::read(MediaBuffer **out, const ReadOptions *options)
         return err;
     }
 
-    memcpy((unsigned char*)(buffer->data()), (unsigned char*)frame.rawbuf, frame_size);
-    memcpy((unsigned char*)frame.rawbuf, (unsigned char*)(frame.rawbuf+frame_size), frame.len - frame_size);
-    frame.len -= frame_size;
-    buffer->set_range(0, frame_size);
+    if (!dual_input) {
+        frame_size = first_frm_size;
+        memcpy((unsigned char*)(buffer->data()), (unsigned char*)frame.rawbuf, frame_size);
+        memcpy((unsigned char*)frame.rawbuf, (unsigned char*)(frame.rawbuf+frame_size), frame.len - frame_size);
+        frame.len -= frame_size;
+        buffer->set_range(0, frame_size);
+        first_frm_size = frame_size;
+        ALOGI("%s::%d-single input-[set range frame_size:%d]",__FUNCTION__, __LINE__, frame_size);
+    }
+    else {
+        dual_packet_buf = (unsigned char*)malloc(dual_packet_len);
+        if (dual_packet_buf == NULL) {
+            ALOGI("%s %d \n",__FUNCTION__,__LINE__);
+            return NO_MEMORY;
+        }
+
+        if (dual_packet_buf) {
+            int offset = 0;
+            int dual_input_length = 0;
+
+            memcpy(dual_packet_buf + offset, (unsigned char*)frame.rawbuf, first_frm_size);
+            offset = offset + first_frm_size;
+            status_t assoc_err = read_associate_data(dual_packet_buf + offset, (int *)&second_frm_size);
+
+            if (assoc_err != OK) {
+                ALOGE("%s::%d-[forget this error-assoc_err:%d]",__FUNCTION__, __LINE__, assoc_err);
+            }
+            if (media_udc_dump_flag == 1) {
+                FILE *fp1 = fopen("/data/tmp/associate.dat", "a+");
+                if (fp1) {
+                    if (fwrite(dual_packet_buf + offset, 1, second_frm_size, fp1) != second_frm_size)
+                    {
+                        ALOGE("FIO: error writing output file");
+                        return -1;
+                    }
+                    fclose(fp1);
+                }
+                else {
+                    ALOGE("FOPEN /data/tmp/associate.dat error!");
+                }
+            }
+
+            dual_input_length = offset +second_frm_size;
+            if (dual_input_length > dual_packet_len) {
+                if (dual_packet_buf) {
+                    free(dual_packet_buf);
+                    dual_packet_buf = NULL;
+                }
+                ALOGE("%s::%d-out of bounds-[dual_input_length:%d]--[dual_packet_len]",__FUNCTION__, __LINE__, dual_input_length, dual_packet_len);
+                return NO_MEMORY;
+            }
+            memcpy((unsigned char*)(buffer->data()), (unsigned char*)dual_packet_buf, dual_input_length);
+            memcpy((unsigned char*)frame.rawbuf, (unsigned char*)(frame.rawbuf+first_frm_size), frame.len - first_frm_size);
+            frame.len -= first_frm_size;
+            buffer->set_range(0, dual_input_length);
+            ALOGI("%s::%d-dual input-[set range main:%d assoc:%d]",__FUNCTION__, __LINE__, first_frm_size, second_frm_size);
+        }
+
+        if (dual_packet_buf) {
+            free(dual_packet_buf);
+            dual_packet_buf = NULL;
+        }
+    }
     buffer->meta_data()->setInt64(kKeyTime, mCurrentTimeUs);
     buffer->meta_data()->setInt32(kKeyIsSyncFrame, 1);
-
     *out = buffer;
     if (readdiff > 0)
     {
         extractor_cost_bytes += readdiff;
     }
-    store_frame_size(frame_size);
+    store_frame_size(first_frm_size);
     return OK;
 }
 

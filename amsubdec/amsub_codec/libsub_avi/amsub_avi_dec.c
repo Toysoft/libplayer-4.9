@@ -14,11 +14,11 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <sys/stat.h>
-#include <unistd.h>
 
 #include "amsub_dec.h"
 #include "amsub_dec_output.h"
-#include "amsub_io_ctrl.h"
+
+
 
 #include <android/log.h>
 
@@ -86,7 +86,6 @@ typedef struct _DivXSubPictHdr_HD
 
 int xsub_subtitle_decode(amsub_dec_t *amsub_dec, int read_handle);
 
-extern int open_sub_device();
 
 static unsigned short DecodeRL(unsigned short RLData, unsigned short *pixelnum, unsigned short *pixeldata)
 {

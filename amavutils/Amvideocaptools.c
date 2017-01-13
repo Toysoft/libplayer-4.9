@@ -4,7 +4,9 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <strings.h>
+#ifdef ANDROID
 #include <cutils/log.h>
+#endif
 #include <sys/ioctl.h>
 
 #include "Amvideocaptools.h"

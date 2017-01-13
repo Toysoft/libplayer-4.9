@@ -428,4 +428,37 @@ int codec_set_track_rate(codec_para_t *p,void *rate)
 {
     return audio_decoder_set_trackrate(p->adec_priv,rate);
 }
+/* --------------------------------------------------------------------------*/
+/**
+* @brief  codec_set_associate_audio_enable  Set associate audio enable/disable
+*
+* @param[in]  enable  en/dis-able
+*
+* @return     Command result
+*/
+/* --------------------------------------------------------------------------*/
+int codec_set_associate_audio_enable(void *priv, unsigned int enable)
+{
+    int ret;
+
+    ret = audio_set_associate_enable(priv, enable);
+    return ret;
+}
+/* --------------------------------------------------------------------------*/
+/**
+* @brief  codec_send_associate_audio_data  send data to buffer with the length is size.
+*
+* @param[in]  buf:destination address
+* @param[in]  size:data length
+*
+* @return     write data length
+*/
+/* --------------------------------------------------------------------------*/
+int codec_send_associate_audio_data(void *priv, uint8_t *buf, size_t size)
+{
+    int ret;
+
+    ret = audio_send_associate_data(priv, buf, size);
+    return ret;
+}
 

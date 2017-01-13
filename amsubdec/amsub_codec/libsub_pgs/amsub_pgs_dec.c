@@ -1,6 +1,5 @@
 #include <unistd.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <getopt.h>
@@ -28,7 +27,6 @@ static subtitlepgs_t subtitle_pgs;
 
 #define OSD_HALF_SIZE (1920*1280/8)
 
-extern int open_sub_device();
 
 int init_pgs_subtitle()
 {

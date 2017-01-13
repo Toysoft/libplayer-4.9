@@ -25,12 +25,8 @@
 #include "player_update.h"
 #include "thread_mgt.h"
 #include "player_ffmpeg_ctrl.h"
+#include "player_cache_mgt.h"
 #include "player_priv.h"
-#include "player_hwdec.h"
-#include "libavformat/tcp_pool.h"
-
-#include "../../amcodec/audio_ctl/audio_ctrl.h"
-
 #include <amthreadpool.h>
 
 #ifndef FBIOPUT_OSD_SRCCOLORKEY
@@ -41,9 +37,7 @@
 #define  FBIOPUT_OSD_SRCKEY_ENABLE  0x46fa
 #endif
 
-extern codec_para_t *get_subtitle_codec(play_para_t *player);
 extern void print_version_info();
-
 int auto_refresh_rate_enable = 0;
 
 static pthread_mutex_t player_stop_mutex;
@@ -116,7 +110,7 @@ int player_start(play_control_t *ctrl_p, unsigned long  priv)
 
     update_loglevel_setting();
     update_dump_dir_path();
-    print_version_info();
+    //print_version_info();
     log_print("[player_start:enter]p=%p black=%d\n", ctrl_p, get_black_policy());
 
     if (ctrl_p == NULL) {
@@ -267,7 +261,7 @@ int player_stop(int pid)
     player_close_pid_data(pid);
     log_print("[player_stop:exit]pid=%d\n", pid);
     pthread_mutex_unlock(&player_stop_mutex);
-    tcppool_refresh_link_and_check(0);
+    tcppool_refresh_link_and_check();
     log_print("[tcppool_refresh_link_and_check]pid=%d\n", pid);
     return r;
 }
@@ -1704,10 +1698,11 @@ int player_list_allpid(pid_info_t *pid)
  * @details
  */
 /* --------------------------------------------------------------------------*/
+
+
 int player_cache_system_init(int enable, const char*dir, int max_size, int block_size)
 {
-    /*do nothing*/
-    return 0;
+    return cache_system_init(enable, dir, max_size, block_size);
 }
 
 /* --------------------------------------------------------------------------*/
@@ -2426,4 +2421,69 @@ int audio_set_playback_rate(int pid,void *rate)
     }
     return codec_set_track_rate(player_para->acodec, rate);
 }
+
+
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @function    player_set_associate_audio_enable
+ *
+ * @brief       set associate audio enable/disable
+ *
+ * @param[in]   pid; player tag which get from player_start return value
+ *
+ * @param[in]   enable; enable/disable associate audio
+ *
+ * @return      r = 0 for success
+ *
+ */
+/* --------------------------------------------------------------------------*/
+
+int player_set_associate_audio_enable(int main_pid,unsigned int enable)
+{
+    play_para_t *player_para;
+    log_print("[audio_set_playback_rate:enter]main_pid=%d\n", main_pid);
+    player_para = player_open_pid_data(main_pid);
+    if (player_para == NULL) {
+        log_print("player ID is NULL!\n");
+        return -1;
+    }
+    if (player_para->acodec == NULL) {
+        log_print("codec is not ready!\n");
+        return -1;
+    }
+    return codec_set_associate_audio_enable(player_para->acodec, enable);
+}
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @function    player_send_associate_audio_data
+ *
+ * @brief       send associate audio data
+ *
+ * @param[in]   main_pid; player tag which get from player_start return value
+ * @param[in]   buf, associate audio data source address
+ * @param[in]   size, associate audio data length
+ *
+ * @return      write data size length
+ *
+ */
+/* --------------------------------------------------------------------------*/
+
+int player_send_associate_audio_data(int main_pid,uint8_t *buf, size_t size)
+{
+    play_para_t *player_para;
+    log_print("[audio_set_playback_rate:enter]main_pid=%d\n", main_pid);
+    player_para = player_open_pid_data(main_pid);
+    if (player_para == NULL) {
+        log_print("player ID is NULL!\n");
+        return -1;
+    }
+    if (player_para->acodec == NULL) {
+        log_print("codec is not ready!\n");
+        return -1;
+    }
+    return codec_send_associate_audio_data(player_para->acodec, buf, size);
+}
+
 

@@ -73,11 +73,6 @@ int time_search(struct play_para *para, int flags);
 int player_reset(play_para_t *p_para);
 int check_avbuffer_enough(play_para_t *para, int type);
 int64_t gettime(void);
-int check_avbuffer_enough_for_ape(play_para_t *para);
-int get_avbuf_min_size(play_para_t *p_para);
-int get_av_delay_ms(play_para_t *p_para);
-int get_cntl_vpts(am_packet_t *pkt);
-
 
 
 #ifdef DEBUG_VARIABLE_DUR

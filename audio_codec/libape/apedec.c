@@ -25,16 +25,18 @@
 #include <stdint.h>
 #include "Ape_decoder.h"
 #include "../../amadec/adec-armdec-mgt.h"
-#include <android/log.h>
 #ifdef __ARM_HAVE_NEON
 #include <arm_neon.h>
 #endif
 #include <sys/time.h>
-
+#ifdef ANDROID
+#include <android/log.h>
 #define  LOG_TAG    "ApeDecoder"
-#define audio_codec_print(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-
-static APEIOBuf  apeiobuf = {0};
+#define audio_codec_print(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
+#else
+#define audio_codec_print  printf
+#endif
+static APEIOBuf  apeiobuf ={0};
 static APE_Decoder_t *apedec;
 static int read_buffersize_per_time = 102400 ; //100k
 ape_extra_data headinfo ;
@@ -145,7 +147,7 @@ void ape_decoder_delete(APE_Decoder_t *decoder)
         dsp_free(decoder->private_data->data);
         decoder->private_data->data = NULL;
     }
-    if (decoder->private_data->filterbuf[0]) {
+    if (decoder->private_data->filterbuf) {
         for (i = 0; i < APE_FILTER_LEVELS; i++) {
             if (s->filterbuf[i]) {
                 dsp_free(s->filterbuf[i]);
@@ -1074,7 +1076,7 @@ int audio_dec_init(audio_decoder_operations_t *adec_ops)
 {
     int x = 1;
     char *p = (char *)&x;
-    //audio_codec_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    audio_codec_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
     if (*p == 1) {
         audio_codec_print("Little endian\n");
     } else {

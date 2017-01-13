@@ -1,4 +1,5 @@
 #include <adec_write.h>
+#include <log-print.h>
 
 int init_buff(buffer_stream_t *bs, int length)
 {
@@ -83,7 +84,7 @@ static int read_data(char * out, buffer_stream_t *bs, int size)
     }
     int ret = is_buffer_empty(bs);
     if (ret == 1) {
-        //printf("=====buffer empty \n");
+        //adec_print("=====buffer empty \n");
         return 0;//buffer empty
     }
     int len = MIN(bs->buf_level, size);
@@ -94,7 +95,7 @@ static int read_data(char * out, buffer_stream_t *bs, int size)
         if (bs->rd_ptr == (bs->data + bs->buf_length)) {
             bs->rd_ptr = bs->data;
         }
-        //printf("=====read ok: condition 1 read :%d byte \n",len);
+        //adec_print("=====read ok: condition 1 read :%d byte \n",len);
         return len;
     } else if (len < (bs->data + bs->buf_length - bs->rd_ptr)) {
         memcpy(out, bs->rd_ptr, len);
@@ -103,7 +104,7 @@ static int read_data(char * out, buffer_stream_t *bs, int size)
         if (bs->rd_ptr == (bs->data + bs->buf_length)) {
             bs->rd_ptr = bs->data;
         }
-        //printf("=====read ok: condition 2 read :%d byte \n",len);
+        //adec_print("=====read ok: condition 2 read :%d byte \n",len);
         return len;
 
     } else {
@@ -115,7 +116,7 @@ static int read_data(char * out, buffer_stream_t *bs, int size)
         if (bs->rd_ptr == (bs->data + bs->buf_length)) {
             bs->rd_ptr = bs->data;
         }
-        //printf("=====read ok: condition 3 read :%d byte \n",len);
+        //adec_print("=====read ok: condition 3 read :%d byte \n",len);
         return len;
     }
 
@@ -129,6 +130,16 @@ int read_pcm_buffer(char * out, buffer_stream_t *bs, int size)
     pthread_mutex_unlock(&bs->nMutex1);
     return ret;
 }
+
+int read_es_buffer(char * out, buffer_stream_t *bs, int size)
+{
+    int ret = 0;
+    pthread_mutex_lock(&bs->nMutex1);
+    ret = read_data(out, bs, size);
+    pthread_mutex_unlock(&bs->nMutex1);
+    return ret;
+}
+
 static int write_data(char *in, buffer_stream_t *bs, int size)
 {
     if (bs->bInited == 0) {
@@ -177,6 +188,15 @@ static int write_data(char *in, buffer_stream_t *bs, int size)
 }
 
 int write_pcm_buffer(char * in, buffer_stream_t *bs, int size)
+{
+    int ret = 0;
+    pthread_mutex_lock(&bs->nMutex1);
+    ret = write_data(in, bs, size);
+    pthread_mutex_unlock(&bs->nMutex1);
+    return ret;
+}
+
+int write_es_buffer(char * in, buffer_stream_t *bs, int size)
 {
     int ret = 0;
     pthread_mutex_lock(&bs->nMutex1);

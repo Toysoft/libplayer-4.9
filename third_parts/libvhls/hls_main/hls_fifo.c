@@ -10,10 +10,7 @@
 #include "hls_debug.h"
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
+
 
 
 HLSFifoBuffer *hls_fifo_alloc(unsigned int size)

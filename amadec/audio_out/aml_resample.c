@@ -7,12 +7,11 @@
 #include <string.h>
 #include <errno.h>
 #include <linux/fb.h>
+#ifdef ANDROID
 #include <sys/system_properties.h>
+#endif
 #include <log-print.h>
-#include <cutils/properties.h>
 #include "aml_resample.h"
-#include "Amsysfsutils.h"
-#include "amconfigutils.h"
 
 
 af_resampe_ctl_t af_resampler_ctx = {0};
@@ -468,6 +467,18 @@ static void dump_pcm_bin(char *path, char *buf, int size)
     }
 }
 
+//Clip from 16.16 fixed-point to 0.15 fixed-point.
+inline static short clip(int x) {
+    if (x < -32768) {
+        return -32768;
+    } else if (x > 32767) {
+        return 32767;
+    } else {
+        return x;
+    }
+}
+
+
 #define  RESAMPLE_FRAMES  128
 void af_resample_api(char* buffer, unsigned int * size, int Chnum, aml_audio_dec_t* audec, int enable, int delta)
 {
@@ -493,6 +504,8 @@ void af_resample_api(char* buffer, unsigned int * size, int Chnum, aml_audio_dec
     short  *input;
     short  *output;
     unsigned frames = 0;
+    unsigned char ch;
+
     in_sr = (RESAMPLE_FRAMES - 1);
     out_sr = (RESAMPLE_FRAMES - delta - 1);
     phaseIncrement = (float)in_sr / out_sr;
@@ -523,6 +536,7 @@ void af_resample_api(char* buffer, unsigned int * size, int Chnum, aml_audio_dec
             input = (short*)pbuf + frames * Chnum;
             output = (short*)buffer + k * Chnum;
             for (j = 0; j < RESAMPLE_FRAMES - resample_delta; j++) {
+#if 0
                 if (Chnum == 2) {
                     output[2 * j] =   input[index * 2] + (short)((input[(index + 1) * 2] - input[index * 2]) * mPhaseFraction1);
                     output[2 * j + 1] = input[index * 2 + 1] + (short)((input[(index + 1) * 2 + 1] - input[index * 2 + 1]) * mPhaseFraction1);
@@ -532,6 +546,11 @@ void af_resample_api(char* buffer, unsigned int * size, int Chnum, aml_audio_dec
                     adec_print("fatal error,only support 1 ch ,2ch audio sample \n");
                     return ;
                 }
+#else
+                for ( ch=0; ch < Chnum; ch++) {
+                    output[Chnum*j+ch] = clip((int)input[index * Chnum+ch] + (int)((input[(index + 1) * Chnum+ch] - input[index * Chnum+ch]) * mPhaseFraction1));
+                }
+#endif
                 mPhaseFraction += phaseIncrement;
                 index =  mPhaseFraction;
                 mPhaseFraction1 = mPhaseFraction - index;

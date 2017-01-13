@@ -470,7 +470,6 @@ typedef struct AVSubtitle
 } AVSubtitle;
 
 int dvbsub_decode(amsub_para_s *spu, const uint8_t *psrc, const int size);
-int dvb_subtitle_decode(amsub_dec_t *amsub_dec, int read_handle);
 
 av_cold int dvbsub_init_decoder();
 av_cold int dvbsub_close_decoder();

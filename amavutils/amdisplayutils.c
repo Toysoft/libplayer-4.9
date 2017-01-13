@@ -4,11 +4,12 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <string.h>
+#include <strings.h>
+#ifdef ANDROID
 #include <cutils/log.h>
+#endif
 #include <sys/ioctl.h>
 #include "include/Amdisplayutils.h"
-#include "include/Amsysfsutils.h"
 
 
 #define FB_DEVICE_PATH   "/sys/class/graphics/fb0/virtual_size"
@@ -25,13 +26,20 @@
 #ifndef FB_BUFFER_NUM
 #define FB_BUFFER_NUM (2)
 #endif
-
+#ifdef ANDROID
 #ifndef LOGD
 #define LOGV ALOGV
 #define LOGD ALOGD
 #define LOGI ALOGI
 #define LOGW ALOGW
 #define LOGE ALOGE
+#endif
+#else
+#define LOGV printf
+#define LOGD printf
+#define LOGI printf
+#define LOGW printf
+#define LOGE printf
 #endif
 
 //#define LOG_FUNCTION_NAME LOGI("%s-%d\n",__FUNCTION__,__LINE__);

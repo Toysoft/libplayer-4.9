@@ -8,8 +8,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#ifdef ANDROID
 #include <android/log.h>
 #include <cutils/properties.h>
+#endif
 //get android  media stream volume
 #define CODE_CALC_VOLUME
 #ifdef CODE_CALC_VOLUME

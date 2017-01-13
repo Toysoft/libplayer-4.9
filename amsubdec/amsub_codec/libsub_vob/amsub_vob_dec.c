@@ -8,7 +8,6 @@
 //header file
 #include <unistd.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -21,8 +20,6 @@
 
 #include "amsub_vob_dec.h"
 #include "amsub_dec_output.h"
-
-#include "../amsub_io_ctrl.h"
 
 #define  LOG_TAG    "amsub_vob_dec"
 #define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)

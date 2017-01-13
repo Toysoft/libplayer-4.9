@@ -6,15 +6,21 @@
 #include <sys/ioctl.h>
 #include <dlfcn.h>
 #include <sys/mman.h>
-#include <android/log.h>
-#include <cutils/properties.h>
-#include <unistd.h>
-#include "../../amadec/adec-armdec-mgt.h"
 
+#include <unistd.h>
+
+#include "../../amadec/adec-armdec-mgt.h"
+#ifdef ANDROID
+#include <cutils/properties.h>
+#include <android/log.h>
 #define  LOG_TAG    "LPCMDEC"
 #define  printk(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
 #define  audio_codec_print(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-
+#else
+#define printk printf
+#define  audio_codec_print printf
+#define PROPERTY_VALUE_MAX 124
+#endif 
 
 #define ASTREAM_DEV "/dev/uio0"
 #define ASTREAM_ADDR "/sys/class/astream/astream-dev/uio0/maps/map0/addr"
@@ -295,7 +301,7 @@ int frame_size_check = 0;
 int jump_read_head_flag = 0;
 int audio_dec_init(audio_decoder_operations_t *adp)
 {
-    //printk("\n\n[%s]WFD LPCMDEC BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    printk("\n\n[%s]WFD LPCMDEC BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
     char value[PROPERTY_VALUE_MAX];
     if (property_get("media.wfd.debug_dec", value, NULL) > 0) {
         enable_debug_print = atoi(value);
@@ -324,8 +330,8 @@ int audio_dec_decode(audio_decoder_operations_t *adec_ops, char *buf, int *outle
     int16_t *dst_int16_t;
     int32_t *dst_int32_t;
     int64_t *dst_int64_t;
-    uint16_t *dst_uint16_t;
-    uint32_t *dst_uint32_t;
+	unsigned short *dst_uint16_t;
+	unsigned int  *dst_uint32_t;
     int frame_size;
     int  skip_bytes = 0;
     sample = (short *)buf;

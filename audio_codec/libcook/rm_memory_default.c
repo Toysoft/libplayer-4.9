@@ -36,10 +36,6 @@
  * ***** END LICENSE BLOCK ***** */
 
 //#include "includes.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
 #include "rm_memory.h"
 #include "rm_memory_default.h"
 

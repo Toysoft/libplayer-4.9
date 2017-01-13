@@ -14,7 +14,6 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <sys/stat.h>
-#include <unistd.h>
 //#include "log_print.h"
 
 #include "amsub_idxsub_dec.h"
@@ -1492,14 +1491,6 @@ unsigned short doDCSQC(unsigned char *pdata, unsigned char *pend)
     return cmdDelaynew > cmdDelay ? cmdDelaynew : cmdDelay;
 }
 
-unsigned int totalsubnum = 0;
-void switch_sub(int index)
-{
-    if (totalsubnum > index || vobsubdata != NULL)
-    {
-        vobsubdata->cur_track_id = index;
-    }
-}
 
 //extern unsigned short doDCSQC(unsigned char *pdata,unsigned char *pend);
 
@@ -1991,6 +1982,9 @@ static int SubtitleVOBSub_ShowSubtitle(subtitlevobsub_t *subtitlevobsub, int pts
 //    return ret;
 //}
 
+
+unsigned int totalsubnum = 0;
+
 subtitlevobsub_t *getIdxSubData(int ptms)
 {
     if (SubtitleVOBSub_ShowSubtitle(vobsubdata, ptms * 90) == 1)
@@ -1998,6 +1992,17 @@ subtitlevobsub_t *getIdxSubData(int ptms)
     else
         return NULL;
 }
+
+
+
+void switch_sub(int index)
+{
+    if (totalsubnum > index || vobsubdata != NULL)
+    {
+        vobsubdata->cur_track_id = index;
+    }
+}
+
 
 static void ini_subdata(subtitlevobsub_t *subtitlevobsub)
 {
@@ -2034,6 +2039,18 @@ void idxsub_close_subtitle()
         close_subtitle(vobsubdata);
     }
 }
+
+
+//change data from 2bit to 32bit
+void idxsub_parser_data(const unsigned char *source, long length, int linewidth, unsigned int *dist, int subtitle_alpha)
+{
+    covert2bto32b(source, length, linewidth, dist, subtitle_alpha);
+    return 0;
+}
+
+
+
+
 
 void covert2bto32b(const unsigned char *source, long length, int bytesPerLine, unsigned int *dist, int subtitle_alpha)
 {
@@ -2163,11 +2180,6 @@ void covert2bto32b(const unsigned char *source, long length, int bytesPerLine, u
     //  LOGE("write bytes %d  / %d ",bytes, length*16);
 }
 
-//change data from 2bit to 32bit
-void idxsub_parser_data(const unsigned char *source, long length, int linewidth, unsigned int *dist, int subtitle_alpha)
-{
-    covert2bto32b(source, length, linewidth, dist, subtitle_alpha);
-}
 
 
 int amsub_dec_init(amsub_dec_opt_t *amsubdec_ops)
@@ -2262,7 +2274,7 @@ int idxsub_subtitle_decode(amsub_para_s *amsub_ps)
     amsub_ps->buffer_size = photosize;
     amsub_ps->spu_alpha = vobsub->vob_subtitle_config.contrast;
     LOGE("start parser_data  spu_alpha=0x%x \n", amsub_ps->spu_alpha);
-    idxsub_parser_data((unsigned char *)vobsub->vob_subtitle_config.prtData, raw_byte, (vobsub->vob_subtitle_config.width) / 4 , amsub_ps->amsub_data, vobsub->vob_subtitle_config.contrast);
+    idxsub_parser_data(vobsub->vob_subtitle_config.prtData, raw_byte, (vobsub->vob_subtitle_config.width) / 4 , amsub_ps->amsub_data, vobsub->vob_subtitle_config.contrast);
     LOGE("parser_data over\n\n");
     amsub_ps->pts = vobsub->cur_pts100;
     amsub_ps->m_delay = vobsub->cur_endpts100;

@@ -1,6 +1,6 @@
 #ifndef CURL_WRAPPER_H_
 #define CURL_WRAPPER_H_
-#include <ctype.h>
+
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/select.h>
