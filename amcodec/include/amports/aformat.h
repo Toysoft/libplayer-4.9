@@ -75,6 +75,7 @@ typedef enum {
 #define IS_AFMT_VALID(afmt) ((afmt > AFORMAT_UNKNOWN) && (afmt < AFORMAT_MAX))
 
 #define IS_AUIDO_NEED_EXT_INFO(afmt) ((afmt == AFORMAT_ADPCM) \
+                                 ||(afmt == AFORMAT_VORBIS) \
                                  ||(afmt == AFORMAT_WMA) \
                                  ||(afmt == AFORMAT_WMAPRO) \
                                  ||(afmt == AFORMAT_PCM_S16BE) \

@@ -8,10 +8,10 @@
 
 #include <adec-pts-mgt.h>
 #include <adec_write.h>
-#include <adec_omx_brige.h>
 #include <Amsysfsutils.h>
 #include <audio-dec.h>
 #ifdef ANDROID
+#include <adec_omx_brige.h>
 #include <cutils/properties.h>
 #endif
 #include <amthreadpool.h>

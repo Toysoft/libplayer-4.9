@@ -45,7 +45,7 @@ struct audio_decoder_operations {
     int nInAssocBufSize;//associate data size
     int lfepresent;
 };
-
+#ifndef AVUTIL_SAMPLEFMT_H
 enum AVSampleFormat {
     AV_SAMPLE_FMT_NONE = -1,
     AV_SAMPLE_FMT_U8,          ///< unsigned 8 bits
@@ -55,5 +55,6 @@ enum AVSampleFormat {
     AV_SAMPLE_FMT_DBL,         ///< double
     AV_SAMPLE_FMT_NB           ///< Number of sample formats. DO NOT USE if linking dynamically
 };
+#endif
 #define AVCODEC_MAX_AUDIO_FRAME_SIZE 500*1024
 #endif

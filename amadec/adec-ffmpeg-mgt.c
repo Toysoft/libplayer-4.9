@@ -8,11 +8,11 @@
 
 #include <adec-pts-mgt.h>
 #include <adec_write.h>
-#include <adec_omx_brige.h>
 #include <Amsysfsutils.h>
 #include <audio-dec.h>
 #include <amthreadpool.h>
 #ifdef ANDROID
+#include <adec_omx_brige.h>
 #include <cutils/properties.h>
 #endif
 #include <adec_assoc_audio.h>
@@ -55,6 +55,11 @@ audio_lib_t audio_lib_list[] = {
     {ACODEC_FMT_MULAW, "libpcm.so"},
     {ACODEC_FMT_ADPCM, "libadpcm.so"},
     {ACODEC_FMT_DRA, "libdra.so"},
+#ifndef ANDROID
+    {ACODEC_FMT_VORBIS, "libamffmpegdec.so"},
+    {ACODEC_FMT_WMA, "libamffmpegdec.so"},
+    {ACODEC_FMT_WMAPRO, "libamffmpegdec.so"},
+#endif
     NULL
 } ;
 
