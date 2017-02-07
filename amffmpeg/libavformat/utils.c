@@ -5461,41 +5461,28 @@ fail:
 static void hex_dump_internal(void *avcl, FILE *f, int level, uint8_t *buf, int size)
 {
     int len, i, j, c;
-    char sbuf[1024 * 4];
-    int off = 0;
-    int printed = 0;
 #undef fprintf
-#define PRINT(...) do { if (!f) {\
-            printed= snprintf(sbuf+off,1024*4-off, __VA_ARGS__); \
-            if (printed>0) off+=printed;\
-        }else fprintf(f, __VA_ARGS__); } while(0)
-    for (i = 0; i < size; i += 16)
-    {
+#define PRINT(...) do { if (!f) av_log(avcl, level, __VA_ARGS__); else fprintf(f, __VA_ARGS__); } while(0)
+
+    for(i=0;i<size;i+=16) {
         len = size - i;
         if (len > 16)
             len = 16;
-        PRINT("%08x: ", i);
-        for (j = 0; j < 16; j++)
-        {
+        PRINT("%08x ", i);
+        for(j=0;j<16;j++) {
             if (j < len)
                 PRINT(" %02x", buf[i + j]);
             else
                 PRINT("   ");
         }
         PRINT(" ");
-        for (j = 0; j < len; j++)
-        {
+        for(j=0;j<len;j++) {
             c = buf[i + j];
             if (c < ' ' || c > '~')
                 c = '.';
             PRINT("%c", c);
         }
         PRINT("\n");
-    }
-    if (!f && off > 0 && off < 1024 * 4)
-    {
-        sbuf[off] = '\0';
-        av_log(avcl, level, "%s\n", sbuf);
     }
 #undef PRINT
 }

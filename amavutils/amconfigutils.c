@@ -104,8 +104,8 @@ int am_getconfig(const char * path, char *val, const char * def)
 		/*linux settings*/
 		char *tmpchar = malloc(strlen(path) + 1);
 		char *tmpval = NULL;
-		int j = 0;	
-		
+		int j = 0;
+
 		if (tmpchar)
 		      memset(tmpchar, 0,(strlen(path) + 1));
             else
@@ -117,15 +117,15 @@ int am_getconfig(const char * path, char *val, const char * def)
 				tmpchar[j]='_';
 		}
 	//	printf("tmpchar: %s,path=%s\n", tmpchar,path);
-		
+
 		tmpval=getenv(tmpchar);
 		free(tmpchar);
 		if(tmpval != NULL) {
-			memcpy(val, tmpval,strlen(tmpval));
-			return atoi(tmpval);
+			strncpy(val, tmpval, CONFIG_VALUE_MAX);
+			return strlen(tmpval);
 		}else {
 			return strlen(val);
-		} 
+		}
 		#endif
 		return strlen(val);
 	}
@@ -300,4 +300,4 @@ int property_set(const char *key, const char *value)
    // printf("player system property_get [%s] %s\n", __FILE__, __FUNCTION__);
     return am_setconfig(key, value);
 }
-#endif  
+#endif
