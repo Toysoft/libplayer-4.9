@@ -23,6 +23,8 @@
  * 包含头文件                                   *
  *----------------------------------------------*/
 #include <errno.h>
+#include <stdint.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 #if __cplusplus

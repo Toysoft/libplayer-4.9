@@ -2,10 +2,13 @@
 #include "ammodule.h"
 #include "libavformat/url.h"
 #include "libavformat/avformat.h"
+#ifdef ANDROID
 #include <android/log.h>
 #define  LOG_TAG    "libvhls_mod"
 #define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-
+#else
+#define  LOGI printf
+#endif
 
 ammodule_methods_t  libvhls_module_methods;
 ammodule_t AMPLAYER_MODULE_INFO_SYM = {

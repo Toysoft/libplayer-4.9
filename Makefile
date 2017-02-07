@@ -20,6 +20,7 @@ all:
 	-$(MAKE) -C examples all
 	-$(MAKE) -C third_parts/libcurl-ffmpeg all
 	-$(MAKE) -C third_parts/libdash all
+	-$(MAKE) -C third_parts/libvhls all
     
 install:
 	-$(MAKE) -C examples install
