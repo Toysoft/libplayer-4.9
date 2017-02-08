@@ -4,8 +4,10 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#ifdef ANDROID
 #define AMTHREADPOOL_SLEEP_US_MONOTONIC
 ///#define AMTHREADPOOL_DEBUG
+#endif
 int amthreadpool_thread_usleep_in(int us);
 int amthreadpool_thread_usleep_in_monotonic(int us);
 int amthreadpool_thread_wake(pthread_t pid);
