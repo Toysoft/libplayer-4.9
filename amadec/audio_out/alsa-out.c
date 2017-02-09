@@ -1080,4 +1080,5 @@ void get_output_func(struct aml_audio_dec* audec)
     out_ops->mute = alsa_mute;
     out_ops->stop = alsa_stop;
     out_ops->latency = alsa_latency;
+    out_ops->track_rate = 1.0f;
 }
