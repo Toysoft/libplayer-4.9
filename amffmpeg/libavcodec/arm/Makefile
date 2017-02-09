@@ -19,6 +19,7 @@ OBJS-$(CONFIG_H264PRED)                += arm/h264pred_init_arm.o
 OBJS                                   += arm/dsputil_init_arm.o        \
                                           arm/dsputil_arm.o             \
                                           arm/fft_init_arm.o            \
+                                          arm/synth_filter_neon.o       \
                                           arm/fft_fixed_init_arm.o      \
                                           arm/fmtconvert_init_arm.o     \
                                           arm/jrevdct_arm.o             \

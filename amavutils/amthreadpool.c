@@ -158,6 +158,7 @@ static int64_t amthreadpool_gettime(void)
     return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
+#ifdef AMTHREADPOOL_SLEEP_US_MONOTONIC
 int amthreadpool_thread_usleep_in_monotonic(int us)
 {
     pthread_t pid = pthread_self();
@@ -192,6 +193,7 @@ int amthreadpool_thread_usleep_in_monotonic(int us)
 #endif
 
 }
+#endif
 
 
 int amthreadpool_thread_usleep_in(int us)
