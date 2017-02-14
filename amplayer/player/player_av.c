@@ -93,6 +93,7 @@ static const media_type media_array[] = {
     {"ogg", OGM_FILE, STREAM_ES},
     {"dra", DRA_FILE, STREAM_AUDIO},
     {"ivf", IVF_FILE, STREAM_ES},
+    {"aiff", AIFF_FILE, STREAM_AUDIO},
 };
 
 aformat_t audio_type_convert(enum CodecID id, pfile_type File_type)

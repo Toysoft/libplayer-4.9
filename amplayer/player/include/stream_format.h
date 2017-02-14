@@ -42,6 +42,7 @@ typedef enum {
     HEVC_FILE       = 24,
     DRA_FILE	    = 25,
     IVF_FILE        = 26,
+    AIFF_FILE        = 27,
     FILE_MAX,
 } pfile_type;
 
