@@ -240,6 +240,11 @@ enum CodecType {
 
 typedef struct AVCodecContext {
     /**
+     * information on struct for av_log
+     * - set by avcodec_alloc_context
+     */
+    const void *av_class;
+    /**
      * the average bitrate
      * - encoding: Set by user; unused for constant quantizer encoding.
      * - decoding: Set by libavcodec. 0 or some bitrate if this info is available in the stream.

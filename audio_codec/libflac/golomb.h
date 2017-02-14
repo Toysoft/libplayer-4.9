@@ -35,6 +35,7 @@
 #endif
 #include "get_bits.h"
 //#include "put_bits.h"
+#include <assert.h>
 
 #define INVALID_VLC           0x80000000
 #ifndef __MW__
