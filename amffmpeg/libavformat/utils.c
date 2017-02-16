@@ -708,6 +708,12 @@ retry_probe:
         else
         {
             av_log(NULL, AV_LOG_DEBUG, "[%s]no new data for probe,retry\n", __FUNCTION__);
+            if (url_interrupt_cb())
+            {
+                ret= AVERROR_EXIT;
+                av_log(NULL, AV_LOG_DEBUG, "interrupted\n");
+                break;
+            }
         }
         if (eof_flag == 1)
         {
@@ -3536,6 +3542,7 @@ static int has_codec_parameters_ex(AVCodecContext *enc, int fastmode)
                         (enc->codec_id == CODEC_ID_AAC) ||
                         (enc->codec_id == CODEC_ID_MP3) ||
                         (enc->codec_id == CODEC_ID_AC3) ||
+                        (enc->codec_id == CODEC_ID_EAC3) ||
                         (enc->codec_id == CODEC_ID_DTS))
                 {
                     if (FLV_PARSE_MODE == fastmode && enc->codec_id == CODEC_ID_AAC)
@@ -3955,6 +3962,7 @@ int av_find_stream_info(AVFormatContext *ic)
     count = 0;
     read_size = 0;
     int continue_parse_count = 0;
+    int parse_mode = fast_switch;
     for (;;)
     {
         if (url_interrupt_cb())
@@ -3969,13 +3977,14 @@ int av_find_stream_info(AVFormatContext *ic)
         {
             int fps_analyze_framecount = 20;
             st = ic->streams[i];
-            int parse_mode = fast_switch;
-            if (ic->pb && ic->pb->is_streamed == 1 && !strcmp(ic->iformat->name, "mpegts"))
-            {
-                if (ic->iformat != NULL && (ic->iformat->flags & AVFMT_TS_HASPMT))
-                    parse_mode = PARSE_MODE_BASE + TS_HASPMT_PLUS + fast_switch;
-                else
-                    parse_mode = PARSE_MODE_BASE + fast_switch;
+            parse_mode = fast_switch;
+            if(ic->pb && ic->pb->is_streamed ==1
+                    && !strncmp(ic->filename, "udp://", 6)
+                    && !strcmp(ic->iformat->name, "mpegts")){
+               if (ic->iformat != NULL && (ic->iformat->flags & AVFMT_TS_HASPMT))
+                   parse_mode = PARSE_MODE_BASE + TS_HASPMT_PLUS + fast_switch;
+               else
+                   parse_mode = PARSE_MODE_BASE + fast_switch;
             }
             if (!strcmp(ic->iformat->name, "asf"))
             {
@@ -4071,7 +4080,7 @@ int av_find_stream_info(AVFormatContext *ic)
             for (i = 0; i < ic->nb_streams; i++)
             {
                 st = ic->streams[i];
-                if (!has_codec_parameters_ex(st->codec, fast_switch))
+                if (!has_codec_parameters_ex(st->codec, parse_mode))
                 {
                     char buf[256];
                     avcodec_string(buf, sizeof(buf), st->codec, 0);
@@ -4207,7 +4216,10 @@ int av_find_stream_info(AVFormatContext *ic)
            decompress for QuickTime. */
         if ((st->codec->codec_id != CODEC_ID_CAVS) && (!has_codec_parameters_ex(st->codec, fast_switch) || (!fast_switch && !has_decode_delay_been_guessed(st))))
         {
-            try_decode_frame(st, pkt);
+            if (strncmp(ic->filename, "udp://", 6))
+            {
+                try_decode_frame(st, pkt);
+            }
         }
         st->codec_info_nb_frames++;
         count++;

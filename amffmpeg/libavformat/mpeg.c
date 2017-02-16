@@ -501,8 +501,9 @@ static int mpegps_read_packet(AVFormatContext *s,
 			unsigned long newhead;	
 			
 			avio_read(s->pb, buf, 32);
-        	avio_seek(s->pb, -32, SEEK_CUR);
-			
+			avio_seek(s->pb, -32, SEEK_CUR);
+			if ((buf[0] == 0x77 && buf[1] == 0x0B) || (buf[0] == 0x0B &&buf[1] == 0x77))
+				codec_id = CODEC_ID_AC3;
 			for(i = 0; i < 32; i ++)
 			{
 				newhead = buf[0]<<24|buf[1]<<16|buf[2]<<8|buf[3];
