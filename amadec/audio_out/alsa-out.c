@@ -796,7 +796,15 @@ int alsa_init(struct aml_audio_dec* audec)
     }
     memset(alsa_param, 0, sizeof(alsa_param_t));
 
-    if (audec->samplerate >= (88200 + 96000) / 2) {
+    if (audec->samplerate >= (176400 + 192000) / 2) {
+        alsa_param->flag = 1;
+        alsa_param->oversample = -1;
+        alsa_param->rate = 96000;
+    } else if (audec->samplerate >= (96000 + 176400) / 2) {
+        alsa_param->flag = 1;
+        alsa_param->oversample = -1;
+        alsa_param->rate = 88200;
+    } else if (audec->samplerate >= (88200 + 96000) / 2) {
         alsa_param->flag = 1;
         alsa_param->oversample = -1;
         alsa_param->rate = 48000;

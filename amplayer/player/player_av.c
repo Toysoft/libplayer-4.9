@@ -227,7 +227,7 @@ aformat_t audio_type_convert(enum CodecID id, pfile_type File_type)
 
     default:
         format = AFORMAT_UNSUPPORT;
-        log_print("audio codec_id=0x%x\n", id);
+        log_print("unsupport audio codec_id=0x%x\n", id);
     }
 
     log_print("[audio_type_convert]audio codec_id=0x%x format=%d\n", id, format);
@@ -522,10 +522,10 @@ int set_file_type(const char *name, pfile_type *ftype, pstream_type *stype)
                 break;
             }
 
-            if (i == j) {
-                log_print("Unsupport file type %s\n", name);
-                return PLAYER_UNSUPPORT;
-            }
+        }
+        if (i == j) {
+            log_print("Unsupport file type %s\n", name);
+            return PLAYER_UNSUPPORT;
         }
     }
 
