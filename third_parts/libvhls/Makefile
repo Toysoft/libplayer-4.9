@@ -15,6 +15,7 @@ CC_SRC += cmf_main/hls_cmf_impl.c \
 	  downloader/hls_download.c	\
 	  downloader/hls_bandwidth_measure.c	\
 	  ffmpeg_binds/ffmpeg_hls_wrapper.c	\
+	  ffmpeg_binds/ffmpeg_hls_demuxer.c	\
 	  ffmpeg_binds/libvhls_mod.c	\
 	  hls_main/hls_fifo.c	\
 	  hls_main/hls_m3ulivesession.c	\
@@ -26,7 +27,7 @@ CXX_OBJS += $(patsubst %.cpp, %.o, $(CXX_SRC))
 
 TARGET_OBJS += $(CC_OBJS) $(CXX_OBJS)
 
-TARGET=libvhls.so
+TARGET=libvhls_mod.so
 
 CFLAGS=-O2 -g  -I$(LOCAL_PATH)/include -I$(LOCAL_PATH)/hls_main -I$(LOCAL_PATH)/common -I$(LOCAL_PATH)/downloader -fPIC
 CFLAGS+= -I$(LOCAL_PATH)/../../amffmpeg

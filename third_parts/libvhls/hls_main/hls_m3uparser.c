@@ -38,6 +38,68 @@ typedef struct _M3UParser {
     struct list_head  mediaGroup_head;
 } M3UParser;
 
+size_t  strlcat(char *dst, const char *src, size_t  size)
+{
+  size_t    srclen;         /* Length of source string */
+  size_t    dstlen;         /* Length of destination string */
+
+
+ /*
+  * Figure out how much room is left...
+  */
+
+  dstlen = strlen(dst);
+  size   -= dstlen + 1;
+
+  if (!size)
+    return (dstlen);        /* No room, return immediately... */
+
+ /*
+  * Figure out how much room is needed...
+  */
+
+  srclen = strlen(src);
+
+ /*
+  * Copy the appropriate amount...
+  */
+
+  if (srclen > size)
+    srclen = size;
+
+  memcpy(dst + dstlen, src, srclen);
+  dst[dstlen + srclen] = '\0';
+
+  return (dstlen + srclen);
+}
+
+
+size_t  strlcpy(char  *dst, const char *src, size_t  size)
+{
+  size_t    srclen;         /* Length of source string */
+
+
+ /*
+  * Figure out how much room is needed...
+  */
+
+  size --;
+
+  srclen = strlen(src);
+
+ /*
+  * Copy the appropriate amount...
+  */
+
+  if (srclen > size)
+    srclen = size;
+
+  memcpy(dst, src, srclen);
+  dst[srclen] = '\0';
+
+  return (srclen);
+}
+
 //====================== media group ==============================
 
 static void codecIsType(const char * codec, MediaType * type) {

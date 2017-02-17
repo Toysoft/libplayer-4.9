@@ -130,7 +130,8 @@ void hls_rand_bytes(void *buf, size_t len)
         len -= 16;
         buf = ((uint8_t *)buf) + 16;
         //TRACE();
-
+#else
+        return;
 #endif
 
     }

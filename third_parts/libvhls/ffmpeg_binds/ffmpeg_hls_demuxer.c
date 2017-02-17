@@ -326,9 +326,9 @@ static int _hls_parse_next_segment(AVFormatContext * s, int session_index, int f
 }
 
 static int hls_read_probe(AVProbeData * p) {
-    HLOG("[%s:%d] read probe ! filename : %s ", __FUNCTION__, __LINE__, p->filename);
+    HLOG("[%s:%d] read probe ! filename : %s \n", __FUNCTION__, __LINE__, p->filename);
     if (av_strstart(p->filename, "mhls:", NULL) != 0) {
-        HLOG("[%s:%d] hls demuxer has been probed !", __FUNCTION__, __LINE__);
+        HLOG("[%s:%d] hls demuxer has been probed !\n", __FUNCTION__, __LINE__);
         return AVPROBE_SCORE_MAX;
     }
     return 0;
