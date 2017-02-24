@@ -64,7 +64,7 @@ static __inline__ int MULSHIFT32(int x, int y)
 {
     long c;
     c = (long)x * y;
-    return (int)c;
+    return (int)(c >> 32);
 }
 #else
 static __inline__ int MULSHIFT32(int x, int y)
