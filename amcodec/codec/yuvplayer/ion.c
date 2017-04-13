@@ -30,7 +30,7 @@
 
 #include <ion.h>
 #include <ion_dev.h>
-
+#define ALOGE printf
 int ion_open()
 {
         int fd = open("/dev/ion", O_RDWR);
