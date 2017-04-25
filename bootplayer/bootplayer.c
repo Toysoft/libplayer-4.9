@@ -15,6 +15,12 @@
 #include "streamsource.h"
 #include "Amsysfsutils.h"
 
+#ifndef ANDROID
+#define ALOGD printf
+#define ALOGE printf
+#define ALOGI printf
+#endif
+
 typedef enum {
     //EMU_STEP_NONE = 0,
     EMU_STEP_PAUSE = 2,

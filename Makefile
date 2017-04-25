@@ -21,7 +21,9 @@ all:
 	-$(MAKE) -C third_parts/libcurl-ffmpeg all
 	-$(MAKE) -C third_parts/libdash all
 	-$(MAKE) -C third_parts/libvhls all
-    
+	-$(MAKE) -C bootplayer all
+	-$(MAKE) -C bootplayer install
+
 install:
 	-$(MAKE) -C examples install
 

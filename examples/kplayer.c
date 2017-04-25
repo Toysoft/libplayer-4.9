@@ -112,6 +112,7 @@ int _media_info_dump(media_info_t* minfo)
     printf("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
     return 0;
 }
+
 static int get_axis(const char *para, int para_num, int *result)
 {
     char *endp;
@@ -174,6 +175,16 @@ static int set_display_axis(int recovery)
     return -1;
 }
 
+static int set_osd_blank()
+{
+    char *path1 = "/sys/class/graphics/fb0/blank";
+    char *path2 = "/sys/class/graphics/fb1/blank";
+
+    amsysfs_set_sysfs_str(path1, "1");
+    amsysfs_set_sysfs_str(path2, "1");
+    return 0;
+}
+
 static void signal_handler(int signum)
 {
     printf("Get signum=%x\n", signum);
@@ -234,6 +245,8 @@ int main(int argc, char *argv[])
     }
     signal(SIGSEGV, signal_handler);
     //SYS_disable_osd0();
+    set_osd_blank();
+
     while ((!tmpneedexit) && (!PLAYER_THREAD_IS_STOPPED(player_get_state(pid)))) {
         switch (tmpstep) {
         case EMU_STEP_PAUSE:
