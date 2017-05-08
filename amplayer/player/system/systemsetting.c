@@ -10,6 +10,10 @@
 #include <unistd.h>
 #include "../player_priv.h"
 
+#ifndef ANDROID
+#define USE_ARM_AUDIO_DEC
+#endif
+
 int PlayerSettingIsEnable(const char* path)
 {
     char value[1024];
@@ -160,8 +164,8 @@ int PlayerGetVFilterFormat(play_para_t*am_p)
 int PlayerGetAFilterFormat(const char *prop)
 {
 	char value[1024];
-	int filter_fmt = 0;	
-#ifndef 	USE_ARM_AUDIO_DEC
+	int filter_fmt = 0;
+#ifndef USE_ARM_AUDIO_DEC
     /* check the dts/ac3 firmware status */
     if(access("/system/etc/firmware/audiodsp_codec_ddp_dcv.bin",F_OK)){
 //#ifndef DOLBY_DAP_EN
