@@ -39,7 +39,7 @@ static int amffmpeg_read(amffmpeg_read_ctl_t *amffmpeg_read_ctx, unsigned char* 
 
 int audio_dec_init(audio_decoder_operations_t *adec_ops)
 {
-    audio_codec_print("\n\n[%s]BuildDate--%s  BuildTime--%s", __FUNCTION__, __DATE__, __TIME__);
+    audio_codec_print("\n\n[%s]BuildDate--%s  BuildTime--%s\n", __FUNCTION__, __DATE__, __TIME__);
     aml_audio_dec_t *audec = (aml_audio_dec_t *)(adec_ops->priv_data);
     adec_ops->nInBufSize = AMFFMPEG_INFRAME_BUFSIZE;
     adec_ops->nOutBufSize = AVCODEC_MAX_AUDIO_FRAME_SIZE;
@@ -159,7 +159,7 @@ int audio_dec_decode(audio_decoder_operations_t *adec_ops, char *outbuf, int *ou
                 break;
             }
         }else {
-            audio_codec_print(".. to be supported");
+            audio_codec_print(".. to be supported\n");
             return -1;
         }
 #if 0

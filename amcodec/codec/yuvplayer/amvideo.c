@@ -1,7 +1,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <amvideo.h>
+#include <yuvplayer/amvideo.h>
 #include "amlv4l.h"
 #include <stdio.h>
 

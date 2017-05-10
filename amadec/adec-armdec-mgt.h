@@ -13,7 +13,7 @@
 #define DEFAULT_PCM_BUFFER_SIZE 192000*2//default out buffer size
 #define DEFAULT_ASSOC_AUDIO_BUFFER_SIZE       (1024*768*2)
 
-#define AUDIO_EXTRA_DATA_SIZE   (4096)
+#define AUDIO_EXTRA_DATA_SIZE   (8192)
 typedef struct _audio_info {
     int bitrate;
     int samplerate;

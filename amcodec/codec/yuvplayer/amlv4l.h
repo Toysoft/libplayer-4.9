@@ -1,6 +1,6 @@
 #ifndef AMLV4L_HEAD_A__
 #define AMLV4L_HEAD_A__
-#include <amvideo.h>
+#include <yuvplayer/amvideo.h>
 
 typedef struct amlv4l_dev {
     int v4l_fd;

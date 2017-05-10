@@ -28,8 +28,7 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 
-#include <ion.h>
-#include <ion_dev.h>
+#include <yuvplayer/ion.h>
 #define ALOGE printf
 int ion_open()
 {
