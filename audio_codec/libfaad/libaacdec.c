@@ -448,6 +448,11 @@ int audio_dec_decode(
             goto exit;
         }
     }
+    if ( hDecoder->adif_header_present ) {
+        if (dec_bufsize < (get_frame_size(gFaadCxt) + FRAME_SIZE_MARGIN)/*AAC_INPUTBUF_SIZE/2*/) {
+            goto exit;
+        }
+    }
     sample_buffer = NeAACDecDecode(gFaadCxt->hDecoder, &frameInfo, dec_buf, dec_bufsize);
     dec_bufsize -= frameInfo.bytesconsumed;
     if (frameInfo.channels < 0 || frameInfo.channels > 8) {
