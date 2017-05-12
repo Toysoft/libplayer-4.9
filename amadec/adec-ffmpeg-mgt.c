@@ -83,6 +83,14 @@ int find_audio_lib(aml_audio_dec_t *audec)
     for (i = 0; i < num; i++) {
         f = &audio_lib_list[i];
         if (f->codec_id == audec->format) {
+#ifndef ANDROID
+            if (audec->format == ACODEC_FMT_FLAC) {
+                fd = dlopen("libavcodec.so", RTLD_NOW | RTLD_GLOBAL);
+                if (!fd) {
+                    adec_print("cant load libavcodec.so (%s)\n", dlerror());
+                }
+            }
+#endif
             fd = dlopen(audio_lib_list[i].name, RTLD_NOW);
             if (fd != NULL) {
                 adec_ops->init    = dlsym(fd, "audio_dec_init");

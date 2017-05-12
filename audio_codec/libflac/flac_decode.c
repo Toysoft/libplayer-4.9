@@ -157,7 +157,7 @@ static void allocate_buffers(FLACContext *s)
     int i;
 
     if (s->max_framesize == 0 && s->max_blocksize) {
-        s->max_framesize = ff_flac_get_max_frame_size(s->max_blocksize,
+        s->max_framesize = am_flac_get_max_frame_size(s->max_blocksize,
                            s->channels, s->bps);
     }
 
@@ -183,12 +183,12 @@ static int parse_streaminfo(FLACContext *s, const uint8_t *buf, int buf_size)
         /* need more data */
         return 0;
     }
-    ff_flac_parse_block_header(&buf[4], NULL, &metadata_type, &metadata_size);
+    am_flac_parse_block_header(&buf[4], NULL, &metadata_type, &metadata_size);
     if (metadata_type != FLAC_METADATA_TYPE_STREAMINFO ||
         metadata_size != FLAC_STREAMINFO_SIZE) {
         return  -1;//AVERROR_INVALIDDATA;
     }
-    ff_flac_parse_streaminfo(s->avctx, (FLACStreaminfo *)s, &buf[8]);
+    am_flac_parse_streaminfo(s->avctx, (FLACStreaminfo *)s, &buf[8]);
     allocate_buffers(s);
     s->got_streaminfo = 1;
 
@@ -207,7 +207,7 @@ static int get_metadata_size(const uint8_t *buf, int buf_size)
 
     buf += 4;
     do {
-        ff_flac_parse_block_header(buf, &metadata_last, NULL, &metadata_size);
+        am_flac_parse_block_header(buf, &metadata_last, NULL, &metadata_size);
         buf += 4;
         if (buf + metadata_size > buf_end) {
             /* need more data in order to read the complete header */
@@ -218,7 +218,7 @@ static int get_metadata_size(const uint8_t *buf, int buf_size)
 
     return buf_size - (buf_end - buf);
 }
-void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
+void am_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
                               const uint8_t *buffer)
 {
     GetBitContext gb;
@@ -254,7 +254,7 @@ void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
 }
 static void allocate_buffers(FLACContext *s);
 
-int ff_flac_is_extradata_valid(AVCodecContext *avctx,
+int am_flac_is_extradata_valid(AVCodecContext *avctx,
                                enum FLACExtradataFormat *format,
                                uint8_t **streaminfo_start)
 {
@@ -449,7 +449,7 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
     return 0;
 }
 
-void ff_flac_parse_block_header(const uint8_t *block_header,
+void am_flac_parse_block_header(const uint8_t *block_header,
                                 int *last, int *type, int *size)
 {
     int tmp = bytestream_get_byte(&block_header);
@@ -898,12 +898,12 @@ int audio_dec_init(audio_decoder_operations_t *adec_ops)
     if (!avctx->extradata_size) {
         return 0;
     }
-    if (!ff_flac_is_extradata_valid(avctx, &format, &streaminfo)) {
+    if (!am_flac_is_extradata_valid(avctx, &format, &streaminfo)) {
         return -1;
     }
 
     /* initialize based on the demuxer-supplied streamdata header */
-    ff_flac_parse_streaminfo(avctx, (FLACStreaminfo *)s, streaminfo);
+    am_flac_parse_streaminfo(avctx, (FLACStreaminfo *)s, streaminfo);
     if (s->bps > 16) {
         avctx->sample_fmt = SAMPLE_FMT_S32;
     } else {

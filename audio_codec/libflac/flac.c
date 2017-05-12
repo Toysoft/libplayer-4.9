@@ -21,7 +21,7 @@
 
 #include "flac.h"
 
-int ff_flac_get_max_frame_size(int blocksize, int ch, int bps)
+int am_flac_get_max_frame_size(int blocksize, int ch, int bps)
 {
     /* Technically, there is no limit to FLAC frame size, but an encoder
        should not write a frame that is larger than if verbatim encoding mode
