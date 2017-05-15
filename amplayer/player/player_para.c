@@ -687,6 +687,19 @@ static void get_ts_program_info(play_para_t *p_para)
         }
     }
 }
+static int sub_support(int codec_id)
+{
+#ifdef ANDROID
+    if (codec_id == CODEC_ID_DVB_TELETEXT) {
+#else
+    /* subtitle is not supported currently. */
+    if (codec_id >= CODEC_ID_DVD_SUBTITLE &&
+        codec_id <= CODEC_ID_DVB_TELETEXT) {
+#endif
+        return 0;
+    }
+    return 1;
+}
 
 static void get_stream_info(play_para_t *p_para)
 {
@@ -891,6 +904,10 @@ static void get_stream_info(play_para_t *p_para)
                     log_print("## filtered format subtitle that not in the same program=%d,i=%d,----\n", tssubtitlepid, i);
                     continue;
                 }
+            }
+            /* sub support check */
+            if (sub_support(pCodec->codec_id) == 0) {
+                continue;
             }
             p_para->sstream_num ++;
             if (temp_sidx == -1) {
