@@ -36,11 +36,13 @@
 /** Base path of the hal modules */
 #define AM_LIBRARY_PATH1    "/system/lib/amplayer"
 #define AM_LIBRARY_PATH2    "/vendor/lib/amplayer"
+#define AM_LIBRARY_PATH_BUILDROOT "/usr/lib/amplayer"
 #define AM_LIBRARY_SETTING  "media.libplayer.modulepath"
 
 static const char *defaut_path[] = {
     AM_LIBRARY_PATH1,
     AM_LIBRARY_PATH2,
+    AM_LIBRARY_PATH_BUILDROOT,
     ""/*real path.*/
 
 };
