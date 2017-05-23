@@ -3861,6 +3861,10 @@ int av_find_stream_info(AVFormatContext *ic)
             fast_switch = 2;
         }
     };
+
+    if (ic->pb && ic->pb->local_playback)
+        ic->probesize <<= 1;
+
     av_log(NULL, AV_LOG_INFO, "[%s]iformat->name[%s]fast_switch=%d streamtype=%lld\n", \
            __FUNCTION__, ic->iformat->name, fast_switch, streamtype);
     /* make all the stream  valid at the beginning*/
