@@ -810,7 +810,9 @@ int audiodec_init(aml_audio_dec_t *audec)
         pthread_setname_np(tid, "AmadecWFDMsgloop");
     } else {
         int codec_type = get_audio_decoder();
-        RegisterDecode(audec, codec_type);
+        if (0 != RegisterDecode(audec, codec_type)) {
+            return -1;
+        }
         ret = amthreadpool_pthread_create(&tid, NULL, (void *)adec_armdec_loop, (void *)audec);
         pthread_mutex_init(&audec->thread_mgt.pthread_mutex, NULL);
         pthread_cond_init(&audec->thread_mgt.pthread_cond, NULL);

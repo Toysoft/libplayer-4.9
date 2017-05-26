@@ -213,7 +213,7 @@ int audio_decode_release(void **handle)
     adec_cmd_t *cmd;
     aml_audio_dec_t *audec = (aml_audio_dec_t *) * handle;
 
-    if (!handle) {
+    if (!*handle) {
         adec_print("audio handle is NULL !\n");
         return -1;
     }

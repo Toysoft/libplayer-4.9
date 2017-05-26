@@ -1012,22 +1012,25 @@ int alsa_stop(struct aml_audio_dec* audec)
     alsa_param_t *alsa_params;
 
     alsa_params = (alsa_param_t *)audec->aout_ops.private_data;
-    pthread_mutex_lock(&alsa_params->playback_mutex);
-    alsa_params->pause_flag = 0;
-    alsa_params->stop_flag = 1;
-    //alsa_params->wait_flag = 0;
-    pthread_cond_signal(&alsa_params->playback_cond);
-    amthreadpool_pthread_join(alsa_params->playback_tid, NULL);
-    pthread_cond_destroy(&alsa_params->playback_cond);
+    if (alsa_params) {
+        pthread_mutex_lock(&alsa_params->playback_mutex);
+        alsa_params->pause_flag = 0;
+        alsa_params->stop_flag = 1;
+        //alsa_params->wait_flag = 0;
+        pthread_cond_signal(&alsa_params->playback_cond);
+        amthreadpool_pthread_join(alsa_params->playback_tid, NULL);
+        pthread_cond_destroy(&alsa_params->playback_cond);
 
 
-    snd_pcm_drop(alsa_params->handle);
-    snd_pcm_close(alsa_params->handle);
-    pthread_mutex_unlock(&alsa_params->playback_mutex);
-    pthread_mutex_destroy(&alsa_params->playback_mutex);
+        snd_pcm_drop(alsa_params->handle);
+        snd_pcm_close(alsa_params->handle);
+        pthread_mutex_unlock(&alsa_params->playback_mutex);
+        pthread_mutex_destroy(&alsa_params->playback_mutex);
 
-    free(alsa_params);
-    audec->aout_ops.private_data = NULL;
+        free(alsa_params);
+        audec->aout_ops.private_data = NULL;
+    }
+
     adec_print("exit alsa out stop\n");
 
     return 0;
