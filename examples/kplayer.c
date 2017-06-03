@@ -230,10 +230,10 @@ int main(int argc, char *argv[])
     pCtrl->hassub = 1;  // enable subtitle
 
     //just open a buffer,just for p2p,http,etc...
-    //pCtrl->auto_buffing_enable = 1;
-    //  pCtrl->buffing_min = 0.001;
-    //  pCtrl->buffing_middle = 0.02;
-    //  pCtrl->buffing_max = 0.9;
+    pCtrl->auto_buffing_enable = 1;
+    pCtrl->buffing_min = 0.001;
+    pCtrl->buffing_middle = 0.02;
+    pCtrl->buffing_max = 0.9;
 
     pCtrl->t_pos = -1;  // start position, if live streaming, need set to -1
     pCtrl->need_start = 0; // if 0,you can omit player_start_play API.just play video/audio immediately. if 1,need call "player_start_play" API;
