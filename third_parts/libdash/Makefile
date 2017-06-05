@@ -1,10 +1,15 @@
-#CC=${HOST_GCC}
-LIBMOD_DIR=$(TARGET_DIR)/usr/lib/amplayer
-#export CC BUILD_DIR STAGING_DIR TARGET_DIR LIBMOD_DIR
+LIBMOD_DIR = $(TARGET_DIR)/usr/lib/amplayer
+LIB_DST := $(LIBMOD_DIR)/libdash_mod.so
+
+ifeq ($(ARCH),arm)
+LIB_SRC := libdash_mod_arm.so
+else
+LIB_SRC := libdash_mod_aarch64.so
+endif
+
 all:
-	mkdir -p $(LIBMOD_DIR)
-	cp -rf libdash_mod.so  $(LIBMOD_DIR)/
+	mkdir $(LIBMOD_DIR) -p
+	-install $(LIB_SRC) $(LIB_DST) -m 0664
 
 clean:
-	rm -rf $(libdashdir)/libdash_mod.so
-
+	rm $(LIB_DST) -rf
