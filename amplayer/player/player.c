@@ -882,7 +882,6 @@ void update_player_start_paras(play_para_t *p_para, play_control_t *c_para)
                       p_para->buffering_threshhold_middle,
                       p_para->buffering_threshhold_max
                      );
-            p_para->buffering_enable = 0;
         }
     }
     player_get_vdec_profile(&p_para->vdec_profile, 0);
