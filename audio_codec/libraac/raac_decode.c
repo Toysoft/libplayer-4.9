@@ -40,7 +40,7 @@ typedef struct {
     UINT32              usStreamNum;
 } rm_info_t;
 
-#define AUDIO_EXTRA_DATA_SIZE  (2048*2)
+#define AUDIO_EXTRA_DATA_SIZE  (2048*4)
 
 struct audio_info {
     int valid;
