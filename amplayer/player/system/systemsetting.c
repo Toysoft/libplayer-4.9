@@ -178,15 +178,15 @@ int PlayerGetAFilterFormat(const char *prop)
             filter_fmt  |= FILTER_AFMT_DTS;
     }
 #else
-    if(access("/system/lib/libstagefright_soft_dcvdec.so",F_OK)){
+    if (access("/usr/lib/libdcv.so",F_OK)) {
 #ifndef DOLBY_DAP_EN
 	filter_fmt |= (FILTER_AFMT_AC3|FILTER_AFMT_EAC3);
 #endif
     }
-    if(access("/system/lib/libstagefright_soft_dtshd.so",F_OK) ){
+    if (access("/usr/lib/libdtscore.so",F_OK)) {
         filter_fmt  |= FILTER_AFMT_DTS;
     }
-    if (access("/system/lib/libdra.so",F_OK) ) {
+    if (access("/system/lib/libdra.so",F_OK)) {
        filter_fmt  |= FILTER_AFMT_DRA;
     }
 #endif	

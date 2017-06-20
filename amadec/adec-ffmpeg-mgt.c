@@ -59,6 +59,9 @@ audio_lib_t audio_lib_list[] = {
     {ACODEC_FMT_VORBIS, "libamffmpegdec.so"},
     {ACODEC_FMT_WMA, "libamffmpegdec.so"},
     {ACODEC_FMT_WMAPRO, "libamffmpegdec.so"},
+    {ACODEC_FMT_AC3,"libdcv.so"},
+    {ACODEC_FMT_EAC3,"libdcv.so"},
+    {ACODEC_FMT_DTS,"libdtscore.so"},
 #endif
     NULL
 } ;
