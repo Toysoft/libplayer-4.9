@@ -7,7 +7,7 @@
 #define SAMPLE_RATE_VALID       (1<<3)
 #define DATA_WIDTH_VALID        (1<<4)
 
-#define AUDIO_EXTRA_DATA_SIZE  (2048*2)
+#define AUDIO_EXTRA_DATA_SIZE  (2048*4)
 
 struct audio_info {
     int valid;
