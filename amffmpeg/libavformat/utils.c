@@ -3604,38 +3604,34 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt)
     int got_picture, data_size, ret = 0;
     AVFrame picture;
     // no hevc SW decoder, just parser now
-    if (st->codec->codec_id == CODEC_ID_HEVC && (st->codec->width <= 0 || st->codec->bit_depth <= 0))
-    {
+    if (st->codec->codec_id == CODEC_ID_HEVC && (st->codec->width <= 0 || st->codec->bit_depth <= 0)) {
         struct hevc_info info;
         const uint8_t *ptr;
         uint8_t *buffer = NULL;
         int tsize, bsize = 0;
         // no sps in es data but extradata, parse bit_depth from extradata.
-        if (st->codec->extradata_size > 0)
-        {
+        if (st->codec->extradata_size > 0) {
             int header_len = 0;
             bsize = st->codec->extradata_size + 100;
             buffer = (uint8_t *)av_malloc(bsize);
+            if (NULL == buffer)
+                return -1;
+
             memset(buffer, 0x00, bsize);
             const uint8_t *p = st->codec->extradata;
             if ((p[0] == 0 && p[1] == 0 && p[2] == 0 && p[3] == 1) || (p[0] == 0 && p[1] == 0 && p[2] == 1))
-            {
                 memcpy(buffer, st->codec->extradata, st->codec->extradata_size);
-            }
-            else
-            {
+            else {
                 char nal_start_code[] = {0x0, 0x0, 0x0, 0x1};
                 int i, j, num_arrays, nal_len_size, nalsize;
                 p += 21;
                 nal_len_size = *(p++) & 3 + 1;
                 num_arrays   = *(p++);
-                for (i = 0; i < num_arrays; i++)
-                {
+                for (i = 0; i < num_arrays; i++) {
                     int type = *(p++) & 0x3f;
                     int cnt  = (*p << 8) | (*(p + 1));
                     p += 2;
-                    for (j = 0; j < cnt; j++)
-                    {
+                    for (j = 0; j < cnt; j++) {
                         nalsize = (*p << 8) | (*(p + 1));
                         memcpy(&(buffer[header_len]), nal_start_code, 4);
                         header_len += 4;
@@ -3645,32 +3641,33 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt)
                     }
                 }
             }
+
             ptr = buffer;
             tsize = header_len;
-        }
-        ret = HEVC_decode_SPS(ptr, tsize, &info);
-        if (ret)
-        {
-            ptr = avpkt->data;
-            tsize = avpkt->size;
+
             ret = HEVC_decode_SPS(ptr, tsize, &info);
-        }
-        if (!ret)
-        {
-            st->codec->width = info.mwidth;
-            st->codec->height = info.mheight;
-            st->codec->bit_depth = info.bit_depth;
-            if (info.long_term_ref_pics_present_flag == 1 && info.num_long_term_ref_pics_sps > 0)
-            {
-                st->codec->long_term_ref_pic = 1;
+            if (ret) {
+                ptr = avpkt->data;
+                tsize = avpkt->size;
+                ret = HEVC_decode_SPS(ptr, tsize, &info);
             }
-        }
-        if (bsize > 0)
-        {
-            av_free(buffer);
+
+            if (!ret) {
+                st->codec->width = info.mwidth;
+                st->codec->height = info.mheight;
+                st->codec->bit_depth = info.bit_depth;
+                if (info.long_term_ref_pics_present_flag == 1
+                    && info.num_long_term_ref_pics_sps > 0) {
+                    st->codec->long_term_ref_pic = 1;
+                }
+            }
+
+            if (bsize > 0)
+                av_free(buffer);
         }
         return 0;
     }
+
     if (!st->codec->codec)
     {
         codec = avcodec_find_decoder(st->codec->codec_id);
