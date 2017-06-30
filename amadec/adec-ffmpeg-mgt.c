@@ -17,7 +17,7 @@
 #endif
 #include <adec_assoc_audio.h>
 
-
+#define HEADER_LENGTH_AFTER_IEC61937 0x4
 static char UDCInOutMix[] = "media.udc.inoutmix";
 
 extern int read_buffer(unsigned char *buffer, int size);
@@ -100,6 +100,7 @@ int find_audio_lib(aml_audio_dec_t *audec)
                 adec_ops->decode  = dlsym(fd, "audio_dec_decode");
                 adec_ops->release = dlsym(fd, "audio_dec_release");
                 adec_ops->getinfo = dlsym(fd, "audio_dec_getinfo");
+                adec_print("audec->format/%d decoder load success \n", audec->format);
             } else {
                 adec_print("cant find decoder lib %s\n", dlerror());
                 return -1;
@@ -1223,16 +1224,24 @@ void *audio_decode_loop(void *args)
     int outlen = 0;
     struct package *p_Package;
     buffer_stream_t *g_bst;
-    AudioInfo g_AudioInfo;
-    adec_print("[%s]adec_armdec_loop start!\n", __FUNCTION__);
+    buffer_stream_t *g_bst_raw;//for ac3&eac3 passthrough
+    AudioInfo g_AudioInfo = {0};
+    adec_print("[%s]adec_armdec_loop start!\n",__FUNCTION__);
+    int dgraw = amsysfs_get_sysfs_int("/sys/class/audiodsp/digital_raw");
+
     audec = (aml_audio_dec_t *)args;
     aout_ops = &audec->aout_ops;
-    adec_ops = audec->adec_ops;
+    adec_ops=audec->adec_ops;
     memset(outbuf, 0, AVCODEC_MAX_AUDIO_FRAME_SIZE);
-    g_bst = audec->g_bst;
+    g_bst=audec->g_bst;
+    if (dgraw) {
+        g_bst_raw=audec->g_bst_raw;
+        g_bst_raw->format = audec->format;
+    }
 
-    nAudioFormat = audec->format;
+    nAudioFormat=audec->format;
     g_bst->format = audec->format;
+
     inlen = 0;
     nNextFrameSize = adec_ops->nInBufSize;
     adec_ops->nAudioDecoderType = audec->format;
@@ -1344,7 +1353,53 @@ exit_decode_loop:
                 } else {
                     audec->decode_offset += dlen;
                 }
+                if (((AUDIO_SPDIF_PASSTHROUGH == dgraw) || (AUDIO_HDMI_PASSTHROUGH == dgraw)) &&
+                     ((ACODEC_FMT_AC3 == nAudioFormat) || (ACODEC_FMT_EAC3 == nAudioFormat) || (ACODEC_FMT_DTS == nAudioFormat))) {
+                    int bytesread=0;
+                    while (outlen) {
+                        //sub the pcm header(4bytes) and the pcm data(0x1800bytes)
+                        char *output_pcm_buf = outbuf + HEADER_LENGTH_AFTER_IEC61937 + bytesread;
+                        int output_pcm_len = *(int *)outbuf;
+                        audec->pcm_cache_size=output_pcm_len;
+                        outlen = outlen - HEADER_LENGTH_AFTER_IEC61937 - output_pcm_len;
 
+                        //sub the raw header(4bytes) and the raw data(AC3:0x1800bytes/EAC3:0x6000bytes)
+                        char *output_raw_buf = output_pcm_buf + output_pcm_len + HEADER_LENGTH_AFTER_IEC61937;
+                        int output_raw_len = *(int *)(outbuf + HEADER_LENGTH_AFTER_IEC61937 + output_pcm_len);
+                        outlen = outlen - HEADER_LENGTH_AFTER_IEC61937 - output_raw_len;
+
+                        bytesread += 2*HEADER_LENGTH_AFTER_IEC61937+output_pcm_len+output_raw_len;
+                        //use alsa-out.c output pcm data
+                        if (g_bst) {
+                            int wlen=0;
+
+                            while (output_pcm_len && (!audec->exit_decode_thread)) {
+                                if (g_bst->buf_length-g_bst->buf_level<output_pcm_len) {
+                                usleep(100000);
+                                continue;
+                                }
+                                wlen=write_pcm_buffer(output_pcm_buf, g_bst, output_pcm_len);
+                                output_pcm_len -= wlen;
+                                audec->pcm_cache_size-=wlen;
+                            }
+                        }
+
+                        //use alsa-out-raw.c output raw data
+                        if ( (g_bst_raw) && ((AUDIO_SPDIF_PASSTHROUGH == dgraw) || (AUDIO_HDMI_PASSTHROUGH == dgraw)) )
+                        {
+                            int wlen=0;
+
+                            while (output_raw_len && !audec->exit_decode_thread) {
+                                if (g_bst_raw->buf_length-g_bst_raw->buf_level<output_raw_len) {
+                                    usleep(100000);
+                                    continue;
+                                }
+                                wlen=write_pcm_buffer(output_raw_buf, g_bst_raw,output_raw_len);
+                                output_raw_len -= wlen;
+                            }
+                        }
+                    }
+                } else {
                 audec->pcm_cache_size = outlen;
                 if (g_bst) {
                     int wlen = 0;
@@ -1356,9 +1411,10 @@ exit_decode_loop:
                         wlen = write_pcm_buffer(outbuf, g_bst, outlen);
                         outlen -= wlen;
                         audec->pcm_cache_size -= wlen;
+                        }
+                      }
                     }
-                }
-            }
+                  }
         } else {
             amthreadpool_thread_usleep(1000);
             continue;
