@@ -6,7 +6,7 @@ TARGET_OBJS=amaudioutils.o amconfigutils.o amdisplayutils.o ammodule.o amsysfsut
 
 TARGET=libamavutils.so
 
-INSTALL_DIR=${LIB_DIR}/libplayer
+INSTALL_DIR=${LIB_DIR}
 
 LDFLAGS += -shared -lpthread -lm -lrt
 
@@ -22,16 +22,17 @@ CFLAGS+=-I$(SRC) -I$(SRC)/include -I$(SRC)/../amcodec/include -L${LIB_DIR} -I$(H
 
 export CC CFLAGS
 
-all: $(TARGET) 
+all: $(TARGET)
 
 $(TARGET): $(TARGET_OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_OBJS:%.o=%.c) -o $@  
+	$(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_OBJS:%.o=%.c) -o $@
 
-    
-    
+
+
 
 install:
 	-install -m 555 ${TARGET} $(INSTALL_DIR)
+	-install -m 555 $(TARGET) $(TARGET_DIR)/usr/lib
 	cp  -rf $(SRC)/include/*  $(HEADERS_DIR)/
 
 force:
@@ -39,5 +40,5 @@ force:
 clean:
 	-rm -rf *.o ${AMADEC_DIST} ${MP3LIB} $(PCMLIB) $(ADPCMLIB) $(AACLIB) $(A52LIB)
 
-    
+
 

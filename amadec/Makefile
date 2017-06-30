@@ -8,7 +8,7 @@ TARGET_OBJS=adec-external-ctrl.o adec-internal-mgt.o adec-ffmpeg-mgt.o adec-mess
 
 TARGET=libamadec.so
 
-INSTALL_DIR=$(LIB_DIR)/libplayer
+INSTALL_DIR=$(LIB_DIR)
 
 LDFLAGS += -shared -lpthread -lm -lasound -lrt
 
@@ -25,16 +25,17 @@ endif
 
 export CC CFLAGS
 
-all: $(TARGET) 
+all: $(TARGET)
 
 $(TARGET): $(TARGET_OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_OBJS:%.o=%.c) -o $@  
+	$(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_OBJS:%.o=%.c) -o $@
 
-    
-    
+
+
 
 install:
 	-install -m 555 ${TARGET} $(INSTALL_DIR)
+	-install -m 555 $(TARGET) $(TARGET_DIR)/usr/lib
 	cp  -rf $(SRC)/include/*  $(HEADERS_DIR)/
 	cp  -rf $(SRC)/*.h  $(HEADERS_DIR)/
 
@@ -43,5 +44,5 @@ force:
 clean:
 	-rm -rf *.o ${AMADEC_DIST} ${MP3LIB} $(PCMLIB) $(ADPCMLIB) $(AACLIB) $(A52LIB)
 
-    
+
 
