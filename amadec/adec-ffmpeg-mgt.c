@@ -888,7 +888,8 @@ static void stop_adec(aml_audio_dec_t *audec)
         char buf[64];
 
         audec->state = STOPPED;
-        aout_ops->mute(audec, 1); //mute output, some repeat sound in audioflinger after stop
+        // buildroot need not this add by lianlian.zhu
+        //aout_ops->mute(audec, 1); //mute output, some repeat sound in audioflinger after stop
         aout_ops->stop(audec);
         audio_codec_release(audec);
 
