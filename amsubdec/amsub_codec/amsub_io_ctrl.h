@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2014 Amlogic, Inc. All rights reserved.
+ *
+ * This source code is subject to the terms and conditions defined in the
+ * file 'LICENSE' which is part of this source code package.
+ *
+ * Description:
+ */
+
+
 #ifndef AMSUB_IO_CTRL_H_
 #define AMSUB_IO_CTRL_H_
 #include "amsub_dec.h"

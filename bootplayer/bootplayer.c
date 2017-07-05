@@ -1,3 +1,24 @@
+/*
+ * Copyright (c) 2014 Amlogic, Inc. All rights reserved.
+ *
+ * This source code is subject to the terms and conditions defined in the
+ * file 'LICENSE' which is part of this source code package.
+ *
+ * Description:
+ */
+
+
+/**
+* @file kplayer.c
+* @brief
+* @author Xu Hui <hui.xu@amlogic.com>
+* @version 1.0.0
+* @date 2011-02-28
+*/
+/*!< Copyright (C) 2007-2011, Amlogic Inc.
+* All right reserved
+*
+*/
 
 #define LOG_TAG "bootplayer"
 
