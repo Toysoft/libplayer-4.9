@@ -1,15 +1,19 @@
-LIBMOD_DIR = $(TARGET_DIR)/usr/lib/amplayer
-LIB_DST := $(LIBMOD_DIR)/libdash_mod.so
+#CC=${HOST_GCC}
 
-ifeq ($(ARCH),arm)
-LIB_SRC := libdash_mod_arm.so
-else
-LIB_SRC := libdash_mod_aarch64.so
-endif
-
+#export CC BUILD_DIR STAGING_DIR TARGET_DIR
 all:
-	mkdir $(LIBMOD_DIR) -p
-	-install $(LIB_SRC) $(LIB_DST) -m 0664
+	mkdir -p $(shell pwd)/../../staging/usr/lib/libdash
+	-$(MAKE) -C libdash/source all
+	-$(MAKE) -C libdash/source install
+	-$(MAKE) -C libdash_wrapper all
+	-$(MAKE) -C libdash_wrapper install
+	-$(MAKE) -C ffmpeg_binds all
+	-$(MAKE) -C ffmpeg_binds install
+
+install:
+	-$(MAKE) -C test install
 
 clean:
-	rm $(LIB_DST) -rf
+	-$(MAKE) -C ffmpeg_binds clean
+	-$(MAKE) -C libdash clean
+	-$(MAKE) -C libdash_wrapper  clean
