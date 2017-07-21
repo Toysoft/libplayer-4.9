@@ -20,7 +20,7 @@ LD 		= $(CROSS)ld
 
 DEBUG_CFLAGS     := -c -Wall -shared -fPIC -Wno-format -g -DDEBUG -fexceptions -fnon-call-exceptions
 RELEASE_CFLAGS   := -c -Wall -shared -fPIC -Wno-unknown-pragmas -Wno-format -O3 -fexceptions -fnon-call-exceptions
-DEBUG_LDFLAGS    := -g -shared -fPIC -L$(INSTALL_DIR)  -lavformat -lavcodec -lavutil -lamadec 
+DEBUG_LDFLAGS    := -g -shared -fPIC -L$(LIB_DIR) -L$(INSTALL_DIR)  -lavformat -lavcodec -lavutil -lamadec
 RELEASE_LDFLAGS  := -shared -fPIC
 
 
