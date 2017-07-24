@@ -185,13 +185,13 @@ static int set_display_axis(int recovery)
     return -1;
 }
 
-static int set_osd_blank()
+static int set_osd_blank(int blank)
 {
     char *path1 = "/sys/class/graphics/fb0/blank";
     char *path2 = "/sys/class/graphics/fb1/blank";
 
-    amsysfs_set_sysfs_str(path1, "1");
-    amsysfs_set_sysfs_str(path2, "1");
+    amsysfs_set_sysfs_str(path1, blank ? "1" : "0");
+    amsysfs_set_sysfs_str(path2, blank ? "1" : "0");
     return 0;
 }
 
@@ -200,6 +200,7 @@ static void signal_handler(int signum)
     printf("Get signum=%x\n", signum);
    // player_progress_exit();
    // set_display_axis(1);
+    set_osd_blank(0);
     signal(signum, SIG_DFL);
     raise(signum);
 }
@@ -254,8 +255,9 @@ int main(int argc, char *argv[])
         return -1;
     }
     signal(SIGSEGV, signal_handler);
+    signal(SIGINT, signal_handler);
     //SYS_disable_osd0();
-    set_osd_blank();
+    set_osd_blank(1);
 
     while ((!tmpneedexit) && (!PLAYER_THREAD_IS_STOPPED(player_get_state(pid)))) {
         switch (tmpstep) {
@@ -379,10 +381,10 @@ int main(int argc, char *argv[])
         signal(SIGHUP, signal_handler);
         signal(SIGTERM, signal_handler);
         signal(SIGSEGV, signal_handler);
-        signal(SIGINT, signal_handler);
         signal(SIGQUIT, signal_handler);
     }
     set_display_axis(1);    //recover osd
+    set_osd_blank(0);
     free(pCtrl->file_name);
     free(pCtrl);
     printf("...........player exit,~,byeybe...........\n");
