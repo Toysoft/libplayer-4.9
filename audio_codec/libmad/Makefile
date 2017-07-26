@@ -1,4 +1,4 @@
-DW_NAME		= mad
+DW_NAME		= ammad
 M_PREFIX=$(LIBPLAYER_STAGING_DIR)/usr
 LIB_DIR?=$(M_PREFIX)/lib
 INSTALL_DIR=${LIB_DIR}/libplayer
