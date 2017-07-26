@@ -25,6 +25,7 @@ $(TARGET): $(TARGET_OBJS)
 
 install:
 	-install -m 555 ${TARGET} $(INSTALL_DIR)
+	mkdir -p $(LIBMOD_DIR)
 	-install -m 555 ${TARGET} $(LIBMOD_DIR)
 force:
 

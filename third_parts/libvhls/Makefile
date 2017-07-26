@@ -48,6 +48,7 @@ all: $(TARGET)
 
 $(TARGET): $(CC_OBJS) $(CXX_OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_OBJS) -o $@
+	mkdir -p $(LIBMOD_DIR)
 	-install -m 555 ${TARGET} $(LIBMOD_DIR)
 clean:
 	$(RM) $(TARGET_OBJS) $(TARGET)
