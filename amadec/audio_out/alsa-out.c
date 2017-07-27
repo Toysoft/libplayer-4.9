@@ -1145,7 +1145,6 @@ unsigned long alsa_latency(struct aml_audio_dec* audec)
 static int alsa_mute(struct aml_audio_dec* audec, adec_bool_t en){
 
     int dgraw = amsysfs_get_sysfs_int("/sys/class/audiodsp/digital_raw");
-    amsysfs_set_sysfs_int("/sys/class/amaudio/mute_unmute",en ? 1:0);
     //ac3 and eac3 passthrough
     if (((AUDIO_SPDIF_PASSTHROUGH == dgraw) || (AUDIO_HDMI_PASSTHROUGH == dgraw)) && \
     ((ACODEC_FMT_AC3 == audec->format) || (ACODEC_FMT_EAC3 == audec->format) || \
