@@ -914,8 +914,6 @@ int alsa_init(struct aml_audio_dec* audec)
         amsysfs_set_sysfs_int("/sys/class/audiodsp/digital_codec",0);//set output codec type as pcm
     }
     adec_print("[%s::%d]--[sound_card_dev:%s]\n",__FUNCTION__, __LINE__,sound_card_dev);
-
-
     err = snd_pcm_open(&alsa_param->handle, sound_card_dev, SND_PCM_STREAM_PLAYBACK, 0);
     if (err < 0) {
         adec_print("[%s::%d]--[audio open error: %s]\n", __FUNCTION__, __LINE__,snd_strerror(err));
@@ -1070,9 +1068,15 @@ int alsa_stop(struct aml_audio_dec* audec)
 
     alsa_params = (alsa_param_t *)audec->aout_ops.private_data;
     int dgraw = amsysfs_get_sysfs_int("/sys/class/audiodsp/digital_raw");
-
+    int res;
     if (alsa_params) {
         pthread_mutex_lock(&alsa_params->playback_mutex);
+        //resume the card, otherwise the output will block
+        if (alsa_params->pause_flag == 1) {
+            while ((res = snd_pcm_pause(alsa_params->handle, 0)) == -EAGAIN) {
+                 sleep(1);
+            }
+        }
         alsa_params->pause_flag = 0;
         alsa_params->stop_flag = 1;
         //alsa_params->wait_flag = 0;
