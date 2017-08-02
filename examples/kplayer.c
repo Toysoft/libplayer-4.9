@@ -195,6 +195,16 @@ static int set_osd_blank(int blank)
     return 0;
 }
 
+static void set_vfm_path(void)
+{
+    char *vfm_path = "/sys/class/vfm/map";
+    char *vfm_rm = "rm default";
+    char *vfm_add = "add default decoder ppmgr deinterlace amvideo";
+
+    amsysfs_set_sysfs_str(vfm_path, vfm_rm);
+    amsysfs_set_sysfs_str(vfm_path, vfm_add);
+}
+
 static void signal_handler(int signum)
 {
     printf("Get signum=%x\n", signum);
@@ -226,6 +236,10 @@ int main(int argc, char *argv[])
         printf("usage:player file\n");
         return -1;
     }
+
+    /*set default path for vfm.*/
+    set_vfm_path();
+
     player_init();
     //set_display_axis(0);        //move osd out of screen to set video layer out
 
