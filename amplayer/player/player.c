@@ -957,6 +957,30 @@ static int check_stop_cmd(play_para_t *player)
     return ret;
 }
 
+static void start_4khevc_scale(play_para_t *player)
+{
+    if (player && player->vstream_info.has_video == 1) {
+        if ((player->vstream_info.video_format == VFORMAT_HEVC) &&
+            ((player->vstream_info.video_width * player->vstream_info.video_height) > 1920 * 1088)) {
+            set_sysfs_int("/sys/module/vh265/parameters/double_write_mode", 3);
+            log_print("[%s] 4K Hevc set double_write_mode 3\n", __FUNCTION__);
+        }
+    }
+    return;
+}
+
+static void stop_4khevc_scale(void)
+{
+    int mode = -1;
+    mode = get_sysfs_int("/sys/module/vh265/parameters/double_write_mode");
+    if (mode == 3) {
+        set_sysfs_int("/sys/module/vh265/parameters/double_write_mode", 0);
+        log_print("[%s] 4K Hevc set double_write_mode 0\n", __FUNCTION__);
+    }
+
+    return;
+}
+
 static void player_para_init(play_para_t *para)
 {
     para->state.start_time = -1;
@@ -1267,6 +1291,7 @@ void *player_thread(play_para_t *player)
     update_player_states(player, 1);
     player_mate_init(player, 1000 * 10);
     ffmpeg_seturl_buffered_level(player, 0);
+    start_4khevc_scale(player);
     if ((player->astream_info.has_audio == 1 &&
         player->vstream_info.has_video == 0 &&
         (player->astream_info.audio_format == AFORMAT_COOK ||
@@ -1761,7 +1786,7 @@ release0:
     player_para_release(player);
     set_player_state(player, PLAYER_EXIT);
     update_player_states(player, 1);
-
+    stop_4khevc_scale();
     // for di detect 3D format for local playing wxl add 20160429
     if (open_3d_detect) {
         set_di_detect_3d_enable(0);
