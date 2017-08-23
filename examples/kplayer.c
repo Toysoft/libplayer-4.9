@@ -210,6 +210,7 @@ static void signal_handler(int signum)
     printf("Get signum=%x\n", signum);
    // player_progress_exit();
    // set_display_axis(1);
+    set_black_policy(1);
     set_osd_blank(0);
     signal(signum, SIG_DFL);
     raise(signum);
