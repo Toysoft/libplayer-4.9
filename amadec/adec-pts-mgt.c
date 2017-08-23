@@ -443,7 +443,7 @@ int adec_pts_droppcm(aml_audio_dec_t *audec)
 					adec_print("## [%s::%d] reset pcr error \n", __FUNCTION__, __LINE__);
 				}
 		}
-		
+
     {
         sysfs_get_int(TSYNC_PCRSCR, &cur_pcr);
         ioctl(audec->adsp_ops.amstream_fd, AMSTREAM_IOC_AB_STATUS, (unsigned long)&am_io);
@@ -986,8 +986,9 @@ int droppcm_get_refpts(aml_audio_dec_t *audec, unsigned long *refpts)
     adec_print("drop pcm use_vpts = %d \n", use_vpts);
 #endif
 
-    unsigned long checkin_firstvpts = 0;
-    while ((!firstvpts || !checkin_firstvpts)) {
+    /*The default value is 0xffffffff, which indicates an invalid pts*/
+    unsigned long checkin_firstvpts = 0xffffffff;
+    while ((!firstvpts || checkin_firstvpts == 0xffffffff)) {
         if (audec->need_stop) {
             return 0;
         }
