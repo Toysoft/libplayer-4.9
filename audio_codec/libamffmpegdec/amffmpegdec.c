@@ -70,13 +70,15 @@ int audio_dec_init(audio_decoder_operations_t *adec_ops)
 
     ic->codec_id       = audec->codec_id;
     ic->codec_type     = AVMEDIA_TYPE_AUDIO;
-    ic->channels = audec->channels;
+    if (audec->adec_ops->channels)
+        ic->channels = audec->adec_ops->channels;
+    else
+        ic->channels = audec->channels;
     ic->sample_rate =audec->samplerate;
     ic->bit_rate = audec->bitrate;
     ic->extradata = audec->extradata;
     ic->extradata_size = audec->extradata_size;
     ic->block_align = audec->block_align;
-    
     if (audec->codec_id == CODEC_ID_WMAV1 || audec->codec_id == CODEC_ID_WMAV2 || 
         audec->codec_id == CODEC_ID_WMAPRO ){
         Asf_audio_info_t *paudio_info=(Asf_audio_info_t*)audec->extradata;
@@ -262,7 +264,17 @@ int audio_dec_decode(audio_decoder_operations_t *adec_ops, char *outbuf, int *ou
         audio_codec_print("could not open file:audio_out3.pcm");
         }
 #endif
-    
+    if (ic->channels == 6) {
+       int i ;
+       for (i = 0;i < *outlen/3;i=i+4) {
+          outbuf[i] = outbuf[3*i];
+          outbuf[i + 1] = outbuf[3*i + 1];
+          outbuf[i + 2] = outbuf[3*i + 2];
+          outbuf[i + 3] = outbuf[3*i + 3];
+       }
+       *outlen = *outlen /3;
+    }
+
     if(outdata){
         av_free(outdata);
         outdata = NULL;

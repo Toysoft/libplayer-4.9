@@ -581,7 +581,8 @@ static int audio_codec_init(aml_audio_dec_t *audec)
         if (audec->format == ACODEC_FMT_PCM_S16BE  || audec->format == ACODEC_FMT_PCM_S16LE  ||
             audec->format == ACODEC_FMT_PCM_U8     || audec->format == ACODEC_FMT_PCM_BLURAY ||
             audec->format == ACODEC_FMT_WIFIDISPLAY || audec->format == ACODEC_FMT_ALAW       ||
-            audec->format == ACODEC_FMT_MULAW      || audec->format == ACODEC_FMT_ADPCM) {
+            audec->format == ACODEC_FMT_MULAW      || audec->format == ACODEC_FMT_ADPCM ||
+            audec->format == ACODEC_FMT_WMAPRO) {
             audec->adec_ops->channels = NumChSave;
         }
     }
