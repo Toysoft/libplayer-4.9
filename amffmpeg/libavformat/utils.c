@@ -429,6 +429,7 @@ static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st, AVProbeDa
         { "mp3"      , CODEC_ID_MP3       , AVMEDIA_TYPE_AUDIO },
         { "mp2"      , CODEC_ID_MP2       , AVMEDIA_TYPE_AUDIO },
         { "mpegvideo", CODEC_ID_MPEG2VIDEO, AVMEDIA_TYPE_VIDEO },
+        { "loas",      CODEC_ID_AAC_LATM,   AVMEDIA_TYPE_AUDIO },
         { 0 }
     };
     int score;

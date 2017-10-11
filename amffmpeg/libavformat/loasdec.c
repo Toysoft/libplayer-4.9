@@ -83,5 +83,5 @@ AVInputFormat ff_loas_demuxer = {
     .read_header    = loas_read_header,
     .read_packet    = ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
-    .raw_codec_id = CODEC_ID_AAC_LATM,
+  // .raw_codec_id = CODEC_ID_AAC_LATM,
 };
