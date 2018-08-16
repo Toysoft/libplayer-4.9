@@ -481,6 +481,11 @@ static size_t pcm_write(alsa_param_t * alsa_param, u_char * data, size_t count)
         data = (char*)tmp_buffer;
         bits_per_frame = bits_per_frame*8;//8ch,32bit
     }
+    pthread_mutex_lock(&alsa_param->playback_mutex);
+    if (alsa_param->pause_flag) {
+        result = 0;
+        goto  done;
+    }
     while (count > 0) {
         r = writei_func(alsa_param->handle, data, count);
 
@@ -508,6 +513,7 @@ static size_t pcm_write(alsa_param_t * alsa_param, u_char * data, size_t count)
         }
     }
 done:
+    pthread_mutex_unlock(&alsa_param->playback_mutex);
     if (tmp_buffer) {
         free(tmp_buffer);
     }
@@ -1047,9 +1053,10 @@ int alsa_resume(struct aml_audio_dec* audec)
     pthread_mutex_lock(&alsa_params->playback_mutex);
 
     alsa_params->pause_flag = 0;
-    while ((res = snd_pcm_pause(alsa_params->handle, 0)) == -EAGAIN) {
+    while ((res = snd_pcm_resume(alsa_params->handle)) == -EAGAIN) {
         sleep(1);
     }
+    snd_pcm_prepare(alsa_params->handle);
     pthread_mutex_unlock(&alsa_params->playback_mutex);
 
     return res;
@@ -1091,6 +1098,8 @@ int alsa_stop(struct aml_audio_dec* audec)
             printf("alsa_stop_raw return  error: %d\n", err);
         }
     }
+        pthread_mutex_unlock(&alsa_params->playback_mutex);
+        //playback loop acquire playback_mutex lock, move signal out of lock
         pthread_cond_signal(&alsa_params->playback_cond);
         amthreadpool_pthread_join(alsa_params->playback_tid, NULL);
         pthread_cond_destroy(&alsa_params->playback_cond);
@@ -1098,7 +1107,6 @@ int alsa_stop(struct aml_audio_dec* audec)
 
         snd_pcm_drop(alsa_params->handle);
         snd_pcm_close(alsa_params->handle);
-        pthread_mutex_unlock(&alsa_params->playback_mutex);
         pthread_mutex_destroy(&alsa_params->playback_mutex);
 
         free(alsa_params);
